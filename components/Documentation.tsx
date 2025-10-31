@@ -1,4 +1,3 @@
-
 import React, { useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
@@ -120,7 +119,7 @@ const Documentation: React.FC = () => {
 ├── index.tsx         # Application entry point
 └── index.html        # Main HTML file
                     `}</Code>
-                </section>
+                </Section>
 
                 <Section title="4. Installation and Setup Guide">
                     <p>Follow these steps to run the project on your local machine.</p>
