@@ -95,7 +95,8 @@ const performOcr = async (canvas: HTMLCanvasElement): Promise<string> => {
     }
 };
 
-const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments'>> => {
+// FIX: Update return type to exclude companyId as it's not available at this stage.
+const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     if (!process.env.API_KEY) {
         throw new Error("API key is missing. Please set it in your environment variables.");
     }
@@ -176,7 +177,8 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSe
 };
 
 
-export const processBoletoPDF = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Boleto> => {
+// FIX: Update return type to reflect that companyId is not part of the returned object yet.
+export const processBoletoPDF = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'companyId'>> => {
     try {
         const [extractedData, fileData] = await Promise.all([
             extractBoletoInfo(file, lang, aiSettings),

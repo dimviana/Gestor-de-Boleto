@@ -1,19 +1,25 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Boleto, BoletoStatus, User, ProcessingMethod } from '../types';
 import * as api from '../services/api';
 import { addLogEntry } from '../services/logService';
 
-export const useBoletos = () => {
+export const useBoletos = (user: User | null) => {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadBoletos = async () => {
+      if (!user) {
+        setBoletos([]);
+        setIsLoading(false);
+        return;
+      }
       try {
         setError(null);
         setIsLoading(true);
-        const fetchedBoletos = await api.fetchBoletos();
+        const fetchedBoletos = await api.fetchBoletos(user);
         setBoletos(fetchedBoletos);
       } catch (e) {
         console.error("Failed to load boletos:", e);
@@ -23,12 +29,15 @@ export const useBoletos = () => {
       }
     };
     loadBoletos();
-  }, []);
+  }, [user]);
 
-  const addBoleto = useCallback(async (user: User, boleto: Boleto, method: ProcessingMethod) => {
+  const addBoleto = useCallback(async (user: User, boleto: Omit<Boleto, 'companyId'>, method: ProcessingMethod) => {
+    if (!user.companyId) {
+        throw new Error('userHasNoCompanyError');
+    }
+
     if (boleto.barcode && boletos.some(b => b.barcode && b.barcode === boleto.barcode)) {
         const existingBoleto = boletos.find(b => b.barcode === boleto.barcode);
-        // User requested to use Document Number as the primary identifier in the error message.
         const identifier = existingBoleto?.guideNumber || existingBoleto?.recipient || 'N/A';
         throw new Error(`duplicateBarcodeError:${identifier}`);
     }
@@ -36,13 +45,13 @@ export const useBoletos = () => {
         throw new Error('invalidBarcodeError');
     }
     
-    const newBoleto = await api.createBoleto(boleto);
+    const newBoletoWithCompany: Boleto = { ...boleto, companyId: user.companyId };
+    const newBoleto = await api.createBoleto(newBoletoWithCompany);
     setBoletos(prev => [newBoleto, ...prev]);
     
     addLogEntry({
         userId: user.id,
         username: user.username,
-        // FIX: Corrected typo in LogAction type.
         action: 'CREATE_BOLETO',
         details: `Criou o boleto "${newBoleto.recipient || 'N/A'}" (Nº doc: ${newBoleto.guideNumber || 'N/A'}) usando o método ${method.toUpperCase()}.`
     });

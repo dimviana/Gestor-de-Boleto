@@ -1,69 +1,63 @@
-import { Boleto, BoletoStatus } from '../types';
 
-const DB_KEY = 'boletos';
+
+// FIX: Import RegisteredUser to resolve reference error.
+import { Boleto, BoletoStatus, User, Company, RegisteredUser } from '../types';
+
+const BOLETOS_DB_KEY = 'boletos';
+const COMPANIES_DB_KEY = 'companies';
 const SIMULATED_DELAY = 500; // ms
 
 // --- Helper Functions ---
 
-const readFromStorage = (): Boleto[] => {
+const readFromStorage = <T>(key: string): T[] => {
   try {
-    const storedBoletos = localStorage.getItem(DB_KEY);
-    return storedBoletos ? JSON.parse(storedBoletos) : [];
+    const storedData = localStorage.getItem(key);
+    return storedData ? JSON.parse(storedData) : [];
   } catch (error) {
-    console.error("Failed to parse boletos from localStorage", error);
-    localStorage.removeItem(DB_KEY);
+    console.error(`Failed to parse ${key} from localStorage`, error);
+    localStorage.removeItem(key);
     return [];
   }
 };
 
-const writeToStorage = (boletos: Boleto[]) => {
-  localStorage.setItem(DB_KEY, JSON.stringify(boletos));
+const writeToStorage = <T>(key: string, data: T[]) => {
+  localStorage.setItem(key, JSON.stringify(data));
 };
 
-// --- Simulated API Endpoints ---
+// --- Boletos API ---
 
-/**
- * Fetches all boletos from the database.
- * @returns A promise that resolves to an array of boletos.
- */
-export const fetchBoletos = (): Promise<Boleto[]> => {
+export const fetchBoletos = (user: User): Promise<Boleto[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const boletos = readFromStorage();
-      resolve(boletos);
+      const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
+      if (user.role === 'admin' && !user.companyId) {
+        resolve(boletos); // Super admin (no company) sees all boletos
+      } else if (user.companyId) {
+        resolve(boletos.filter(b => b.companyId === user.companyId));
+      } else {
+        resolve([]); // User with no company assigned sees no boletos
+      }
     }, SIMULATED_DELAY);
   });
 };
 
-/**
- * Creates a new boleto in the database.
- * @param boleto - The boleto object to create.
- * @returns A promise that resolves to the newly created boleto.
- */
 export const createBoleto = (boleto: Boleto): Promise<Boleto> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const boletos = readFromStorage();
-      // Ensure no duplicates are added, although this should be checked before calling.
+      const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
       if (!boletos.some(b => b.id === boleto.id)) {
         const updatedBoletos = [boleto, ...boletos];
-        writeToStorage(updatedBoletos);
+        writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
       }
       resolve(boleto);
-    }, SIMULATED_DELAY / 2); // Faster create time
+    }, SIMULATED_DELAY / 2);
   });
 };
 
-/**
- * Updates the status of an existing boleto.
- * @param id - The ID of the boleto to update.
- * @param status - The new status for the boleto.
- * @returns A promise that resolves to the updated boleto.
- */
 export const updateBoleto = (id: string, status: BoletoStatus): Promise<Boleto> => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const boletos = readFromStorage();
+        const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
         let updatedBoleto: Boleto | null = null;
         const updatedBoletos = boletos.map(b => {
           if (b.id === id) {
@@ -74,7 +68,7 @@ export const updateBoleto = (id: string, status: BoletoStatus): Promise<Boleto> 
         });
   
         if (updatedBoleto) {
-          writeToStorage(updatedBoletos);
+          writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
           resolve(updatedBoleto);
         } else {
           reject(new Error("Boleto not found"));
@@ -83,16 +77,10 @@ export const updateBoleto = (id: string, status: BoletoStatus): Promise<Boleto> 
     });
 };
 
-/**
- * Updates the comments of an existing boleto.
- * @param id - The ID of the boleto to update.
- * @param comments - The new comments for the boleto.
- * @returns A promise that resolves to the updated boleto.
- */
 export const updateBoletoComments = (id: string, comments: string): Promise<Boleto> => {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
-            const boletos = readFromStorage();
+            const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
             let updatedBoleto: Boleto | null = null;
             const updatedBoletos = boletos.map(b => {
                 if (b.id === id) {
@@ -103,7 +91,7 @@ export const updateBoletoComments = (id: string, comments: string): Promise<Bole
             });
 
             if (updatedBoleto) {
-                writeToStorage(updatedBoletos);
+                writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
                 resolve(updatedBoleto);
             } else {
                 reject(new Error("Boleto not found"));
@@ -112,18 +100,71 @@ export const updateBoletoComments = (id: string, comments: string): Promise<Bole
     });
 };
 
-
-/**
- * Deletes a boleto from the database.
- * @param id - The ID of the boleto to delete.
- * @returns A promise that resolves when the operation is complete.
- */
 export const removeBoleto = (id: string): Promise<void> => {
     return new Promise((resolve) => {
         setTimeout(() => {
-            const boletos = readFromStorage();
+            const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
             const updatedBoletos = boletos.filter(b => b.id !== id);
-            writeToStorage(updatedBoletos);
+            writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
+            resolve();
+        }, SIMULATED_DELAY / 2);
+    });
+};
+
+// --- Companies API ---
+
+export const fetchCompanies = (): Promise<Company[]> => {
+    return new Promise(resolve => {
+        setTimeout(() => resolve(readFromStorage<Company>(COMPANIES_DB_KEY)), SIMULATED_DELAY / 2);
+    });
+};
+
+export const createCompany = (companyData: Omit<Company, 'id'>): Promise<Company> => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const companies = readFromStorage<Company>(COMPANIES_DB_KEY);
+            const newCompany: Company = { ...companyData, id: crypto.randomUUID() };
+            writeToStorage(COMPANIES_DB_KEY, [...companies, newCompany]);
+            resolve(newCompany);
+        }, SIMULATED_DELAY / 2);
+    });
+};
+
+export const updateCompany = (id: string, updates: Partial<Omit<Company, 'id'>>): Promise<Company> => {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const companies = readFromStorage<Company>(COMPANIES_DB_KEY);
+            let updatedCompany: Company | null = null;
+            const updatedCompanies = companies.map(c => {
+                if (c.id === id) {
+                    updatedCompany = { ...c, ...updates };
+                    return updatedCompany;
+                }
+                return c;
+            });
+            if (updatedCompany) {
+                writeToStorage(COMPANIES_DB_KEY, updatedCompanies);
+                resolve(updatedCompany);
+            } else {
+                reject(new Error("Company not found"));
+            }
+        }, SIMULATED_DELAY / 2);
+    });
+};
+
+export const deleteCompany = (id: string): Promise<void> => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const companies = readFromStorage<Company>(COMPANIES_DB_KEY);
+            writeToStorage(COMPANIES_DB_KEY, companies.filter(c => c.id !== id));
+            // Also un-assign users from this company
+            const users = readFromStorage<RegisteredUser>('registered_users').map(u => {
+                if (u.companyId === id) {
+                    return { ...u, companyId: undefined };
+                }
+                return u;
+            });
+            writeToStorage('registered_users', users);
             resolve();
         }, SIMULATED_DELAY / 2);
     });

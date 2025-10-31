@@ -30,7 +30,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser, updateUser, deleteUser, getLogs }) => {
-  const { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos();
+  const { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos(user);
   const [isLoadingUpload, setIsLoadingUpload] = useState(false);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
@@ -47,7 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const handleFileUpload = async (file: File) => {
     setIsLoadingUpload(true);
     try {
-      let newBoleto: Boleto;
+      let newBoleto: Omit<Boleto, 'companyId'>;
       if (method === 'ai') {
           newBoleto = await processBoletoWithAI(file, language, aiSettings);
       } else {
@@ -69,7 +69,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       } else if (error.message === 'pdfProcessingError') {
           errorMessage = t('pdfProcessingError');
           errorTitle = t('processingErrorTitle');
+      } else if (error.message === 'userHasNoCompanyError') {
+          errorMessage = t('userHasNoCompanyErrorText');
+          errorTitle = t('userHasNoCompanyErrorTitle');
       }
+
 
       setErrorModalContent({ title: errorTitle, message: errorMessage });
       setIsErrorModalOpen(true);
@@ -208,14 +212,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">
-          <FileUpload onFileUpload={handleFileUpload} disabled={isLoadingUpload} />
+          <FileUpload onFileUpload={handleFileUpload} disabled={isLoadingUpload || !user.companyId} />
+          {user.role !== 'admin' && !user.companyId && (
+              <div className="text-center p-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 text-sm rounded-lg">
+                  {t('uploadDisabledNoCompany')}
+              </div>
+          )}
           {isLoadingUpload && (
             <div className="flex items-center justify-center mt-4">
               <Spinner />
               <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{method === 'ai' ? t('processingStatusOcr') : t('processingStatusRegex')}</p>
             </div>
           )}
-           <FolderWatcher onFileUpload={handleFileUpload} disabled={isLoadingUpload} />
+           <FolderWatcher onFileUpload={handleFileUpload} disabled={isLoadingUpload || !user.companyId} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

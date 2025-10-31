@@ -5,6 +5,13 @@ export enum BoletoStatus {
   PAID = 'PAGO',
 }
 
+export interface Company {
+  id: string;
+  name: string;
+  cnpj: string;
+  address: string;
+}
+
 export interface Boleto {
   id: string;
   recipient: string | null; // Beneficiário
@@ -20,6 +27,7 @@ export interface Boleto {
   status: BoletoStatus;
   fileName: string;
   fileData: string;
+  companyId: string; // Added for multi-tenancy
   comments: string | null;
 }
 
@@ -29,6 +37,7 @@ export interface User {
   id: string;
   username: string;
   role: Role;
+  companyId?: string; // Added for multi-tenancy
 }
 
 // Represents a user as stored in the database (localStorage)

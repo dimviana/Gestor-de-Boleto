@@ -76,7 +76,8 @@ const cleanOcrMistakes = (value: string): string => {
 };
 
 
-const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments'>> => {
+// FIX: Update return type to exclude companyId as it's not available at this stage.
+const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     const text = await getPdfTextContent(file);
 
     // Normalize text: remove multiple spaces, but keep newlines for structure
@@ -171,7 +172,8 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     };
 };
 
-export const processBoletoPDFWithRegex = async (file: File): Promise<Boleto> => {
+// FIX: Update return type to reflect that companyId is not part of the returned object yet.
+export const processBoletoPDFWithRegex = async (file: File): Promise<Omit<Boleto, 'companyId'>> => {
     try {
         const [extractedData, fileData] = await Promise.all([
             extractBoletoInfoWithRegex(file),

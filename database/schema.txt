@@ -1,29 +1,48 @@
 -- Database: boleto_manager_ai
 -- This schema defines the structure for the Boleto Manager AI application,
--- migrating data persistence from localStorage to a relational database.
+-- including multi-company support.
+
+--
+-- Table structure for table `companies`
+-- Stores company information for multi-tenancy.
+--
+CREATE TABLE IF NOT EXISTS `companies` (
+  `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the company',
+  `name` VARCHAR(255) NOT NULL,
+  `cnpj` VARCHAR(20) DEFAULT NULL,
+  `address` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 --
 -- Table structure for table `users`
--- Stores user account information, including credentials and roles.
+-- Stores user account information, including credentials, roles, and company association.
 --
 CREATE TABLE IF NOT EXISTS `users` (
   `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the user',
   `username` VARCHAR(255) NOT NULL COMMENT 'User''s email address, used for login',
   `password` VARCHAR(255) NOT NULL COMMENT 'Hashed password for security',
   `role` ENUM('user', 'admin') NOT NULL DEFAULT 'user' COMMENT 'User role for authorization',
+  `company_id` VARCHAR(36) DEFAULT NULL COMMENT 'Foreign key linking to the company',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `username_UNIQUE` (`username`)
+  UNIQUE KEY `username_UNIQUE` (`username`),
+  KEY `company_id_fk_idx` (`company_id`),
+  CONSTRAINT `users_company_id_fk` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Table structure for table `boletos`
--- Stores all information related to the uploaded boleto payment slips.
+-- Stores all information related to the uploaded boleto payment slips, segregated by company.
 --
 CREATE TABLE IF NOT EXISTS `boletos` (
   `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the boleto',
   `user_id` VARCHAR(36) NOT NULL COMMENT 'Foreign key linking to the user who uploaded it',
+  `company_id` VARCHAR(36) NOT NULL COMMENT 'Foreign key linking to the company',
   `recipient` VARCHAR(255) DEFAULT NULL COMMENT 'Beneficiário',
   `drawee` VARCHAR(255) DEFAULT NULL COMMENT 'Sacado',
   `document_date` DATE DEFAULT NULL,
@@ -41,9 +60,11 @@ CREATE TABLE IF NOT EXISTS `boletos` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `user_id_fk` (`user_id`),
+  KEY `user_id_fk_idx` (`user_id`),
+  KEY `company_id_fk_idx` (`company_id`),
   KEY `barcode_idx` (`barcode`),
-  CONSTRAINT `boletos_user_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `boletos_user_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `boletos_company_id_fk` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --

@@ -89,7 +89,8 @@ export const useAuth = () => {
         id: crypto.randomUUID(),
         username,
         password,
-        role: 'user'
+        role: 'user',
+        companyId: undefined, // New users start without a company
     };
 
     const updatedUsers = [...registeredUsers, newUser];
@@ -144,6 +145,7 @@ export const useAuth = () => {
       const targetUser = users[userIndex];
       const oldUsername = targetUser.username;
       const oldRole = targetUser.role;
+      const oldCompanyId = targetUser.companyId;
 
       if (updates.username && updates.username !== oldUsername && users.some(u => u.username.toLowerCase() === updates.username?.toLowerCase())) {
           setAuthError('authErrorEmailExists');
@@ -155,12 +157,13 @@ export const useAuth = () => {
           return false;
       }
       
-      // Filter out empty password updates
       if (updates.password === '') {
           delete updates.password;
       }
 
       const updatedUser = { ...targetUser, ...updates };
+      if(updates.companyId === '') updatedUser.companyId = undefined;
+
       users[userIndex] = updatedUser;
       setRegisteredUsers(users);
 
@@ -174,6 +177,10 @@ export const useAuth = () => {
       if (updates.password) {
           details.push("redefiniu a senha");
       }
+      if ('companyId' in updates && updates.companyId !== oldCompanyId) {
+          details.push(`alterou a empresa (ID: ${updates.companyId || 'Nenhuma'})`);
+      }
+
 
       if (details.length > 0) {
          addLogEntry({
