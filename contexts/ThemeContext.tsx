@@ -17,11 +17,19 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   useEffect(() => {
     const root = window.document.documentElement;
-    const isDark =
-      theme === 'dark' ||
-      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    root.classList.toggle('dark', isDark);
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else if (theme === 'light') {
+      root.classList.remove('dark');
+    } else { // 'system'
+      if (isSystemDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -30,7 +38,11 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const handleChange = () => {
       if (theme === 'system') {
         const root = window.document.documentElement;
-        root.classList.toggle('dark', mediaQuery.matches);
+        if (mediaQuery.matches) {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
       }
     };
 
