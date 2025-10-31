@@ -12,6 +12,7 @@ export const translations = {
     columnToPay: 'To Pay',
     columnVerifying: 'Verifying',
     columnPaid: 'Paid',
+    loadingBoletos: 'Loading your boletos...',
     // File Upload
     uploadCTA: 'Click to upload',
     uploadOrDrag: 'or drag and drop',
@@ -50,6 +51,7 @@ export const translations = {
     columnToPay: 'PAGAR',
     columnVerifying: 'VERIFICAR',
     columnPaid: 'PAGO',
+    loadingBoletos: 'Carregando seus boletos...',
     // File Upload
     uploadCTA: 'Clique para enviar',
     uploadOrDrag: 'ou arraste e solte',

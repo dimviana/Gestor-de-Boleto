@@ -1,44 +1,56 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Boleto, BoletoStatus } from '../types';
+import * as api from '../services/api';
 
 export const useBoletos = () => {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const storedBoletos = localStorage.getItem('boletos');
-      if (storedBoletos) {
-        setBoletos(JSON.parse(storedBoletos));
+    const loadBoletos = async () => {
+      try {
+        setError(null);
+        setIsLoading(true);
+        const fetchedBoletos = await api.fetchBoletos();
+        setBoletos(fetchedBoletos);
+      } catch (e) {
+        console.error("Failed to load boletos:", e);
+        setError("Failed to load boletos from the database.");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to parse boletos from localStorage", error);
-      localStorage.removeItem('boletos');
-    }
+    };
+    loadBoletos();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('boletos', JSON.stringify(boletos));
-  }, [boletos]);
-
-  const addBoleto = useCallback((boleto: Boleto) => {
+  const addBoleto = useCallback(async (boleto: Boleto) => {
+    // Perform client-side validation before sending to the "API"
     if (boleto.guideNumber && boletos.some(b => b.guideNumber && b.guideNumber === boleto.guideNumber)) {
         throw new Error(`duplicateGuideError:${boleto.guideNumber}`);
     }
     if (!boleto.guideNumber || boleto.guideNumber.trim() === '') {
         throw new Error('invalidGuideError');
     }
-    setBoletos(prev => [boleto, ...prev]);
+    
+    // Call the API to persist the new boleto
+    const newBoleto = await api.createBoleto(boleto);
+    
+    // Update the local state for immediate UI feedback
+    setBoletos(prev => [newBoleto, ...prev]);
   }, [boletos]);
 
-  const updateBoletoStatus = useCallback((id: string, status: BoletoStatus) => {
+  const updateBoletoStatus = useCallback(async (id: string, status: BoletoStatus) => {
+    const updatedBoleto = await api.updateBoleto(id, status);
     setBoletos(prev =>
-      prev.map(b => (b.id === id ? { ...b, status } : b))
+      prev.map(b => (b.id === id ? updatedBoleto : b))
     );
   }, []);
 
-  const deleteBoleto = useCallback((id: string) => {
+  const deleteBoleto = useCallback(async (id: string) => {
+    await api.removeBoleto(id);
     setBoletos(prev => prev.filter(b => b.id !== id));
   }, []);
 
-  return { boletos, addBoleto, updateBoletoStatus, deleteBoleto };
+  return { boletos, addBoleto, updateBoletoStatus, deleteBoleto, isLoading, error };
 };
