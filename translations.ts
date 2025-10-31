@@ -1,3 +1,5 @@
+
+
 export type Language = 'pt' | 'en';
 
 const pt = {
@@ -34,6 +36,8 @@ const pt = {
     recipientNotFound: 'Destinatário não encontrado',
     dueDate: 'Vencimento:',
     amount: 'Valor:',
+    discount: 'Desconto:',
+    interestAndFines: 'Juros/Multa:',
     barcode: 'Código de Barras:',
     guideNumber: 'Nº do Documento:',
     documentDate: 'Data do Doc.:',
@@ -47,6 +51,8 @@ const pt = {
     downloadPdf: 'Baixar Documentação em PDF',
     processingErrorTitle: 'Erro ao Processar',
     processingStatus: 'Processando com IA',
+    processingStatusOcr: 'Processando com IA e OCR...',
+    processingStatusRegex: 'Extraindo dados localmente...',
     processingErrorText: 'Ocorreu um erro ao tentar processar o arquivo PDF. Verifique o console para mais detalhes.',
     duplicateBarcodeErrorTitle: 'Boleto Duplicado',
     duplicateBarcodeErrorText: 'Um boleto com este código de barras (Doc Nº: {{identifier}}) já foi adicionado.',
@@ -56,6 +62,7 @@ const pt = {
     genericErrorText: 'Ocorreu um erro inesperado. Por favor, tente novamente.',
     pdfProcessingError: 'Ocorreu um erro ao processar o boleto com a IA.',
     confirmUserDeletion: 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.',
+    confirmBulkDelete: 'Tem certeza que deseja excluir os {{count}} boletos selecionados?',
     deleteUserError: 'Não foi possível excluir o usuário.',
     deleteSelfError: 'Você não pode excluir sua própria conta.',
     adminPanelUsersTab: 'Usuários & Aparência',
@@ -82,21 +89,45 @@ const pt = {
     extractionMethodAIDescription: 'Alta precisão usando IA para analisar a imagem do boleto. Requer conexão com a internet e uso da API.',
     extractionMethodRegex: 'REGEX (Local)',
     extractionMethodRegexDescription: 'Extração instantânea e offline baseada em texto. Mais rápido, mas pode falhar em layouts de boleto incomuns.',
+    itemsSelected: '{{count}} itens selecionados',
+    deselectAll: 'Desselecionar Todos',
+    moveTo: 'Mover para {{status}}',
+    deleteSelected: 'Excluir selecionados',
+    monitorFolderButton: 'Monitorar Pasta',
+    monitoringFolderLabel: 'Monitorando Pasta:',
+    stopMonitoringButton: 'Parar de Monitorar',
+    folderWatcherDescription: 'Selecione uma pasta para enviar automaticamente novos boletos em PDF. A aba deve permanecer aberta.',
+    folderWatcherUnsupported: 'O monitoramento de pastas não é suportado pelo seu navegador. Use um navegador como Chrome ou Edge.',
+    folderWatcherTabMustBeOpen: 'A aba deve permanecer aberta para o monitoramento funcionar.',
+    folderWatcherCrossOriginError: 'Este recurso foi bloqueado pela política de segurança do seu navegador. O monitoramento de pastas pode não funcionar em ambientes incorporados como este.',
+    addComment: 'Adicionar/Editar Comentário',
+    commentsLabel: 'Comentários',
+    addCommentLabel: 'Adicionar um comentário',
+    commentPlaceholder: 'Digite suas anotações aqui...',
+    saveCommentButton: 'Salvar Comentário',
+    notificationsTitle: 'Notificações',
+    overdueAlert: 'ATRASADO',
+    dueSoonAlert: 'Vence em {{days}} dias',
+    dueTodayAlert: 'Vence Hoje',
+    noNotifications: 'Nenhuma notificação nova.',
     geminiPrompt: `
-        Você é um assistente especialista em extrair informações de boletos bancários brasileiros a partir de uma imagem.
-        Analise a imagem e retorne um objeto JSON com as seguintes informações. Se uma informação não for encontrada, retorne null para aquele campo.
-        Todas as datas devem estar no formato AAAA-MM-DD.
-        O valor deve ser um número, usando ponto como separador decimal.
-        O bounding box do QR code deve ter as coordenadas em pixels da imagem fornecida.
+        Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
+        Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos a seguir.
+        O texto OCR é a fonte primária de informação, pois pode conter texto que não é visível na imagem. No entanto, o OCR pode conter erros.
+        Use a imagem para verificar o layout, corrigir erros de reconhecimento de caracteres do OCR e extrair informações que o OCR possa ter perdido, como o QR code.
+        Retorne um objeto JSON com as seguintes informações. Se uma informação não for encontrada em nenhuma das fontes, retorne null para aquele campo.
+        Datas devem estar no formato AAAA-MM-DD. O valor deve ser um número.
+
         - recipient: O nome do beneficiário/cedente.
         - drawee: O nome do sacado.
         - documentDate: A "Data do Documento".
         - dueDate: A data de vencimento.
-        - amount: O valor do documento.
-        - barcode: A linha digitável completa, com todos os números e pontos.
+        - amount: O valor final a ser pago ("Valor Cobrado"). Se não houver, use o "Valor do Documento".
+        - discount: O valor de qualquer desconto ("(-) Desconto / Abatimento").
+        - interestAndFines: A soma de quaisquer juros e multas ("(+) Juros / Multa" ou "Outros Acréscimos").
+        - barcode: A linha digitável completa.
         - guideNumber: O "Número do Documento".
         - pixQrCodeText: O conteúdo completo (copia e cola) do QR Code PIX.
-        - pixQrCodeBoundingBox: Um objeto com x, y, width, e height do QR Code PIX na imagem.
     `,
 };
 
@@ -134,6 +165,8 @@ const en: typeof pt = {
     recipientNotFound: 'Recipient not found',
     dueDate: 'Due Date:',
     amount: 'Amount:',
+    discount: 'Discount:',
+    interestAndFines: 'Interest/Fines:',
     barcode: 'Barcode:',
     guideNumber: 'Document No:',
     documentDate: 'Doc. Date:',
@@ -147,6 +180,8 @@ const en: typeof pt = {
     downloadPdf: 'Download Documentation as PDF',
     processingErrorTitle: 'Processing Error',
     processingStatus: 'Processing with AI',
+    processingStatusOcr: 'Processing with AI and OCR...',
+    processingStatusRegex: 'Extracting data locally...',
     processingErrorText: 'An error occurred while trying to process the PDF file. Check the console for more details.',
     duplicateBarcodeErrorTitle: 'Duplicate Boleto',
     duplicateBarcodeErrorText: 'A boleto with this barcode (Doc No: {{identifier}}) already exists.',
@@ -156,6 +191,7 @@ const en: typeof pt = {
     genericErrorText: 'An unexpected error occurred. Please try again.',
     pdfProcessingError: 'An error occurred while processing the boleto with the AI.',
     confirmUserDeletion: 'Are you sure you want to delete this user? This action cannot be undone.',
+    confirmBulkDelete: 'Are you sure you want to delete the {{count}} selected boletos?',
     deleteUserError: 'Could not delete the user.',
     deleteSelfError: 'You cannot delete your own account.',
     adminPanelUsersTab: 'Users & Appearance',
@@ -182,21 +218,45 @@ const en: typeof pt = {
     extractionMethodAIDescription: 'High accuracy using AI to analyze the boleto image. Requires internet connection and API usage.',
     extractionMethodRegex: 'REGEX (Local)',
     extractionMethodRegexDescription: 'Instant, offline text-based extraction. Faster, but may fail on uncommon boleto layouts.',
+    itemsSelected: '{{count}} items selected',
+    deselectAll: 'Deselect All',
+    moveTo: 'Move to {{status}}',
+    deleteSelected: 'Delete selected',
+    monitorFolderButton: 'Monitor Folder',
+    monitoringFolderLabel: 'Monitoring Folder:',
+    stopMonitoringButton: 'Stop Monitoring',
+    folderWatcherDescription: 'Select a folder to automatically upload new PDF boletos. The tab must remain open.',
+    folderWatcherUnsupported: 'Folder monitoring is not supported by your browser. Please use a browser like Chrome or Edge.',
+    folderWatcherTabMustBeOpen: 'The tab must remain open for monitoring to work.',
+    folderWatcherCrossOriginError: 'This feature was blocked by the browser\'s security policy. Folder monitoring may not work in embedded environments like this one.',
+    addComment: 'Add/Edit Comment',
+    commentsLabel: 'Comments',
+    addCommentLabel: 'Add a comment',
+    commentPlaceholder: 'Type your notes here...',
+    saveCommentButton: 'Save Comment',
+    notificationsTitle: 'Notifications',
+    overdueAlert: 'OVERDUE',
+    dueSoonAlert: 'Due in {{days}} days',
+    dueTodayAlert: 'Due Today',
+    noNotifications: 'No new notifications.',
     geminiPrompt: `
-        You are an expert assistant specialized in extracting information from Brazilian bank slips (boletos) from an image.
-        Analyze the image and return a JSON object with the following information. If a piece of information is not found, return null for that field.
-        All dates must be in YYYY-MM-DD format.
-        The amount must be a number, using a period as the decimal separator.
-        The QR code bounding box must have coordinates in pixels from the provided image.
+        You are an expert assistant for extracting information from Brazilian bank slips (boletos).
+        Your task is to analyze the OCR-EXTRACTED TEXT and the IMAGE provided below.
+        The OCR text is the primary source of information, as it may contain text not selectable from the image. However, the OCR may contain errors.
+        Use the image to verify the layout, correct character recognition errors from the OCR, and extract information the OCR might have missed, like the QR code.
+        Return a JSON object with the following information. If a piece of information is not found in either source, return null for that field.
+        Dates must be in YYYY-MM-DD format. The amount must be a number.
+
         - recipient: The name of the beneficiary/payee.
         - drawee: The name of the drawee (Sacado).
         - documentDate: The "Data do Documento" (Document Date).
         - dueDate: The due date.
-        - amount: The document amount.
-        - barcode: The complete digitable line (linha digitável), with all numbers and periods.
+        - amount: The final amount to be paid ("Valor Cobrado"). If not present, use "Valor do Documento".
+        - discount: The value of any discount ("(-) Desconto / Abatimento").
+        - interestAndFines: The sum of any interest and fines ("(+) Juros / Multa" or "Outros Acréscimos").
+        - barcode: The complete digitable line (linha digitável).
         - guideNumber: The "Número do Documento" (Document Number).
         - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code.
-        - pixQrCodeBoundingBox: An object with x, y, width, and height of the PIX QR Code in the image.
     `,
 };
 

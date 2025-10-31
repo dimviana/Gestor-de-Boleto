@@ -1,7 +1,8 @@
 
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useCallback } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
-import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry } from '../types';
+import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification } from '../types';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
@@ -12,8 +13,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
-import { WalletIcon, HourglassIcon, CheckCircleIcon } from './icons/Icons';
+import { WalletIcon, HourglassIcon, CheckCircleIcon, TrashIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
+import FolderWatcher from './FolderWatcher';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -26,7 +28,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser, updateUser, deleteUser, getLogs }) => {
-  const { boletos, addBoleto, updateBoletoStatus, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos();
+  const { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos();
   const [isLoadingUpload, setIsLoadingUpload] = useState(false);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
@@ -35,6 +37,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
+
+  const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
 
   const handleFileUpload = async (file: File) => {
     setIsLoadingUpload(true);
@@ -70,17 +74,61 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
     }
   };
 
-  const handleUpdateStatus = (id: string, status: BoletoStatus) => {
+  const handleToggleBoletoSelection = useCallback((id: string) => {
+    setSelectedBoletoIds(prevSelected =>
+        prevSelected.includes(id)
+            ? prevSelected.filter(boletoId => boletoId !== id)
+            : [...prevSelected, id]
+    );
+  }, []);
+
+  const handleToggleSelectAll = useCallback((columnBoletos: Boleto[]) => {
+      const columnIds = columnBoletos.map(b => b.id);
+      const allSelectedInColumn = columnIds.length > 0 && columnIds.every(id => selectedBoletoIds.includes(id));
+
+      if (allSelectedInColumn) {
+          // Deselect all from this column
+          setSelectedBoletoIds(prev => prev.filter(id => !columnIds.includes(id)));
+      } else {
+          // Select all from this column (and keep existing selections from other columns)
+          setSelectedBoletoIds(prev => [...new Set([...prev, ...columnIds])]);
+      }
+  }, [selectedBoletoIds]);
+
+  const handleUpdateStatus = useCallback((id: string, status: BoletoStatus) => {
     updateBoletoStatus(user, id, status);
+  }, [user, updateBoletoStatus]);
+
+  const handleUpdateComments = useCallback((id: string, comments: string) => {
+    updateBoletoComments(user, id, comments);
+  }, [user, updateBoletoComments]);
+
+
+  const handleBulkUpdateStatus = async (status: BoletoStatus) => {
+      await Promise.all(
+          selectedBoletoIds.map(id => updateBoletoStatus(user, id, status))
+      );
+      setSelectedBoletoIds([]);
+  };
+
+  const handleBulkDelete = async () => {
+      if (window.confirm(t('confirmBulkDelete', { count: selectedBoletoIds.length.toString() }))) {
+          await Promise.all(
+              selectedBoletoIds.map(id => deleteBoleto(user, id))
+          );
+          setSelectedBoletoIds([]);
+      }
   };
 
   const handleDelete = (id: string) => {
     deleteBoleto(user, id);
+    // Also remove from selection if it was selected
+    setSelectedBoletoIds(prev => prev.filter(selectedId => selectedId !== id));
   };
 
-  const boletosToDo = boletos.filter(b => b.status === BoletoStatus.TO_PAY);
-  const boletosVerifying = boletos.filter(b => b.status === BoletoStatus.VERIFYING);
-  const boletosPaid = boletos.filter(b => b.status === BoletoStatus.PAID);
+  const boletosToDo = useMemo(() => boletos.filter(b => b.status === BoletoStatus.TO_PAY), [boletos]);
+  const boletosVerifying = useMemo(() => boletos.filter(b => b.status === BoletoStatus.VERIFYING), [boletos]);
+  const boletosPaid = useMemo(() => boletos.filter(b => b.status === BoletoStatus.PAID), [boletos]);
 
   const calculateTotal = (boletosList: Boleto[]) => {
     return boletosList.reduce((sum, boleto) => sum + (boleto.amount || 0), 0);
@@ -89,6 +137,38 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const totalToDo = useMemo(() => calculateTotal(boletosToDo), [boletosToDo]);
   const totalVerifying = useMemo(() => calculateTotal(boletosVerifying), [boletosVerifying]);
   const totalPaid = useMemo(() => calculateTotal(boletosPaid), [boletosPaid]);
+
+  const notifications = useMemo((): Notification[] => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to the beginning of the day for accurate comparison
+
+    return boletos
+      .filter(b => b.status === BoletoStatus.TO_PAY && b.dueDate)
+      .map(boleto => {
+        // Ensure dueDate is not null and is a valid date string
+        if (!boleto.dueDate) return null;
+        
+        try {
+          const dueDate = new Date(`${boleto.dueDate}T00:00:00`);
+          const timeDiff = dueDate.getTime() - today.getTime();
+          const daysUntilDue = Math.ceil(timeDiff / (1000 * 3600 * 24));
+          
+          if (daysUntilDue < 0) {
+            return { boleto, type: 'overdue', daysUntilDue };
+          }
+          if (daysUntilDue <= 3) { // Includes today and the next 3 days
+            return { boleto, type: 'dueSoon', daysUntilDue };
+          }
+          return null;
+        } catch (e) {
+            console.error("Invalid date format for boleto:", boleto.id, boleto.dueDate);
+            return null;
+        }
+
+      })
+      .filter((notification): notification is Notification => notification !== null)
+      .sort((a, b) => a.daysUntilDue - b.daysUntilDue); // Sort by urgency
+  }, [boletos]);
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
@@ -116,16 +196,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
         onLogout={onLogout} 
         onOpenDocs={() => setIsDocsOpen(true)}
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+        notifications={notifications}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="mb-8 p-6 bg-white/60 rounded-2xl shadow-lg border border-gray-200 backdrop-blur-md">
+        <div className="mb-8 p-6 bg-white/60 rounded-2xl shadow-lg border border-gray-200 backdrop-blur-md space-y-4">
           <FileUpload onFileUpload={handleFileUpload} disabled={isLoadingUpload} />
           {isLoadingUpload && (
             <div className="flex items-center justify-center mt-4">
               <Spinner />
-              <p className="ml-4 text-blue-600 font-semibold">{t('processingStatus')}...</p>
+              <p className="ml-4 text-blue-600 font-semibold">{method === 'ai' ? t('processingStatusOcr') : t('processingStatusRegex')}</p>
             </div>
           )}
+           <FolderWatcher onFileUpload={handleFileUpload} disabled={isLoadingUpload} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -158,26 +240,60 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
             <KanbanColumn 
                 title={t('kanbanTitleToDo')} 
                 boletos={boletosToDo} 
+                status={BoletoStatus.TO_PAY}
                 onUpdateStatus={handleUpdateStatus} 
-                onDelete={handleDelete} 
+                onDelete={handleDelete}
+                onUpdateComments={handleUpdateComments}
+                selectedBoletoIds={selectedBoletoIds}
+                onToggleSelection={handleToggleBoletoSelection}
+                onToggleSelectAll={handleToggleSelectAll}
             />
             <KanbanColumn 
                 title={t('kanbanTitleVerifying')} 
                 boletos={boletosVerifying} 
+                status={BoletoStatus.VERIFYING}
                 onUpdateStatus={handleUpdateStatus} 
                 onDelete={handleDelete} 
+                onUpdateComments={handleUpdateComments}
+                selectedBoletoIds={selectedBoletoIds}
+                onToggleSelection={handleToggleBoletoSelection}
+                onToggleSelectAll={handleToggleSelectAll}
             />
             <KanbanColumn 
                 title={t('kanbanTitlePaid')} 
                 boletos={boletosPaid} 
+                status={BoletoStatus.PAID}
                 onUpdateStatus={handleUpdateStatus} 
                 onDelete={handleDelete} 
+                onUpdateComments={handleUpdateComments}
+                selectedBoletoIds={selectedBoletoIds}
+                onToggleSelection={handleToggleBoletoSelection}
+                onToggleSelectAll={handleToggleSelectAll}
             />
           </div>
         )}
         {dbError && <p className="text-red-500 text-center mt-4">{dbError}</p>}
       </main>
       
+      {selectedBoletoIds.length > 0 && (
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl p-4 z-30">
+            <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 flex items-center justify-between p-4 animate-fade-in-up">
+                <p className="font-semibold text-gray-700">
+                    {t('itemsSelected', { count: selectedBoletoIds.length.toString() })}
+                </p>
+                <div className="flex items-center space-x-2">
+                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.TO_PAY)} className="px-3 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200">{t('moveTo', { status: t('kanbanTitleToDo')})}</button>
+                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.VERIFYING)} className="px-3 py-2 text-sm font-medium text-yellow-600 bg-yellow-100 rounded-md hover:bg-yellow-200">{t('moveTo', { status: t('kanbanTitleVerifying')})}</button>
+                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.PAID)} className="px-3 py-2 text-sm font-medium text-green-600 bg-green-100 rounded-md hover:bg-green-200">{t('moveTo', { status: t('kanbanTitlePaid')})}</button>
+                    <button onClick={handleBulkDelete} className="p-2 text-red-600 bg-red-100 rounded-md hover:bg-red-200" title={t('deleteSelected')}><TrashIcon className="w-5 h-5"/></button>
+                </div>
+                <button onClick={() => setSelectedBoletoIds([])} className="text-sm font-semibold text-blue-600 hover:underline">
+                    {t('deselectAll')}
+                </button>
+            </div>
+        </div>
+      )}
+
       <Modal 
           isOpen={isErrorModalOpen} 
           onClose={() => setIsErrorModalOpen(false)} 

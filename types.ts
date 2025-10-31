@@ -11,12 +11,15 @@ export interface Boleto {
   documentDate: string | null;
   dueDate: string | null;
   amount: number | null;
+  discount: number | null;
+  interestAndFines: number | null;
   barcode: string | null;
   guideNumber: string | null;
   pixQrCodeText: string | null; // The copy-paste string
   status: BoletoStatus;
   fileName: string;
   fileData: string;
+  comments: string | null;
 }
 
 export type Role = 'user' | 'admin';
@@ -42,6 +45,7 @@ export type LogAction =
   | 'REGISTER_USER'
   | 'CREATE_BOLETO'
   | 'UPDATE_BOLETO_STATUS'
+  | 'UPDATE_BOLETO_COMMENT'
   | 'DELETE_BOLETO'
   | 'DELETE_USER'
   | 'ADMIN_CREATE_USER'
@@ -55,4 +59,10 @@ export interface LogEntry {
   username: string;
   action: LogAction;
   details: string; // e.g., "Updated boleto 'ACME-123' status to PAID"
+}
+
+export interface Notification {
+  boleto: Boleto;
+  type: 'overdue' | 'dueSoon';
+  daysUntilDue: number;
 }

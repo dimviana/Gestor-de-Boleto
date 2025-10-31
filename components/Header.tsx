@@ -1,21 +1,38 @@
 
-import React from 'react';
-import { LogoutIcon, BookOpenIcon, SettingsIcon } from './icons/Icons';
+import React, { useState, useRef, useEffect } from 'react';
+import { LogoutIcon, BookOpenIcon, SettingsIcon, BellIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
-import { User } from '../types';
+import { User, Notification } from '../types';
+import NotificationPopover from './NotificationPopover';
 
 interface HeaderProps {
   onLogout: () => void;
   onOpenDocs: () => void;
   onOpenAdminPanel: () => void;
   user: User;
+  notifications: Notification[];
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, user }) => {
+const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, user, notifications }) => {
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const notificationCount = notifications.length;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setIsPopoverOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [popoverRef]);
 
   return (
     <header className="bg-white/80 backdrop-blur-md shadow-md sticky top-0 z-20">
@@ -34,12 +51,12 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
             </div>
             <h1 className="text-2xl font-bold text-blue-600">{appName}</h1>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
              {user.role === 'admin' && (
                  <button
                   onClick={onOpenAdminPanel}
                   title="Painel Administrativo"
-                  className="flex items-center p-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="p-2 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
                   <SettingsIcon className="w-5 h-5" />
                 </button>
@@ -47,10 +64,25 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
              <button
               onClick={onOpenDocs}
               title={t('documentationTitle')}
-              className="flex items-center p-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="p-2 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               <BookOpenIcon className="w-5 h-5" />
             </button>
+            <div className="relative" ref={popoverRef}>
+                <button
+                    onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+                    title={t('notificationsTitle')}
+                    className="relative p-2 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                    <BellIcon className="w-5 h-5" />
+                    {notificationCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                           {notificationCount}
+                        </span>
+                    )}
+                </button>
+                {isPopoverOpen && <NotificationPopover notifications={notifications} />}
+            </div>
             <button
               onClick={onLogout}
               className="flex items-center px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"

@@ -84,6 +84,36 @@ export const updateBoleto = (id: string, status: BoletoStatus): Promise<Boleto> 
 };
 
 /**
+ * Updates the comments of an existing boleto.
+ * @param id - The ID of the boleto to update.
+ * @param comments - The new comments for the boleto.
+ * @returns A promise that resolves to the updated boleto.
+ */
+export const updateBoletoComments = (id: string, comments: string): Promise<Boleto> => {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const boletos = readFromStorage();
+            let updatedBoleto: Boleto | null = null;
+            const updatedBoletos = boletos.map(b => {
+                if (b.id === id) {
+                    updatedBoleto = { ...b, comments };
+                    return updatedBoleto;
+                }
+                return b;
+            });
+
+            if (updatedBoleto) {
+                writeToStorage(updatedBoletos);
+                resolve(updatedBoleto);
+            } else {
+                reject(new Error("Boleto not found"));
+            }
+        }, SIMULATED_DELAY / 2);
+    });
+};
+
+
+/**
  * Deletes a boleto from the database.
  * @param id - The ID of the boleto to delete.
  * @returns A promise that resolves when the operation is complete.

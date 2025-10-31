@@ -1,3 +1,5 @@
+
+
 import { Boleto, BoletoStatus } from '../types';
 
 declare const pdfjsLib: any;
@@ -57,33 +59,57 @@ const getPdfTextContent = async (file: File): Promise<string> => {
     return fullText;
 };
 
+/**
+ * Replaces common OCR character misinterpretations with the correct characters.
+ * @param value The string to clean.
+ * @returns The cleaned string.
+ */
+const cleanOcrMistakes = (value: string): string => {
+    if (!value) return '';
+    return value
+        .replace(/O/g, '0')
+        .replace(/I/g, '1')
+        .replace(/l/g, '1')
+        .replace(/S/g, '5')
+        .replace(/B/g, '8')
+        .replace(/Z/g, '2');
+};
 
-const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id' | 'status' | 'fileData'>> => {
+
+const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments'>> => {
     const text = await getPdfTextContent(file);
 
     // Normalize text: remove multiple spaces, but keep newlines for structure
     const normalizedText = text.replace(/ +/g, ' ').trim();
 
-    // Refactored regex patterns for increased robustness and flexibility
+    // Upgraded REGEX patterns for improved data extraction.
+    // The lookahead `(?=...)` now also includes `[\r\n]` to correctly stop capturing
+    // at the end of a line, which is crucial for multi-line layouts.
     const patterns = {
         // Handles formatted line (with optional dots and flexible spaces) OR a raw 47-48 digit number.
         barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
-        // Allows amount to be on the next line from its label. Handles different currency notations.
-        amount: /(?:Valor (?:do )?Documento|Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        // Allows due date to be on the next line from its label.
-        dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}\/\d{2}\/\d{4})/i,
-        // Allows document date to be on the next line from its label.
-        documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}\/\d{2}\/\d{4})/i,
-        // Flexible labels for document number, allowing more character types.
-        guideNumber: /(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero)[\s.:\n]*?([\w\d\/-]+)/i,
-        recipient: /(?:Beneficiário|Cedente)[\s.:]*([^\n]+)/i,
-        drawee: /(?:Pagador|Sacado)[\s.:]*([^\n]+)/i,
+        // Allows amount to be on the next line. Handles "(=) Valor do Documento".
+        amount: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento|Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        discount: /(?:(?:\(-\)\s*)?Desconto|Abatimento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        interestAndFines: /(?:(?:\(\+\)\s*)?Juros|Multa|Acréscimos)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        // Allows due date to be on the next line and handles common OCR errors for '/'.
+        dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
+        // Allows document date to be on the next line and handles common OCR errors for '/'.
+        documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
+        // Flexible capture that stops at a wide gap OR a newline.
+        guideNumber: /(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero|Guia)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
+        // Flexible capture that stops at a wide gap OR a newline.
+        recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
+        // Flexible capture that stops at a wide gap OR a newline.
+        drawee: /(?:Pagador|Sacado)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
         // Captures any long non-whitespace string starting with the PIX identifier.
         pixQrCodeText: /(000201\S{100,})/i,
     };
 
     const barcodeMatch = normalizedText.match(patterns.barcode);
     const amountMatch = normalizedText.match(patterns.amount);
+    const discountMatch = normalizedText.match(patterns.discount);
+    const interestAndFinesMatch = normalizedText.match(patterns.interestAndFines);
     const dueDateMatch = normalizedText.match(patterns.dueDate);
     const documentDateMatch = normalizedText.match(patterns.documentDate);
     const guideNumberMatch = normalizedText.match(patterns.guideNumber);
@@ -93,32 +119,42 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     
     // Process matches
     const rawBarcode = barcodeMatch ? (barcodeMatch[1] || barcodeMatch[2]) : null;
-    const barcode = rawBarcode ? rawBarcode.replace(/[^\d]/g, '') : null;
+    const barcode = rawBarcode ? cleanOcrMistakes(rawBarcode).replace(/[^\d]/g, '') : null;
     
-    const amountStr = amountMatch ? amountMatch[1].replace(/\./g, '').replace(',', '.') : null;
-    const amount = amountStr ? parseFloat(amountStr) : null;
+    const parseCurrency = (match: RegExpMatchArray | null): number | null => {
+        if (!match || !match[1]) return null;
+        let valueStr = match[1];
+        valueStr = cleanOcrMistakes(valueStr);
+        valueStr = valueStr.replace(/\./g, '').replace(',', '.');
+        if (isNaN(parseFloat(valueStr))) return null;
+        return parseFloat(valueStr);
+    };
+
+    const amount = parseCurrency(amountMatch);
+    const discount = parseCurrency(discountMatch);
+    const interestAndFines = parseCurrency(interestAndFinesMatch);
     
     const parseDate = (match: RegExpMatchArray | null): string | null => {
         if (!match || !match[1]) return null;
-        const [day, month, year] = match[1].split('/');
+        const [day, month, year] = match[1].split(/[\/Il]/);
         // Basic validation to avoid invalid dates like 00/00/0000
-        if (parseInt(day, 10) === 0 || parseInt(month, 10) === 0 || !year || year.length < 4) return null;
-        return `${year}-${month}-${day}`;
+        if (!day || !month || !year || parseInt(day, 10) === 0 || parseInt(month, 10) === 0 || year.length < 4) return null;
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     };
 
     const dueDate = parseDate(dueDateMatch);
     const documentDate = parseDate(documentDateMatch);
-    
-    const cleanField = (match: RegExpMatchArray | null, stopWordsRegex: RegExp): string | null => {
-        if (!match) return null;
-        let value = match[1].trim();
-        // Remove text from adjacent fields that might have been captured on the same line
-        value = value.split(stopWordsRegex)[0].trim().replace(/--/g, '').trim();
-        return value || null; // Return null if the result is an empty string
+
+    // With improved regex, a simple trim is usually sufficient.
+    const getMatchValue = (match: RegExpMatchArray | null): string | null => {
+        if (!match || !match[1]) return null;
+        const value = match[1].trim().replace(/--/g, '').trim();
+        return value || null;
     };
 
-    const recipient = cleanField(recipientMatch, /CNPJ|CPF|Agência|Nosso Número|Guia/i);
-    const drawee = cleanField(draweeMatch, /CNPJ|CPF|Data do Documento|Nº do Documento|Vencimento|Guia|CEP|Endereço/i);
+    const recipient = getMatchValue(recipientMatch);
+    const drawee = getMatchValue(draweeMatch);
+    const guideNumber = getMatchValue(guideNumberMatch);
 
     return {
         recipient,
@@ -126,8 +162,10 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
         documentDate,
         dueDate,
         amount,
+        discount,
+        interestAndFines,
         barcode,
-        guideNumber: guideNumberMatch ? guideNumberMatch[1].trim() : null,
+        guideNumber,
         pixQrCodeText: pixQrCodeTextMatch ? pixQrCodeTextMatch[0].trim() : null,
         fileName: file.name,
     };
@@ -145,6 +183,7 @@ export const processBoletoPDFWithRegex = async (file: File): Promise<Boleto> => 
             id: crypto.randomUUID(),
             status: BoletoStatus.TO_PAY,
             fileData,
+            comments: null,
         };
     } catch (error) {
         console.error("Error processing Boleto with REGEX:", error);

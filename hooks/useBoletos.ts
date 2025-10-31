@@ -63,6 +63,20 @@ export const useBoletos = () => {
     });
   }, []);
 
+  const updateBoletoComments = useCallback(async (user: User, id: string, comments: string) => {
+    const updatedBoleto = await api.updateBoletoComments(id, comments);
+    setBoletos(prev =>
+      prev.map(b => (b.id === id ? updatedBoleto : b))
+    );
+    addLogEntry({
+        userId: user.id,
+        username: user.username,
+        action: 'UPDATE_BOLETO_COMMENT',
+        details: `Adicionou/editou comentário no boleto "${updatedBoleto.recipient || 'N/A'}" (Nº doc: ${updatedBoleto.guideNumber || 'N/A'}).`
+    });
+  }, []);
+
+
   const deleteBoleto = useCallback(async (user: User, id: string) => {
     const boletoToDelete = boletos.find(b => b.id === id);
     await api.removeBoleto(id);
@@ -78,5 +92,5 @@ export const useBoletos = () => {
     }
   }, [boletos]);
 
-  return { boletos, addBoleto, updateBoletoStatus, deleteBoleto, isLoading, error };
+  return { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading, error };
 };
