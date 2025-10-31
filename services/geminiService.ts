@@ -8,6 +8,29 @@ import { translations } from '../translations';
 declare const pdfjsLib: any;
 declare const Tesseract: any;
 
+/**
+ * Helper function to get the API key.
+ * This makes the application runnable locally by using localStorage as the primary source,
+ * as suggested by the app's own documentation component.
+ * It retains compatibility with the original environment by checking for `process.env.API_KEY` as a fallback.
+ */
+const getApiKey = (): string => {
+    const keyFromStorage = localStorage.getItem('gemini_api_key');
+    if (keyFromStorage) {
+      return keyFromStorage;
+    }
+
+    // Check for the environment variable for compatibility with the original platform.
+    // We check for `process` to avoid ReferenceError in a pure browser environment.
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return process.env.API_KEY;
+    }
+    
+    // Provide a helpful error message for local setup.
+    throw new Error("Chave da API não encontrada. Configure-a no console do navegador: localStorage.setItem('gemini_api_key', 'SUA_CHAVE_AQUI');");
+};
+
+
 const convertFileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -97,10 +120,8 @@ const performOcr = async (canvas: HTMLCanvasElement): Promise<string> => {
 
 // FIX: Update return type to exclude companyId as it's not available at this stage.
 const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
-    if (!process.env.API_KEY) {
-        throw new Error("API key is missing. Please set it in your environment variables.");
-    }
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = getApiKey();
+    const ai = new GoogleGenAI({ apiKey });
     
     const canvas = await renderPdfPageToCanvas(file);
     
@@ -194,6 +215,10 @@ export const processBoletoPDF = async (file: File, lang: 'pt' | 'en', aiSettings
         };
     } catch (error) {
         console.error("Error processing Boleto with Gemini:", error);
+        // Pass the specific error message to the caller (e.g., if API key is missing)
+        if (error instanceof Error) {
+            throw error;
+        }
         throw new Error("pdfProcessingError");
     }
 };
