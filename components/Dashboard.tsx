@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
@@ -9,7 +10,7 @@ import Documentation from './Documentation';
 import { BoletoStatus, Boleto } from '../types';
 import { useBoletos } from '../hooks/useBoletos';
 import { processBoletoPDF } from '../services/geminiService';
-import { CheckCircleIcon, ClockIcon, DocumentTextIcon, XCircleIcon } from './icons/Icons';
+import { CheckCircleIcon, ClockIcon, DocumentTextIcon, XCircleIcon, DollarSignIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { TranslationKey } from '../translations';
 
@@ -53,6 +54,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const totalPaid = useMemo(() => {
+    return boletos
+        .filter(boleto => boleto.status === BoletoStatus.PAID)
+        .reduce((sum, boleto) => sum + (boleto.amount || 0), 0);
+  }, [boletos]);
+
+  const formatCurrency = (value: number) => {
+      return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
+          style: 'currency',
+          currency: language === 'pt' ? 'BRL' : 'USD'
+      });
   };
 
   const columns = [
@@ -122,6 +136,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
               </div>
             )}
             
+            <div className="mb-8">
+              <div className="bg-green-100/70 border border-green-200 text-green-800 rounded-xl shadow-lg p-6 flex items-center justify-start">
+                <div className="p-3 bg-white rounded-full mr-4 shadow">
+                  <DollarSignIcon className="w-8 h-8 text-green-500" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">{t('totalPaid')}</h2>
+                  <p className="text-3xl font-bold text-green-600">{formatCurrency(totalPaid)}</p>
+                </div>
+              </div>
+            </div>
+
             {renderContent()}
 
           </div>

@@ -1,4 +1,5 @@
 
+
 export const translations = {
   en: {
     // Login
@@ -14,6 +15,7 @@ export const translations = {
     columnVerifying: 'Verifying',
     columnPaid: 'Paid',
     loadingBoletos: 'Loading your boletos...',
+    totalPaid: 'Total Paid',
     // Documentation
     documentationTitle: 'System Documentation',
     downloadPdf: 'Download as PDF',
@@ -56,6 +58,7 @@ export const translations = {
     columnVerifying: 'VERIFICAR',
     columnPaid: 'PAGO',
     loadingBoletos: 'Carregando seus boletos...',
+    totalPaid: 'Total Pago',
     // Documentation
     documentationTitle: 'Documentação do Sistema',
     downloadPdf: 'Baixar como PDF',
