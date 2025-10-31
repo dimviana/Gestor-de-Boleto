@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Boleto Manager AI",
+  "description": "An intelligent SaaS platform to manage boleto payments. Upload a PDF, and our AI will extract the details, allowing you to track payments through 'To Pay', 'Verifying', and 'Paid' stages.",
+  "requestFramePermissions": []
+}
