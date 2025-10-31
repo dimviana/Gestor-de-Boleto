@@ -1,15 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
 // FIX: To resolve type conflicts with the global DOM `Request`, we now explicitly
 // use the `express` namespace for all Express-related types. This ensures that
 // properties like `.headers`, `.body`, etc., are correctly recognized.
-export interface AuthRequest extends Request {
+export interface AuthRequest extends express.Request {
   user?: User;
 }
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const protect = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -27,7 +27,7 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const admin = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
