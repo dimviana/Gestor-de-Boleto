@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
-import { Boleto, BoletoStatus, User } from '../types';
+import { Boleto, BoletoStatus, User, RegisteredUser } from '../types';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
@@ -16,9 +16,12 @@ import AdminPanel from './AdminPanel';
 interface DashboardProps {
   onLogout: () => void;
   user: User;
+  getUsers: () => RegisteredUser[];
+  updateUser: (userId: string, updates: Partial<Pick<RegisteredUser, 'role'>>) => boolean;
+  deleteUser: (userId: string) => boolean;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, updateUser, deleteUser }) => {
   const { boletos, addBoleto, updateBoletoStatus, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos();
   const [isLoadingUpload, setIsLoadingUpload] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -159,7 +162,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
           <Documentation />
       </Modal>
       <Modal isOpen={isAdminPanelOpen} onClose={() => setIsAdminPanelOpen(false)} title="Painel Administrativo">
-          <AdminPanel onClose={() => setIsAdminPanelOpen(false)} />
+          <AdminPanel 
+            onClose={() => setIsAdminPanelOpen(false)} 
+            getUsers={getUsers}
+            updateUser={updateUser}
+            deleteUser={deleteUser}
+            currentUser={user}
+        />
       </Modal>
     </>
   );

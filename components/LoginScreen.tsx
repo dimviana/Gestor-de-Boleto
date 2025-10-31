@@ -1,31 +1,57 @@
+
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
-import { User } from '../types';
+import { TranslationKey } from '../translations';
 
 interface LoginScreenProps {
-  onLogin: (user: User) => void;
+  login: (username: string, password?: string) => void;
+  register: (username: string, password?: string) => boolean;
+  authError: string | null;
+  setAuthError: (error: string | null) => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, setAuthError }) => {
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
-  const [username, setUsername] = useState('');
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
-  const handleLogin = () => {
-    const role = username.toLowerCase() === 'admin' ? 'admin' : 'user';
-    onLogin({ username, role });
+
+  const handleSwitchMode = (newMode: 'login' | 'register') => {
+    setMode(newMode);
+    setEmail('');
+    setPassword('');
+    setAuthError(null);
+    setRegistrationSuccess(false);
+  };
+
+  const handleSubmit = () => {
+    setAuthError(null);
+    setRegistrationSuccess(false);
+
+    if (mode === 'login') {
+      login(email, password);
+    } else {
+      const success = register(email, password);
+      if (success) {
+        setRegistrationSuccess(true);
+        handleSwitchMode('login');
+      }
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      handleLogin();
+      handleSubmit();
     }
   };
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-2xl">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-2xl">
         <div className="text-center">
            <div className="flex flex-col items-center justify-center space-y-4 mb-4">
             {logoUrl ? (
@@ -37,30 +63,63 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                     </svg>
                 </div>
             )}
-        </div>
+            </div>
           <h1 className="text-4xl font-bold text-blue-600">{appName}</h1>
           <p className="mt-2 text-gray-500">{t('loginSubtitle')}</p>
         </div>
         
-        <div>
-            <label htmlFor="username" className="text-sm font-medium text-gray-700">Usuário</label>
-            <input 
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Digite 'admin' para acesso de administrador"
-                className="w-full px-4 py-2 mt-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+        <div className="flex border-b border-gray-200">
+            <button
+                onClick={() => handleSwitchMode('login')}
+                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+                {t('loginTab')}
+            </button>
+            <button
+                onClick={() => handleSwitchMode('register')}
+                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+                {t('registerTab')}
+            </button>
+        </div>
+
+        {authError && <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg text-center">{t(authError as TranslationKey)}</div>}
+        {registrationSuccess && <div className="p-3 text-sm text-green-700 bg-green-100 rounded-lg text-center">{t('registrationSuccess')}</div>}
+
+        <div className="space-y-4">
+            <div>
+                <label htmlFor="email" className="text-sm font-medium text-gray-700">{t('emailLabel')}</label>
+                <input 
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={t('emailPlaceholder')}
+                    className="w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+            </div>
+            <div>
+                 <label htmlFor="password" className="text-sm font-medium text-gray-700">{mode === 'login' ? t('passwordLabel') : t('passwordLabelRegister')}</label>
+                <input 
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={t('passwordPlaceholder')}
+                    className="w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+            </div>
+             {mode === 'login' && <p className="text-xs text-center text-gray-500">{t('adminHint')}</p>}
         </div>
        
         <button
-          onClick={handleLogin}
+          onClick={handleSubmit}
           className="w-full px-4 py-3 font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!username}
+          disabled={!email || (mode === 'register' && !password)}
         >
-          {t('loginButton')}
+          {mode === 'login' ? t('loginButton') : t('createAccountButton')}
         </button>
       </div>
     </div>

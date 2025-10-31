@@ -1,3 +1,4 @@
+
 export enum BoletoStatus {
   TO_PAY = 'PAGAR',
   VERIFYING = 'VERIFICAR',
@@ -19,6 +20,12 @@ export interface Boleto {
 export type Role = 'user' | 'admin';
 
 export interface User {
+  id: string;
   username: string;
   role: Role;
+}
+
+// Represents a user as stored in the database (localStorage)
+export interface RegisteredUser extends User {
+  password?: string;
 }
