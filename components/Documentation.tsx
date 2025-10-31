@@ -1,6 +1,7 @@
 
 import React, { useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { DocumentTextIcon } from './icons/Icons';
 
 // Let TypeScript know about the global variables from the CDN scripts
@@ -9,6 +10,7 @@ declare const html2canvas: any;
 
 const Documentation: React.FC = () => {
     const { t } = useLanguage();
+    const { appName } = useWhitelabel();
     const docContentRef = useRef<HTMLDivElement>(null);
 
     const handleDownloadPdf = async () => {
@@ -78,7 +80,7 @@ const Documentation: React.FC = () => {
         <div>
             <div ref={docContentRef} className="p-4 bg-white">
                 <header className="mb-8 text-center">
-                    <h2 className="text-4xl font-extrabold text-blue-600">{t('loginTitle')}</h2>
+                    <h2 className="text-4xl font-extrabold text-blue-600">{appName}</h2>
                     <p className="text-lg text-gray-500">{t('loginSubtitle')}</p>
                 </header>
                 
@@ -113,12 +115,12 @@ const Documentation: React.FC = () => {
 │   ├── api.ts        # Simulated API for data persistence (LocalStorage)
 │   └── geminiService.ts # Logic for interacting with Gemini AI
 ├── types.ts          # TypeScript type definitions
-├── translations.ts   # Internationalization (i18n) strings
+├── translations.ts   # Internationalization (i1n) strings
 ├── App.tsx           # Main application component with routing
 ├── index.tsx         # Application entry point
 └── index.html        # Main HTML file
                     `}</Code>
-                </Section>
+                </section>
 
                 <Section title="4. Installation and Setup Guide">
                     <p>Follow these steps to run the project on your local machine.</p>
@@ -143,12 +145,13 @@ const Documentation: React.FC = () => {
                     <Code>
                         {`localStorage.setItem('gemini_api_key', 'YOUR_API_KEY_HERE');`}
                     </Code>
-                    <p><strong>Note:</strong> The app has been updated to use an environment variable `process.env.API_KEY`. In a real development environment, you would create a `.env.local` file with `API_KEY=...`. For this live environment, the key is assumed to be injected automatically.</p>
+                    <p><strong>Note:</strong> The app has been updated to use an environment variable `process.env.API_KEY`. In this live environment, the key is assumed to be injected automatically.</p>
                 </Section>
 
                 <Section title="5. How to Use">
                     <ol>
-                        <li><strong>Login:</strong> Click the "Access Dashboard" button to enter the main application.</li>
+                        <li><strong>Login:</strong> On the login screen, type a username. Use 'admin' to access administrative features. Click "Access Dashboard" to enter.</li>
+                        <li><strong>(Admin) Customize Appearance:</strong> If logged in as admin, click the settings icon in the header to open the Admin Panel. Here you can change the application name and logo URL.</li>
                         <li><strong>Upload Boleto:</strong> Drag and drop a PDF file onto the designated area, or click to select a file from your computer.</li>
                         <li><strong>AI Processing:</strong> The system will display a spinner while it converts the PDF to an image and sends it to the Gemini AI for analysis.</li>
                         <li><strong>Manage on Kanban Board:</strong> Once processed, the new boleto card will appear in the "To Pay" column.</li>
@@ -161,8 +164,8 @@ const Documentation: React.FC = () => {
                     <p>The current architecture with a simulated API is excellent for demos and rapid development. The next logical step is to connect it to a real backend.</p>
                     <ul>
                        <li><strong>Backend API:</strong> Develop a RESTful or GraphQL API (e.g., using Node.js, Python, or Go) to handle CRUD operations for boletos.</li>
-                       <li><strong>Database Integration:</strong> Use a robust database like PostgreSQL or MySQL. A schema has already been designed in <code>database.sql</code> to facilitate this transition.</li>
-                       <li><strong>User Authentication:</strong> Replace the simple session-based login with a secure authentication system (e.g., JWT, OAuth).</li>
+                       <li><strong>Database Integration:</strong> Use a robust database like PostgreSQL or MySQL.</li>
+                       <li><strong>User Authentication:</strong> Replace the simple session-based login with a secure authentication system (e.g., JWT, OAuth) that manages real user accounts and roles.</li>
                        <li><strong>Real-time Updates:</strong> Implement WebSockets to reflect changes on the Kanban board in real-time for all connected users.</li>
                     </ul>
                 </Section>

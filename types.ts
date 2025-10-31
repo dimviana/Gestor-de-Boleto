@@ -15,3 +15,10 @@ export interface Boleto {
   fileName: string;
   fileData: string;
 }
+
+export type Role = 'user' | 'admin';
+
+export interface User {
+  username: string;
+  role: Role;
+}

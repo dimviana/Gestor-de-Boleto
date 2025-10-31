@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
-import { Boleto, BoletoStatus } from '../types';
+import { Boleto, BoletoStatus, User } from '../types';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
@@ -11,16 +11,19 @@ import { useLanguage } from '../contexts/LanguageContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
 import { WalletIcon, HourglassIcon, CheckCircleIcon } from './icons/Icons';
+import AdminPanel from './AdminPanel';
 
 interface DashboardProps {
   onLogout: () => void;
+  user: User;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   const { boletos, addBoleto, updateBoletoStatus, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos();
   const [isLoadingUpload, setIsLoadingUpload] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const { t, language } = useLanguage();
 
   const handleFileUpload = async (file: File) => {
@@ -85,7 +88,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
 
   return (
     <>
-      <Header onLogout={onLogout} onOpenDocs={() => setIsDocsOpen(true)} />
+      <Header 
+        user={user}
+        onLogout={onLogout} 
+        onOpenDocs={() => setIsDocsOpen(true)}
+        onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+      />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8 p-6 bg-white/60 rounded-2xl shadow-lg border border-gray-200 backdrop-blur-md">
           <FileUpload onFileUpload={handleFileUpload} disabled={isLoadingUpload} />
@@ -149,6 +157,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
       </main>
       <Modal isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} title={t('documentationTitle')}>
           <Documentation />
+      </Modal>
+      <Modal isOpen={isAdminPanelOpen} onClose={() => setIsAdminPanelOpen(false)} title="Painel Administrativo">
+          <AdminPanel onClose={() => setIsAdminPanelOpen(false)} />
       </Modal>
     </>
   );
