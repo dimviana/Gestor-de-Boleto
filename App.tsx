@@ -24,12 +24,17 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-blue-200 min-h-screen text-gray-800 font-sans">
-      {isAuthenticated ? (
-        <Dashboard onLogout={handleLogout} />
-      ) : (
-        <LoginScreen onLogin={handleLogin} />
-      )}
+    <div className="bg-gradient-to-br from-blue-50 to-blue-200 min-h-screen text-gray-800 font-sans flex flex-col">
+      <main className="flex-grow">
+        {isAuthenticated ? (
+          <Dashboard onLogout={handleLogout} />
+        ) : (
+          <LoginScreen onLogin={handleLogin} />
+        )}
+      </main>
+      <footer className="text-center p-4 text-gray-600 text-sm">
+        © {new Date().getFullYear()} ABILDEVELOPER. Todos os direitos reservados.
+      </footer>
     </div>
   );
 };
