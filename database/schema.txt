@@ -1,0 +1,88 @@
+-- Database: boleto_manager_ai
+-- This schema defines the structure for the Boleto Manager AI application,
+-- migrating data persistence from localStorage to a relational database.
+
+--
+-- Table structure for table `users`
+-- Stores user account information, including credentials and roles.
+--
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the user',
+  `username` VARCHAR(255) NOT NULL COMMENT 'User''s email address, used for login',
+  `password` VARCHAR(255) NOT NULL COMMENT 'Hashed password for security',
+  `role` ENUM('user', 'admin') NOT NULL DEFAULT 'user' COMMENT 'User role for authorization',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username_UNIQUE` (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `boletos`
+-- Stores all information related to the uploaded boleto payment slips.
+--
+CREATE TABLE IF NOT EXISTS `boletos` (
+  `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the boleto',
+  `user_id` VARCHAR(36) NOT NULL COMMENT 'Foreign key linking to the user who uploaded it',
+  `recipient` VARCHAR(255) DEFAULT NULL COMMENT 'Beneficiário',
+  `drawee` VARCHAR(255) DEFAULT NULL COMMENT 'Sacado',
+  `document_date` DATE DEFAULT NULL,
+  `due_date` DATE DEFAULT NULL,
+  `amount` DECIMAL(10,2) DEFAULT NULL,
+  `discount` DECIMAL(10,2) DEFAULT NULL,
+  `interest_and_fines` DECIMAL(10,2) DEFAULT NULL,
+  `barcode` VARCHAR(255) DEFAULT NULL COMMENT 'Linha digitável',
+  `guide_number` VARCHAR(255) DEFAULT NULL COMMENT 'Número do documento',
+  `pix_qr_code_text` TEXT DEFAULT NULL,
+  `status` ENUM('PAGAR', 'VERIFICAR', 'PAGO') NOT NULL DEFAULT 'PAGAR',
+  `file_name` VARCHAR(255) NOT NULL,
+  `file_data` MEDIUMTEXT NOT NULL COMMENT 'Base64 encoded PDF data for viewing/downloading',
+  `comments` TEXT DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id_fk` (`user_id`),
+  KEY `barcode_idx` (`barcode`),
+  CONSTRAINT `boletos_user_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `activity_logs`
+-- Records significant actions performed by users for auditing and tracking.
+--
+CREATE TABLE IF NOT EXISTS `activity_logs` (
+  `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the log entry',
+  `user_id` VARCHAR(36) NOT NULL,
+  `username` VARCHAR(255) NOT NULL,
+  `action` VARCHAR(50) NOT NULL COMMENT 'The type of action performed (e.g., LOGIN, CREATE_BOLETO)',
+  `details` TEXT COMMENT 'A description of the action',
+  `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id_idx` (`user_id`),
+  KEY `action_idx` (`action`),
+  KEY `timestamp_idx` (`timestamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `settings`
+-- Stores global application settings using a flexible key-value pair system.
+--
+CREATE TABLE IF NOT EXISTS `settings` (
+  `id` INT AUTO_INCREMENT,
+  `setting_key` VARCHAR(255) NOT NULL,
+  `setting_value` TEXT,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `setting_key_UNIQUE` (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Initial data for `settings` table
+-- Pre-populates the settings with default values on the first run.
+--
+INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
+('whitelabel_appName', 'Boleto Manager AI'),
+('whitelabel_logoUrl', ''),
+('processing_method', 'ai'),
+('ai_settings', '{"model": "gemini-2.5-flash", "temperature": 0.2, "topK": 1, "topP": 1}')
+ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
