@@ -6,8 +6,10 @@ import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
 import Spinner from './Spinner';
-import { processBoletoPDF } from '../services/geminiService';
+import { processBoletoPDF as processBoletoWithAI } from '../services/geminiService';
+import { processBoletoPDFWithRegex } from '../services/regexService';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
 import { WalletIcon, HourglassIcon, CheckCircleIcon } from './icons/Icons';
@@ -26,35 +28,43 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser, updateUser, deleteUser, getLogs }) => {
   const { boletos, addBoleto, updateBoletoStatus, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos();
   const [isLoadingUpload, setIsLoadingUpload] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const { t, language } = useLanguage();
+  const { method } = useProcessingMethod();
+  
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [errorModalContent, setErrorModalContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
 
   const handleFileUpload = async (file: File) => {
     setIsLoadingUpload(true);
-    setUploadError(null);
     try {
-      const newBoleto = await processBoletoPDF(file, language);
-      await addBoleto(user, newBoleto);
+      let newBoleto: Boleto;
+      if (method === 'ai') {
+          newBoleto = await processBoletoWithAI(file, language);
+      } else {
+          newBoleto = await processBoletoPDFWithRegex(file);
+      }
+      await addBoleto(user, newBoleto, method);
     } catch (error: any) {
       console.error("Upload failed:", error);
       let errorMessage = t('genericErrorText');
       let errorTitle = t('genericErrorTitle');
       
-      if (error.message.startsWith('duplicateGuideError:')) {
-          const guideNumber = error.message.split(':')[1];
-          errorMessage = t('duplicateErrorText', { guideNumber });
-          errorTitle = t('duplicateErrorTitle');
-      } else if (error.message === 'invalidGuideError') {
-          errorMessage = t('invalidGuideErrorText');
-          errorTitle = t('invalidGuideErrorTitle');
+      if (error.message.startsWith('duplicateBarcodeError:')) {
+          const identifier = error.message.split(':')[1];
+          errorMessage = t('duplicateBarcodeErrorText', { identifier });
+          errorTitle = t('duplicateBarcodeErrorTitle');
+      } else if (error.message === 'invalidBarcodeError') {
+          errorMessage = t('invalidBarcodeErrorText');
+          errorTitle = t('invalidBarcodeErrorTitle');
       } else if (error.message === 'pdfProcessingError') {
           errorMessage = t('pdfProcessingError');
           errorTitle = t('processingErrorTitle');
       }
 
-      setUploadError(`${errorTitle}: ${errorMessage}`);
+      setErrorModalContent({ title: errorTitle, message: errorMessage });
+      setIsErrorModalOpen(true);
     } finally {
       setIsLoadingUpload(false);
     }
@@ -113,10 +123,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
           {isLoadingUpload && (
             <div className="flex items-center justify-center mt-4">
               <Spinner />
-              <p className="ml-4 text-blue-600 font-semibold">{t('processingErrorTitle')}...</p>
+              <p className="ml-4 text-blue-600 font-semibold">{t('processingStatus')}...</p>
             </div>
           )}
-          {uploadError && <p className="text-red-500 text-center mt-4">{uploadError}</p>}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -168,9 +177,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
         )}
         {dbError && <p className="text-red-500 text-center mt-4">{dbError}</p>}
       </main>
+      
+      <Modal 
+          isOpen={isErrorModalOpen} 
+          onClose={() => setIsErrorModalOpen(false)} 
+          title={errorModalContent.title}
+      >
+          <div className="text-center p-4">
+              <p className="text-gray-600 mb-6">{errorModalContent.message}</p>
+              <button
+                  onClick={() => setIsErrorModalOpen(false)}
+                  className="px-8 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300"
+              >
+                  OK
+              </button>
+          </div>
+      </Modal>
+
       <Modal isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} title={t('documentationTitle')}>
           <Documentation />
       </Modal>
+      
       <Modal isOpen={isAdminPanelOpen} onClose={() => setIsAdminPanelOpen(false)} title="Painel Administrativo">
           <AdminPanel 
             onClose={() => setIsAdminPanelOpen(false)} 

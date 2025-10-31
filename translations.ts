@@ -1,4 +1,3 @@
-
 export type Language = 'pt' | 'en';
 
 const pt = {
@@ -37,16 +36,22 @@ const pt = {
     amount: 'Valor:',
     barcode: 'Código de Barras:',
     guideNumber: 'Nº do Documento:',
+    documentDate: 'Data do Doc.:',
+    drawee: 'Sacado:',
+    pixQrCode: 'QR Code PIX',
+    copyPixCode: 'Copiar Código PIX',
+    pixCodeCopied: 'Copiado!',
     notAvailable: 'N/A',
     openPdf: 'Abrir PDF original',
     documentationTitle: 'Documentação',
     downloadPdf: 'Baixar Documentação em PDF',
     processingErrorTitle: 'Erro ao Processar',
-    processingErrorText: 'Ocorreu um erro ao tentar processar o arquivo PDF com a IA. Verifique o console para mais detalhes.',
-    duplicateErrorTitle: 'Boleto Duplicado',
-    duplicateErrorText: 'Um boleto com o número de documento "{{guideNumber}}" já existe.',
-    invalidGuideErrorTitle: 'Dados Inválidos',
-    invalidGuideErrorText: 'O número do documento não pôde ser extraído do boleto. Verifique o arquivo e tente novamente.',
+    processingStatus: 'Processando com IA',
+    processingErrorText: 'Ocorreu um erro ao tentar processar o arquivo PDF. Verifique o console para mais detalhes.',
+    duplicateBarcodeErrorTitle: 'Boleto Duplicado',
+    duplicateBarcodeErrorText: 'Um boleto com este código de barras (Doc Nº: {{identifier}}) já foi adicionado.',
+    invalidBarcodeErrorTitle: 'Código de Barras Faltando',
+    invalidBarcodeErrorText: 'Não foi possível extrair o código de barras (linha digitável) do PDF. Este é um campo essencial para o processamento do boleto.',
     genericErrorTitle: 'Ocorreu um Erro',
     genericErrorText: 'Ocorreu um erro inesperado. Por favor, tente novamente.',
     pdfProcessingError: 'Ocorreu um erro ao processar o boleto com a IA.',
@@ -72,16 +77,26 @@ const pt = {
     userAddedSuccess: 'Usuário adicionado com sucesso.',
     userUpdatedSuccess: 'Usuário atualizado com sucesso.',
     addUserErrorDuplicate: 'Já existe um usuário com este email.',
+    extractionMethodTitle: 'Método de Extração de Dados',
+    extractionMethodAI: 'IA (Gemini)',
+    extractionMethodAIDescription: 'Alta precisão usando IA para analisar a imagem do boleto. Requer conexão com a internet e uso da API.',
+    extractionMethodRegex: 'REGEX (Local)',
+    extractionMethodRegexDescription: 'Extração instantânea e offline baseada em texto. Mais rápido, mas pode falhar em layouts de boleto incomuns.',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros a partir de uma imagem.
         Analise a imagem e retorne um objeto JSON com as seguintes informações. Se uma informação não for encontrada, retorne null para aquele campo.
-        A data de vencimento deve estar no formato AAAA-MM-DD.
+        Todas as datas devem estar no formato AAAA-MM-DD.
         O valor deve ser um número, usando ponto como separador decimal.
+        O bounding box do QR code deve ter as coordenadas em pixels da imagem fornecida.
         - recipient: O nome do beneficiário/cedente.
+        - drawee: O nome do sacado.
+        - documentDate: A "Data do Documento".
         - dueDate: A data de vencimento.
         - amount: O valor do documento.
         - barcode: A linha digitável completa, com todos os números e pontos.
         - guideNumber: O "Número do Documento".
+        - pixQrCodeText: O conteúdo completo (copia e cola) do QR Code PIX.
+        - pixQrCodeBoundingBox: Um objeto com x, y, width, e height do QR Code PIX na imagem.
     `,
 };
 
@@ -121,16 +136,22 @@ const en: typeof pt = {
     amount: 'Amount:',
     barcode: 'Barcode:',
     guideNumber: 'Document No:',
+    documentDate: 'Doc. Date:',
+    drawee: 'Drawee:',
+    pixQrCode: 'PIX QR Code',
+    copyPixCode: 'Copy PIX Code',
+    pixCodeCopied: 'Copied!',
     notAvailable: 'N/A',
     openPdf: 'Open original PDF',
     documentationTitle: 'Documentation',
     downloadPdf: 'Download Documentation as PDF',
     processingErrorTitle: 'Processing Error',
-    processingErrorText: 'An error occurred while trying to process the PDF file with the AI. Check the console for more details.',
-    duplicateErrorTitle: 'Duplicate Boleto',
-    duplicateErrorText: 'A boleto with document number "{{guideNumber}}" already exists.',
-    invalidGuideErrorTitle: 'Invalid Data',
-    invalidGuideErrorText: 'The document number could not be extracted from the boleto. Please check the file and try again.',
+    processingStatus: 'Processing with AI',
+    processingErrorText: 'An error occurred while trying to process the PDF file. Check the console for more details.',
+    duplicateBarcodeErrorTitle: 'Duplicate Boleto',
+    duplicateBarcodeErrorText: 'A boleto with this barcode (Doc No: {{identifier}}) already exists.',
+    invalidBarcodeErrorTitle: 'Missing Barcode',
+    invalidBarcodeErrorText: 'Could not extract the barcode (digitable line) from the PDF. This is a required field for boleto processing.',
     genericErrorTitle: 'An Error Occurred',
     genericErrorText: 'An unexpected error occurred. Please try again.',
     pdfProcessingError: 'An error occurred while processing the boleto with the AI.',
@@ -156,16 +177,26 @@ const en: typeof pt = {
     userAddedSuccess: 'User added successfully.',
     userUpdatedSuccess: 'User updated successfully.',
     addUserErrorDuplicate: 'A user with this email already exists.',
+    extractionMethodTitle: 'Data Extraction Method',
+    extractionMethodAI: 'AI (Gemini)',
+    extractionMethodAIDescription: 'High accuracy using AI to analyze the boleto image. Requires internet connection and API usage.',
+    extractionMethodRegex: 'REGEX (Local)',
+    extractionMethodRegexDescription: 'Instant, offline text-based extraction. Faster, but may fail on uncommon boleto layouts.',
     geminiPrompt: `
         You are an expert assistant specialized in extracting information from Brazilian bank slips (boletos) from an image.
         Analyze the image and return a JSON object with the following information. If a piece of information is not found, return null for that field.
-        The due date must be in YYYY-MM-DD format.
+        All dates must be in YYYY-MM-DD format.
         The amount must be a number, using a period as the decimal separator.
+        The QR code bounding box must have coordinates in pixels from the provided image.
         - recipient: The name of the beneficiary/payee.
+        - drawee: The name of the drawee (Sacado).
+        - documentDate: The "Data do Documento" (Document Date).
         - dueDate: The due date.
         - amount: The document amount.
         - barcode: The complete digitable line (linha digitável), with all numbers and periods.
         - guideNumber: The "Número do Documento" (Document Number).
+        - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code.
+        - pixQrCodeBoundingBox: An object with x, y, width, and height of the PIX QR Code in the image.
     `,
 };
 

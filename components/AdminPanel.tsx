@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
-import { RegisteredUser, Role, User, LogEntry } from '../types';
+import { RegisteredUser, Role, User, LogEntry, ProcessingMethod } from '../types';
 import { TrashIcon, EditIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 
 interface AdminPanelProps {
@@ -19,6 +20,7 @@ interface AdminPanelProps {
 const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, updateUser, deleteUser, currentUser, getLogs }) => {
     const { appName, logoUrl, setAppName, setLogoUrl } = useWhitelabel();
     const { t, language } = useLanguage();
+    const { method: currentMethod, setMethod } = useProcessingMethod();
     const [activeTab, setActiveTab] = useState<'users' | 'logs'>('users');
     
     // Whitelabel state
@@ -46,6 +48,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
     const handleSaveWhitelabel = () => {
         setAppName(currentAppName);
         setLogoUrl(currentLogoUrl);
+    };
+
+    const handleMethodChange = (newMethod: ProcessingMethod) => {
+        setMethod(newMethod, currentUser);
     };
 
     const openAddUserModal = () => {
@@ -167,6 +173,37 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
                     </button>
                 </div>
             </div>
+
+            <hr className="my-6 border-t border-gray-200"/>
+
+            {/* Extraction Method */}
+            <div>
+                <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">{t('extractionMethodTitle')}</h3>
+                <fieldset className="mt-4">
+                    <legend className="sr-only">{t('extractionMethodTitle')}</legend>
+                    <div className="space-y-4">
+                        <div className="flex items-start">
+                            <div className="flex items-center h-5">
+                                <input id="method-ai" name="processing-method" type="radio" checked={currentMethod === 'ai'} onChange={() => handleMethodChange('ai')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/>
+                            </div>
+                            <div className="ml-3 text-sm">
+                                <label htmlFor="method-ai" className="font-medium text-gray-800">{t('extractionMethodAI')}</label>
+                                <p className="text-gray-500">{t('extractionMethodAIDescription')}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start">
+                            <div className="flex items-center h-5">
+                                <input id="method-regex" name="processing-method" type="radio" checked={currentMethod === 'regex'} onChange={() => handleMethodChange('regex')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/>
+                            </div>
+                            <div className="ml-3 text-sm">
+                                <label htmlFor="method-regex" className="font-medium text-gray-800">{t('extractionMethodRegex')}</label>
+                                <p className="text-gray-500">{t('extractionMethodRegexDescription')}</p>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
 
             <hr className="my-6 border-t border-gray-200"/>
 

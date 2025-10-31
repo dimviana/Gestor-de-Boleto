@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Boleto, BoletoStatus, User } from '../types';
+import { Boleto, BoletoStatus, User, ProcessingMethod } from '../types';
 import * as api from '../services/api';
 import { addLogEntry } from '../services/logService';
 
@@ -25,12 +25,15 @@ export const useBoletos = () => {
     loadBoletos();
   }, []);
 
-  const addBoleto = useCallback(async (user: User, boleto: Boleto) => {
-    if (boleto.guideNumber && boletos.some(b => b.guideNumber && b.guideNumber === boleto.guideNumber)) {
-        throw new Error(`duplicateGuideError:${boleto.guideNumber}`);
+  const addBoleto = useCallback(async (user: User, boleto: Boleto, method: ProcessingMethod) => {
+    if (boleto.barcode && boletos.some(b => b.barcode && b.barcode === boleto.barcode)) {
+        const existingBoleto = boletos.find(b => b.barcode === boleto.barcode);
+        // User requested to use Document Number as the primary identifier in the error message.
+        const identifier = existingBoleto?.guideNumber || existingBoleto?.recipient || 'N/A';
+        throw new Error(`duplicateBarcodeError:${identifier}`);
     }
-    if (!boleto.guideNumber || boleto.guideNumber.trim() === '') {
-        throw new Error('invalidGuideError');
+    if (!boleto.barcode || boleto.barcode.trim() === '') {
+        throw new Error('invalidBarcodeError');
     }
     
     const newBoleto = await api.createBoleto(boleto);
@@ -39,8 +42,9 @@ export const useBoletos = () => {
     addLogEntry({
         userId: user.id,
         username: user.username,
+        // FIX: Corrected typo in LogAction type.
         action: 'CREATE_BOLETO',
-        details: `Criou o boleto "${newBoleto.recipient}" (Nº: ${newBoleto.guideNumber}).`
+        details: `Criou o boleto "${newBoleto.recipient || 'N/A'}" (Nº doc: ${newBoleto.guideNumber || 'N/A'}) usando o método ${method.toUpperCase()}.`
     });
 
   }, [boletos]);

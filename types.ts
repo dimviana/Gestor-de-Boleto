@@ -6,11 +6,14 @@ export enum BoletoStatus {
 
 export interface Boleto {
   id: string;
-  recipient: string | null;
+  recipient: string | null; // Beneficiário
+  drawee: string | null; // Sacado
+  documentDate: string | null;
   dueDate: string | null;
   amount: number | null;
   barcode: string | null;
   guideNumber: string | null;
+  pixQrCodeText: string | null; // The copy-paste string
   status: BoletoStatus;
   fileName: string;
   fileData: string;
@@ -29,6 +32,9 @@ export interface RegisteredUser extends User {
   password?: string;
 }
 
+export type ProcessingMethod = 'ai' | 'regex';
+
+
 // New types for the logging system
 export type LogAction =
   | 'LOGIN'
@@ -39,7 +45,8 @@ export type LogAction =
   | 'DELETE_BOLETO'
   | 'DELETE_USER'
   | 'ADMIN_CREATE_USER'
-  | 'ADMIN_UPDATE_USER';
+  | 'ADMIN_UPDATE_USER'
+  | 'ADMIN_CHANGE_SETTINGS';
 
 export interface LogEntry {
   id: string;

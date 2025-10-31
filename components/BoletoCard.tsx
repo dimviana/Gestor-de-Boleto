@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Boleto, BoletoStatus } from '../types';
-import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, HashtagIcon, FileTextIcon } from './icons/Icons';
+import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, HashtagIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface BoletoCardProps {
@@ -11,7 +11,8 @@ interface BoletoCardProps {
 
 const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete }) => {
   const { t, language } = useLanguage();
-  const { id, recipient, dueDate, amount, barcode, status, fileName, guideNumber, fileData } = boleto;
+  const { id, recipient, drawee, documentDate, dueDate, amount, barcode, status, fileName, guideNumber, fileData, pixQrCodeText } = boleto;
+  const [copyButtonText, setCopyButtonText] = useState(t('copyPixCode'));
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t('notAvailable');
@@ -48,6 +49,15 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     const fileURL = URL.createObjectURL(blob);
     window.open(fileURL, '_blank');
   };
+
+  const handleCopyPix = () => {
+    if (pixQrCodeText) {
+        navigator.clipboard.writeText(pixQrCodeText).then(() => {
+            setCopyButtonText(t('pixCodeCopied'));
+            setTimeout(() => setCopyButtonText(t('copyPixCode')), 2000);
+        });
+    }
+  };
   
   const getAction = () => {
     const baseButtonClasses = "w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-white rounded-md transition-colors";
@@ -80,30 +90,51 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   return (
     <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 transition-shadow hover:shadow-lg animate-fade-in">
       <div className="flex justify-between items-start">
-        <h3 className="font-bold text-gray-800 break-all">{recipient || t('recipientNotFound')}</h3>
-        <button onClick={() => onDelete(id)} className="text-gray-400 hover:text-red-500 transition-colors">
+        <div className="flex-1 min-w-0 pr-2">
+            <h3 className="font-bold text-gray-800 break-words">{recipient || t('recipientNotFound')}</h3>
+            {drawee && (
+              <p className="text-sm text-gray-500 truncate" title={drawee}>
+                <span className="font-normal">{t('drawee')}</span> {drawee}
+              </p>
+            )}
+        </div>
+        <button onClick={() => onDelete(id)} className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0">
           <TrashIcon className="w-5 h-5" />
         </button>
       </div>
-      <p className="text-xs text-gray-400 mb-3 truncate">{fileName}</p>
+      <p className="text-xs text-gray-400 mt-1 mb-3 truncate">{fileName}</p>
       
       <div className="space-y-2 text-sm text-gray-600">
-        <div className="flex items-center">
-          <CalendarIcon className="w-4 h-4 mr-2 text-blue-500" />
-          <span>{t('dueDate')} <span className="font-semibold">{formatDate(dueDate)}</span></span>
-        </div>
-        <div className="flex items-center">
-          <DollarSignIcon className="w-4 h-4 mr-2 text-green-500" />
-          <span>{t('amount')} <span className="font-semibold">{formatCurrency(amount)}</span></span>
-        </div>
-        <div className="flex items-center">
-            <HashtagIcon className="w-4 h-4 mr-2 text-gray-500" />
-            <span>{t('guideNumber')} <span className="font-semibold">{guideNumber || t('notAvailable')}</span></span>
-        </div>
-        <div className="flex items-start">
-          <BarcodeIcon className="w-4 h-4 mr-2 text-gray-500 mt-0.5 flex-shrink-0" />
-          <span className="break-all">{t('barcode')} <span className="font-mono text-xs">{barcode || t('notAvailable')}</span></span>
-        </div>
+         {documentDate && (
+            <div className="flex items-center">
+                <FileTextIcon className="w-4 h-4 mr-2 text-orange-500" />
+                <span>{t('documentDate')} <span className="font-semibold">{formatDate(documentDate)}</span></span>
+            </div>
+         )}
+        {dueDate && (
+            <div className="flex items-center">
+              <CalendarIcon className="w-4 h-4 mr-2 text-blue-500" />
+              <span>{t('dueDate')} <span className="font-semibold">{formatDate(dueDate)}</span></span>
+            </div>
+        )}
+        {(amount !== null && amount !== undefined) && (
+            <div className="flex items-center">
+              <DollarSignIcon className="w-4 h-4 mr-2 text-green-500" />
+              <span>{t('amount')} <span className="font-semibold">{formatCurrency(amount)}</span></span>
+            </div>
+        )}
+        {guideNumber && (
+            <div className="flex items-center">
+                <HashtagIcon className="w-4 h-4 mr-2 text-gray-500" />
+                <span>{t('guideNumber')} <span className="font-semibold">{guideNumber}</span></span>
+            </div>
+        )}
+        {barcode && (
+            <div className="flex items-start">
+              <BarcodeIcon className="w-4 h-4 mr-2 text-gray-500 mt-0.5 flex-shrink-0" />
+              <span className="break-all">{t('barcode')} <span className="font-mono text-xs">{barcode}</span></span>
+            </div>
+        )}
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-100">
@@ -121,6 +152,22 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             </button>
         </div>
       </div>
+
+      {pixQrCodeText && (
+        <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+            <div className="flex items-center justify-center font-semibold text-gray-700 mb-2">
+                <QrCodeIcon className="w-5 h-5 mr-2" />
+                <span>{t('pixQrCode')}</span>
+            </div>
+            <button 
+                onClick={handleCopyPix}
+                className="mt-2 flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-all duration-200"
+            >
+                <CopyIcon className="w-4 h-4 mr-2" />
+                {copyButtonText}
+            </button>
+        </div>
+      )}
     </div>
   );
 };

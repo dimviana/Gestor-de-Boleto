@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Boleto, BoletoStatus } from '../types';
 import { translations } from '../translations';
@@ -13,7 +14,7 @@ const convertFileToBase64 = (file: File): Promise<string> => {
     });
 };
 
-const convertPdfPageToImageBase64 = async (file: File): Promise<string> => {
+const renderPdfPageToCanvas = async (file: File): Promise<HTMLCanvasElement> => {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const page = await pdf.getPage(1);
@@ -29,9 +30,7 @@ const convertPdfPageToImageBase64 = async (file: File): Promise<string> => {
     }
 
     await page.render({ canvasContext: context, viewport: viewport }).promise;
-
-    const dataUrl = canvas.toDataURL('image/jpeg');
-    return dataUrl.split(',')[1];
+    return canvas;
 };
 
 
@@ -40,8 +39,9 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en'): Promise<Omit<Bo
         throw new Error("API key is missing. Please set it in your environment variables.");
     }
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-    const fileAsBase64 = await convertPdfPageToImageBase64(file);
+    
+    const canvas = await renderPdfPageToCanvas(file);
+    const fileAsBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
     const mimeType = 'image/jpeg';
 
     const imagePart = {
@@ -66,20 +66,36 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en'): Promise<Omit<Bo
             responseSchema: {
                 type: Type.OBJECT,
                 properties: {
-                    recipient: { type: Type.STRING, description: 'The name of the beneficiary or company to be paid.' },
-                    dueDate: { type: Type.STRING, description: 'The due date in YYYY-MM-DD format.' },
-                    amount: { type: Type.NUMBER, description: 'The payment amount as a number.' },
+                    recipient: { type: Type.STRING, description: 'The name of the beneficiary or company to be paid (Beneficiário/Cedente).' },
+                    drawee: { type: Type.STRING, description: 'The name of the drawee (Sacado). Should be null if not found.' },
+                    documentDate: { type: Type.STRING, description: 'The document creation date (Data do Documento) in YYYY-MM-DD format. Should be null if not found.' },
+                    dueDate: { type: Type.STRING, description: 'The due date (Vencimento) in YYYY-MM-DD format.' },
+                    amount: { type: Type.NUMBER, description: 'The payment amount (Valor do Documento) as a number.' },
                     barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável).' },
                     guideNumber: { type: Type.STRING, description: 'The document number (número do documento) of the boleto. Should be null if not found.' },
+                    pixQrCodeText: { type: Type.STRING, description: 'The full text content of the PIX QR Code (Copia e Cola). Should be null if not found.' },
                 },
-                required: ["recipient", "dueDate", "amount", "barcode", "guideNumber"],
+                required: ["recipient", "dueDate", "amount", "barcode"],
             },
         },
     });
 
     const parsedJson = JSON.parse(response.text);
+
+    // Normalize barcode by removing all non-digit characters for consistent duplicate checks
+    if (parsedJson.barcode) {
+        parsedJson.barcode = parsedJson.barcode.replace(/[^\d]/g, '');
+    }
+    
     return {
-        ...parsedJson,
+        recipient: parsedJson.recipient,
+        drawee: parsedJson.drawee,
+        documentDate: parsedJson.documentDate,
+        dueDate: parsedJson.dueDate,
+        amount: parsedJson.amount,
+        barcode: parsedJson.barcode,
+        guideNumber: parsedJson.guideNumber,
+        pixQrCodeText: parsedJson.pixQrCodeText,
         fileName: file.name,
     };
 };
