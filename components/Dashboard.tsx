@@ -1,8 +1,7 @@
 
-
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
-import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification } from '../types';
+import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company } from '../types';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
@@ -18,6 +17,8 @@ import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
 import { BoletoDetailsModal } from './BoletoDetailsModal';
 import { useAiSettings } from '../contexts/AiSettingsContext';
+import * as api from '../services/api';
+
 
 interface DashboardProps {
   onLogout: () => void;
@@ -43,6 +44,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
 
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
+
+  // Admin filter state
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
+
+  useEffect(() => {
+    if (user.role === 'admin') {
+      const loadCompanies = async () => {
+        const fetchedCompanies = await api.fetchCompanies();
+        setCompanies(fetchedCompanies);
+      };
+      loadCompanies();
+    }
+  }, [user.role]);
 
   const handleFileUpload = async (file: File) => {
     setIsLoadingUpload(true);
@@ -138,9 +153,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
     setViewingBoleto(boleto);
   }, []);
 
-  const boletosToDo = useMemo(() => boletos.filter(b => b.status === BoletoStatus.TO_PAY), [boletos]);
-  const boletosVerifying = useMemo(() => boletos.filter(b => b.status === BoletoStatus.VERIFYING), [boletos]);
-  const boletosPaid = useMemo(() => boletos.filter(b => b.status === BoletoStatus.PAID), [boletos]);
+  const filteredBoletos = useMemo(() => {
+    if (user.role === 'admin') {
+      // If no company is selected, show nothing.
+      if (!selectedCompanyFilter) {
+        return [];
+      }
+      // Otherwise, filter by the selected company.
+      return boletos.filter(boleto => boleto.companyId === selectedCompanyFilter);
+    }
+    // For non-admin users, the boletos are already filtered by the useBoletos hook.
+    return boletos;
+  }, [boletos, user.role, selectedCompanyFilter]);
+
+  const boletosToDo = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.TO_PAY), [filteredBoletos]);
+  const boletosVerifying = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.VERIFYING), [filteredBoletos]);
+  const boletosPaid = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.PAID), [filteredBoletos]);
 
   const calculateTotal = (boletosList: Boleto[]) => {
     return boletosList.reduce((sum, boleto) => sum + (boleto.amount || 0), 0);
@@ -154,7 +182,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normalize to the beginning of the day for accurate comparison
 
-    return boletos
+    return filteredBoletos
       .filter(b => b.status === BoletoStatus.TO_PAY && b.dueDate)
       .map(boleto => {
         // Ensure dueDate is not null and is a valid date string
@@ -180,7 +208,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       })
       .filter((notification): notification is Notification => notification !== null)
       .sort((a, b) => a.daysUntilDue - b.daysUntilDue); // Sort by urgency
-  }, [boletos]);
+  }, [filteredBoletos]);
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
@@ -224,6 +252,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
               <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{method === 'ai' ? t('processingStatusOcr') : t('processingStatusRegex')}</p>
             </div>
           )}
+
+          {user.role === 'admin' && (
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <label htmlFor="company-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('filterByCompany')}
+              </label>
+              <select
+                id="company-filter"
+                value={selectedCompanyFilter}
+                onChange={(e) => setSelectedCompanyFilter(e.target.value)}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              >
+                <option value="" disabled>
+                  {t('selectCompanyPrompt')}
+                </option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
            <FolderWatcher onFileUpload={handleFileUpload} disabled={isLoadingUpload || !user.companyId} />
         </div>
 

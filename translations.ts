@@ -1,5 +1,4 @@
 
-
 export type Language = 'pt' | 'en';
 
 const pt = {
@@ -136,6 +135,8 @@ const pt = {
     userHasNoCompanyErrorTitle: 'Ação Bloqueada',
     userHasNoCompanyErrorText: 'Você precisa pertencer a uma empresa para adicionar boletos. Peça a um administrador para atribuí-lo a uma.',
     uploadDisabledNoCompany: 'O upload está desativado pois seu usuário não está associado a uma empresa.',
+    filterByCompany: 'Filtrar por Empresa',
+    selectCompanyPrompt: 'Selecione uma empresa',
     adminCompaniesTitle: 'Gerenciamento de Empresas',
     adminAddCompanyTitle: 'Adicionar Nova Empresa',
     companyNameLabel: 'Nome da Empresa',
@@ -299,6 +300,8 @@ const en: typeof pt = {
     userHasNoCompanyErrorTitle: 'Action Blocked',
     userHasNoCompanyErrorText: 'You must belong to a company to add boletos. Please ask an administrator to assign you to one.',
     uploadDisabledNoCompany: 'Upload is disabled because your user is not associated with a company.',
+    filterByCompany: 'Filter by Company',
+    selectCompanyPrompt: 'Select a company',
     adminCompaniesTitle: 'Company Management',
     adminAddCompanyTitle: 'Add New Company',
     companyNameLabel: 'Company Name',
