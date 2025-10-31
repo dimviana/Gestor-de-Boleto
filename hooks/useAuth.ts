@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
-import { User, RegisteredUser, Role } from '../types';
+import { User, RegisteredUser, LogEntry } from '../types';
+import { addLogEntry, getLogsFromStorage } from '../services/logService';
 
 const USER_SESSION_KEY = 'user_session';
 const REGISTERED_USERS_KEY = 'registered_users';
@@ -40,6 +41,7 @@ export const useAuth = () => {
       const adminUser: User = { id: 'admin-user', username: 'admin', role: 'admin' };
       sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(adminUser));
       setUser(adminUser);
+      addLogEntry({ userId: adminUser.id, username: adminUser.username, action: 'LOGIN', details: 'Administrador acessou o sistema.' });
       return;
     }
 
@@ -51,12 +53,17 @@ export const useAuth = () => {
       const { password: _, ...sessionUser } = foundUser;
       sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(sessionUser));
       setUser(sessionUser);
+      addLogEntry({ userId: sessionUser.id, username: sessionUser.username, action: 'LOGIN', details: 'Usuário acessou o sistema.' });
     } else {
       setAuthError('authErrorInvalidCredentials');
     }
   }, []);
 
   const logout = useCallback(() => {
+    const currentUser = JSON.parse(sessionStorage.getItem(USER_SESSION_KEY) || 'null');
+    if (currentUser) {
+         addLogEntry({ userId: currentUser.id, username: currentUser.username, action: 'LOGOUT', details: 'Usuário saiu do sistema.' });
+    }
     sessionStorage.removeItem(USER_SESSION_KEY);
     setUser(null);
   }, []);
@@ -88,40 +95,124 @@ export const useAuth = () => {
     const updatedUsers = [...registeredUsers, newUser];
     setRegisteredUsers(updatedUsers);
     
+    addLogEntry({ userId: newUser.id, username: newUser.username, action: 'REGISTER_USER', details: 'Nova conta de usuário criada.' });
+
     return true;
   }, []);
 
   const getUsers = useCallback((): RegisteredUser[] => {
       return getRegisteredUsers();
   }, []);
-
-  const updateUser = useCallback((userId: string, updates: Partial<Pick<RegisteredUser, 'role'>>): boolean => {
-      if (userId === 'admin-user') return false;
-
+  
+  const addUser = useCallback((actor: User, newUser: Omit<RegisteredUser, 'id'>): boolean => {
+      setAuthError(null);
+      if (!isEmailValid(newUser.username)) {
+          setAuthError('authErrorInvalidEmail');
+          return false;
+      }
+       if (!newUser.password || newUser.password.length < 6) {
+        setAuthError('authErrorPasswordLength');
+        return false;
+    }
       const users = getRegisteredUsers();
-      const userIndex = users.findIndex(u => u.id === userId);
-
-      if(userIndex === -1) return false;
-
-      users[userIndex] = { ...users[userIndex], ...updates };
-      setRegisteredUsers(users);
+      if (users.some(u => u.username.toLowerCase() === newUser.username.toLowerCase())) {
+          setAuthError('authErrorEmailExists');
+          return false;
+      }
+      const userToAdd: RegisteredUser = {
+          id: crypto.randomUUID(),
+          ...newUser
+      };
+      setRegisteredUsers([...users, userToAdd]);
+      addLogEntry({
+          userId: actor.id,
+          username: actor.username,
+          action: 'ADMIN_CREATE_USER',
+          details: `Criou o novo usuário ${userToAdd.username} com a permissão ${userToAdd.role}.`
+      });
       return true;
   }, []);
 
-  const deleteUser = useCallback((userId: string): boolean => {
-      if (userId === 'admin-user') return false;
+  const updateUser = useCallback((actor: User, targetUserId: string, updates: Partial<Omit<RegisteredUser, 'id'>>): boolean => {
+      if (targetUserId === 'admin-user') return false;
+      setAuthError(null);
+      const users = getRegisteredUsers();
+      const userIndex = users.findIndex(u => u.id === targetUserId);
+
+      if(userIndex === -1) return false;
       
-      const loggedInUser: User | null = JSON.parse(sessionStorage.getItem(USER_SESSION_KEY) || 'null');
-      if (loggedInUser && loggedInUser.id === userId) {
-          console.error("Cannot delete the currently logged-in user.");
-          return false; // Prevent self-deletion
+      const targetUser = users[userIndex];
+      const oldUsername = targetUser.username;
+      const oldRole = targetUser.role;
+
+      if (updates.username && updates.username !== oldUsername && users.some(u => u.username.toLowerCase() === updates.username?.toLowerCase())) {
+          setAuthError('authErrorEmailExists');
+          return false;
+      }
+
+      if (updates.password && updates.password.length < 6) {
+          setAuthError('authErrorPasswordLength');
+          return false;
+      }
+      
+      // Filter out empty password updates
+      if (updates.password === '') {
+          delete updates.password;
+      }
+
+      const updatedUser = { ...targetUser, ...updates };
+      users[userIndex] = updatedUser;
+      setRegisteredUsers(users);
+
+      const details: string[] = [];
+      if (updates.username && updates.username !== oldUsername) {
+          details.push(`e-mail de "${oldUsername}" para "${updates.username}"`);
+      }
+      if (updates.role && updates.role !== oldRole) {
+          details.push(`permissão de "${oldRole}" para "${updates.role}"`);
+      }
+      if (updates.password) {
+          details.push("redefiniu a senha");
+      }
+
+      if (details.length > 0) {
+         addLogEntry({
+            userId: actor.id,
+            username: actor.username,
+            action: 'ADMIN_UPDATE_USER',
+            details: `Atualizou o usuário ${oldUsername}: ${details.join(', ')}.`
+        });
+      }
+
+      return true;
+  }, []);
+
+  const deleteUser = useCallback((actor: User, targetUserId: string): boolean => {
+      if (targetUserId === 'admin-user' || actor.id === targetUserId) {
+          console.error("Deletion constraints violated.");
+          return false;
       }
 
       const users = getRegisteredUsers();
-      const updatedUsers = users.filter(u => u.id !== userId);
+      const userToDelete = users.find(u => u.id === targetUserId);
+      if (!userToDelete) return false;
+
+      const updatedUsers = users.filter(u => u.id !== targetUserId);
       setRegisteredUsers(updatedUsers);
+
+      addLogEntry({
+          userId: actor.id,
+          username: actor.username,
+          action: 'DELETE_USER',
+          details: `Excluiu o usuário ${userToDelete.username}.`
+      });
+
       return true;
   }, []);
   
-  return { user, login, logout, register, authError, setAuthError, getUsers, updateUser, deleteUser };
+  const getLogs = useCallback((): LogEntry[] => {
+      return getLogsFromStorage();
+  }, []);
+  
+  return { user, login, logout, register, authError, setAuthError, getUsers, addUser, updateUser, deleteUser, getLogs };
 };

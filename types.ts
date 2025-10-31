@@ -1,4 +1,3 @@
-
 export enum BoletoStatus {
   TO_PAY = 'PAGAR',
   VERIFYING = 'VERIFICAR',
@@ -28,4 +27,25 @@ export interface User {
 // Represents a user as stored in the database (localStorage)
 export interface RegisteredUser extends User {
   password?: string;
+}
+
+// New types for the logging system
+export type LogAction =
+  | 'LOGIN'
+  | 'LOGOUT'
+  | 'REGISTER_USER'
+  | 'CREATE_BOLETO'
+  | 'UPDATE_BOLETO_STATUS'
+  | 'DELETE_BOLETO'
+  | 'DELETE_USER'
+  | 'ADMIN_CREATE_USER'
+  | 'ADMIN_UPDATE_USER';
+
+export interface LogEntry {
+  id: string;
+  timestamp: string; // ISO string for date and time
+  userId: string;
+  username: string;
+  action: LogAction;
+  details: string; // e.g., "Updated boleto 'ACME-123' status to PAID"
 }

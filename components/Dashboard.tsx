@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
-import { Boleto, BoletoStatus, User, RegisteredUser } from '../types';
+import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry } from '../types';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
@@ -17,11 +17,13 @@ interface DashboardProps {
   onLogout: () => void;
   user: User;
   getUsers: () => RegisteredUser[];
-  updateUser: (userId: string, updates: Partial<Pick<RegisteredUser, 'role'>>) => boolean;
-  deleteUser: (userId: string) => boolean;
+  addUser: (actor: User, newUser: Omit<RegisteredUser, 'id'>) => boolean;
+  updateUser: (actor: User, userId: string, updates: Partial<Omit<RegisteredUser, 'id'>>) => boolean;
+  deleteUser: (actor: User, userId: string) => boolean;
+  getLogs: () => LogEntry[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, updateUser, deleteUser }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser, updateUser, deleteUser, getLogs }) => {
   const { boletos, addBoleto, updateBoletoStatus, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos();
   const [isLoadingUpload, setIsLoadingUpload] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, updateU
     setUploadError(null);
     try {
       const newBoleto = await processBoletoPDF(file, language);
-      await addBoleto(newBoleto);
+      await addBoleto(user, newBoleto);
     } catch (error: any) {
       console.error("Upload failed:", error);
       let errorMessage = t('genericErrorText');
@@ -56,6 +58,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, updateU
     } finally {
       setIsLoadingUpload(false);
     }
+  };
+
+  const handleUpdateStatus = (id: string, status: BoletoStatus) => {
+    updateBoletoStatus(user, id, status);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteBoleto(user, id);
   };
 
   const boletosToDo = boletos.filter(b => b.status === BoletoStatus.TO_PAY);
@@ -139,20 +149,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, updateU
             <KanbanColumn 
                 title={t('kanbanTitleToDo')} 
                 boletos={boletosToDo} 
-                onUpdateStatus={updateBoletoStatus} 
-                onDelete={deleteBoleto} 
+                onUpdateStatus={handleUpdateStatus} 
+                onDelete={handleDelete} 
             />
             <KanbanColumn 
                 title={t('kanbanTitleVerifying')} 
                 boletos={boletosVerifying} 
-                onUpdateStatus={updateBoletoStatus} 
-                onDelete={deleteBoleto} 
+                onUpdateStatus={handleUpdateStatus} 
+                onDelete={handleDelete} 
             />
             <KanbanColumn 
                 title={t('kanbanTitlePaid')} 
                 boletos={boletosPaid} 
-                onUpdateStatus={updateBoletoStatus} 
-                onDelete={deleteBoleto} 
+                onUpdateStatus={handleUpdateStatus} 
+                onDelete={handleDelete} 
             />
           </div>
         )}
@@ -165,9 +175,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, updateU
           <AdminPanel 
             onClose={() => setIsAdminPanelOpen(false)} 
             getUsers={getUsers}
+            addUser={addUser}
             updateUser={updateUser}
             deleteUser={deleteUser}
             currentUser={user}
+            getLogs={getLogs}
         />
       </Modal>
     </>
