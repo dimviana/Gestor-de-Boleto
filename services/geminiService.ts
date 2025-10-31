@@ -2,7 +2,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 // FIX: Import BoletoStatus to resolve reference error.
-import { Boleto, BoletoStatus } from '../types';
+import { Boleto, BoletoStatus, AiSettings } from '../types';
 import { translations } from '../translations';
 
 declare const pdfjsLib: any;
@@ -95,7 +95,7 @@ const performOcr = async (canvas: HTMLCanvasElement): Promise<string> => {
     }
 };
 
-const extractBoletoInfo = async (file: File, lang: 'pt' | 'en'): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments'>> => {
+const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments'>> => {
     if (!process.env.API_KEY) {
         throw new Error("API key is missing. Please set it in your environment variables.");
     }
@@ -122,7 +122,7 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en'): Promise<Omit<Bo
     const fullPromptWithOcr = `${prompt}\n\n--- TEXTO EXTRAÍDO VIA OCR ---\n${ocrText}\n--- FIM DO TEXTO EXTRAÍDO ---`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: aiSettings.model,
         contents: {
             parts: [
                 { text: fullPromptWithOcr },
@@ -130,6 +130,9 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en'): Promise<Omit<Bo
             ],
         },
         config: {
+            temperature: aiSettings.temperature,
+            topK: aiSettings.topK,
+            topP: aiSettings.topP,
             responseMimeType: "application/json",
             responseSchema: {
                 type: Type.OBJECT,
@@ -173,10 +176,10 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en'): Promise<Omit<Bo
 };
 
 
-export const processBoletoPDF = async (file: File, lang: 'pt' | 'en'): Promise<Boleto> => {
+export const processBoletoPDF = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Boleto> => {
     try {
         const [extractedData, fileData] = await Promise.all([
-            extractBoletoInfo(file, lang),
+            extractBoletoInfo(file, lang, aiSettings),
             convertFileToBase64(file)
         ]);
 

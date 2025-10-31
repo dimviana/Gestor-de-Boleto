@@ -41,20 +41,20 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
   };
 
   return (
-    <div className="absolute top-12 right-0 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 z-30 animate-fade-in-up">
-      <div className="p-3 font-bold text-gray-800 border-b border-gray-100">
+    <div className="absolute top-12 right-0 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-30 animate-fade-in-up">
+      <div className="p-3 font-bold text-gray-800 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700">
         {t('notificationsTitle')}
       </div>
       <div className="max-h-80 overflow-y-auto">
         {notifications.length > 0 ? (
           <ul>
             {notifications.map(({ boleto }) => (
-              <li key={boleto.id} className="p-3 border-b border-gray-100 hover:bg-gray-50">
+              <li key={boleto.id} className="p-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <div className="flex justify-between items-center mb-1">
-                  <p className="font-semibold text-sm text-gray-800 truncate pr-2">{boleto.recipient || t('recipientNotFound')}</p>
+                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate pr-2">{boleto.recipient || t('recipientNotFound')}</p>
                   {getStatusLabel(notifications.find(n => n.boleto.id === boleto.id)!)}
                 </div>
-                <div className="flex items-center text-xs text-gray-500 space-x-4">
+                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
                   <span className="flex items-center">
                     <DollarSignIcon className="w-3 h-3 mr-1" />
                     {formatCurrency(boleto.amount)}
@@ -68,7 +68,7 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
             ))}
           </ul>
         ) : (
-          <div className="p-6 text-center text-gray-500">
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
             {t('noNotifications')}
           </div>
         )}

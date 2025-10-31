@@ -14,9 +14,10 @@ interface KanbanColumnProps {
   selectedBoletoIds: string[];
   onToggleSelection: (id: string) => void;
   onToggleSelectAll: (boletos: Boleto[]) => void;
+  onViewDetails: (boleto: Boleto) => void;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll, onViewDetails }) => {
     const columnBoletoIds = useMemo(() => boletos.map(b => b.id), [boletos]);
     const selectedInColumn = useMemo(() => columnBoletoIds.filter(id => selectedBoletoIds.includes(id)), [columnBoletoIds, selectedBoletoIds]);
     const [isOver, setIsOver] = useState(false);
@@ -66,14 +67,14 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
     >
-      <div className={`bg-gray-100/80 rounded-xl shadow-inner h-full flex flex-col transition-colors duration-300 ${isOver ? 'bg-blue-100' : ''}`}>
-        <h2 className="text-lg font-bold text-gray-700 p-4 border-b border-gray-200 sticky top-16 bg-gray-100/80 rounded-t-xl backdrop-blur-sm flex items-center justify-between">
+      <div className={`bg-gray-100/80 dark:bg-gray-800/80 rounded-xl shadow-inner h-full flex flex-col transition-colors duration-300 ${isOver ? 'bg-blue-100 dark:bg-blue-900/50' : ''}`}>
+        <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300 p-4 border-b border-gray-200 dark:border-gray-700 sticky top-16 bg-gray-100/80 dark:bg-gray-800/80 rounded-t-xl backdrop-blur-sm flex items-center justify-between">
           <span>{title} ({boletos.length})</span>
           {boletos.length > 0 && (
             <input
                 ref={checkboxRef}
                 type="checkbox"
-                className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer"
+                className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-offset-gray-800 cursor-pointer"
                 checked={isAllSelected}
                 onChange={() => onToggleSelectAll(boletos)}
                 title="Selecionar todos nesta coluna"
@@ -91,11 +92,12 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
                 onUpdateComments={onUpdateComments}
                 isSelected={selectedBoletoIds.includes(boleto.id)}
                 onToggleSelection={onToggleSelection}
+                onViewDetails={onViewDetails}
               />
             ))
           ) : (
             <div className="flex items-center justify-center h-40">
-              <p className="text-gray-500 italic">No items</p>
+              <p className="text-gray-500 dark:text-gray-400 italic">No items</p>
             </div>
           )}
         </div>

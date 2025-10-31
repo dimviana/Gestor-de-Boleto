@@ -1,3 +1,4 @@
+
 export enum BoletoStatus {
   TO_PAY = 'PAGAR',
   VERIFYING = 'VERIFICAR',
@@ -37,6 +38,8 @@ export interface RegisteredUser extends User {
 
 export type ProcessingMethod = 'ai' | 'regex';
 
+export type Theme = 'light' | 'dark' | 'system';
+
 
 // New types for the logging system
 export type LogAction =
@@ -65,4 +68,12 @@ export interface Notification {
   boleto: Boleto;
   type: 'overdue' | 'dueSoon';
   daysUntilDue: number;
+}
+
+// New type for AI settings
+export interface AiSettings {
+  model: string;
+  temperature: number;
+  topK: number;
+  topP: number;
 }

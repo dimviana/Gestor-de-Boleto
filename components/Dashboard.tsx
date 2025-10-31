@@ -16,6 +16,8 @@ import Documentation from './Documentation';
 import { WalletIcon, HourglassIcon, CheckCircleIcon, TrashIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
+import { BoletoDetailsModal } from './BoletoDetailsModal';
+import { useAiSettings } from '../contexts/AiSettingsContext';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -34,18 +36,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const { t, language } = useLanguage();
   const { method } = useProcessingMethod();
+  const { aiSettings } = useAiSettings();
   
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
 
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
+  const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
 
   const handleFileUpload = async (file: File) => {
     setIsLoadingUpload(true);
     try {
       let newBoleto: Boleto;
       if (method === 'ai') {
-          newBoleto = await processBoletoWithAI(file, language);
+          newBoleto = await processBoletoWithAI(file, language, aiSettings);
       } else {
           newBoleto = await processBoletoPDFWithRegex(file);
       }
@@ -126,6 +130,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
     setSelectedBoletoIds(prev => prev.filter(selectedId => selectedId !== id));
   };
 
+  const handleViewBoletoDetails = useCallback((boleto: Boleto) => {
+    setViewingBoleto(boleto);
+  }, []);
+
   const boletosToDo = useMemo(() => boletos.filter(b => b.status === BoletoStatus.TO_PAY), [boletos]);
   const boletosVerifying = useMemo(() => boletos.filter(b => b.status === BoletoStatus.VERIFYING), [boletos]);
   const boletosPaid = useMemo(() => boletos.filter(b => b.status === BoletoStatus.PAID), [boletos]);
@@ -178,13 +186,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   };
 
   const SummaryCard: React.FC<{ icon: React.ReactNode, title: string, value: number, colorClass: string }> = ({ icon, title, value, colorClass }) => (
-    <div className="bg-white/70 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-gray-200 flex items-center space-x-4">
-        <div className={`p-3 rounded-full bg-gray-100 ${colorClass}`}>
+    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 flex items-center space-x-4">
+        <div className={`p-3 rounded-full bg-gray-100 dark:bg-gray-700 ${colorClass}`}>
             {icon}
         </div>
         <div>
-            <p className="text-sm font-medium text-gray-500">{title}</p>
-            <p className="text-2xl font-bold text-gray-800">{formatCurrency(value)}</p>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
+            <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(value)}</p>
         </div>
     </div>
   );
@@ -199,12 +207,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
         notifications={notifications}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="mb-8 p-6 bg-white/60 rounded-2xl shadow-lg border border-gray-200 backdrop-blur-md space-y-4">
+        <div className="mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">
           <FileUpload onFileUpload={handleFileUpload} disabled={isLoadingUpload} />
           {isLoadingUpload && (
             <div className="flex items-center justify-center mt-4">
               <Spinner />
-              <p className="ml-4 text-blue-600 font-semibold">{method === 'ai' ? t('processingStatusOcr') : t('processingStatusRegex')}</p>
+              <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{method === 'ai' ? t('processingStatusOcr') : t('processingStatusRegex')}</p>
             </div>
           )}
            <FolderWatcher onFileUpload={handleFileUpload} disabled={isLoadingUpload} />
@@ -247,6 +255,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
                 selectedBoletoIds={selectedBoletoIds}
                 onToggleSelection={handleToggleBoletoSelection}
                 onToggleSelectAll={handleToggleSelectAll}
+                onViewDetails={handleViewBoletoDetails}
             />
             <KanbanColumn 
                 title={t('kanbanTitleVerifying')} 
@@ -258,6 +267,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
                 selectedBoletoIds={selectedBoletoIds}
                 onToggleSelection={handleToggleBoletoSelection}
                 onToggleSelectAll={handleToggleSelectAll}
+                onViewDetails={handleViewBoletoDetails}
             />
             <KanbanColumn 
                 title={t('kanbanTitlePaid')} 
@@ -269,6 +279,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
                 selectedBoletoIds={selectedBoletoIds}
                 onToggleSelection={handleToggleBoletoSelection}
                 onToggleSelectAll={handleToggleSelectAll}
+                onViewDetails={handleViewBoletoDetails}
             />
           </div>
         )}
@@ -277,17 +288,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       
       {selectedBoletoIds.length > 0 && (
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl p-4 z-30">
-            <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 flex items-center justify-between p-4 animate-fade-in-up">
-                <p className="font-semibold text-gray-700">
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 animate-fade-in-up">
+                <p className="font-semibold text-gray-700 dark:text-gray-200">
                     {t('itemsSelected', { count: selectedBoletoIds.length.toString() })}
                 </p>
                 <div className="flex items-center space-x-2">
-                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.TO_PAY)} className="px-3 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200">{t('moveTo', { status: t('kanbanTitleToDo')})}</button>
-                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.VERIFYING)} className="px-3 py-2 text-sm font-medium text-yellow-600 bg-yellow-100 rounded-md hover:bg-yellow-200">{t('moveTo', { status: t('kanbanTitleVerifying')})}</button>
-                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.PAID)} className="px-3 py-2 text-sm font-medium text-green-600 bg-green-100 rounded-md hover:bg-green-200">{t('moveTo', { status: t('kanbanTitlePaid')})}</button>
-                    <button onClick={handleBulkDelete} className="p-2 text-red-600 bg-red-100 rounded-md hover:bg-red-200" title={t('deleteSelected')}><TrashIcon className="w-5 h-5"/></button>
+                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.TO_PAY)} className="px-3 py-2 text-sm font-medium text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/60">{t('moveTo', { status: t('kanbanTitleToDo')})}</button>
+                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.VERIFYING)} className="px-3 py-2 text-sm font-medium text-yellow-600 bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300 rounded-md hover:bg-yellow-200 dark:hover:bg-yellow-900/60">{t('moveTo', { status: t('kanbanTitleVerifying')})}</button>
+                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.PAID)} className="px-3 py-2 text-sm font-medium text-green-600 bg-green-100 dark:bg-green-900/40 dark:text-green-300 rounded-md hover:bg-green-200 dark:hover:bg-green-900/60">{t('moveTo', { status: t('kanbanTitlePaid')})}</button>
+                    <button onClick={handleBulkDelete} className="p-2 text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/60" title={t('deleteSelected')}><TrashIcon className="w-5 h-5"/></button>
                 </div>
-                <button onClick={() => setSelectedBoletoIds([])} className="text-sm font-semibold text-blue-600 hover:underline">
+                <button onClick={() => setSelectedBoletoIds([])} className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
                     {t('deselectAll')}
                 </button>
             </div>
@@ -300,7 +311,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
           title={errorModalContent.title}
       >
           <div className="text-center p-4">
-              <p className="text-gray-600 mb-6">{errorModalContent.message}</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">{errorModalContent.message}</p>
               <button
                   onClick={() => setIsErrorModalOpen(false)}
                   className="px-8 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300"
@@ -325,6 +336,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
             getLogs={getLogs}
         />
       </Modal>
+
+      {viewingBoleto && (
+          <BoletoDetailsModal
+            boleto={viewingBoleto}
+            onClose={() => setViewingBoleto(null)}
+          />
+        )}
     </>
   );
 };

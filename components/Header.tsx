@@ -6,6 +6,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { User, Notification } from '../types';
 import NotificationPopover from './NotificationPopover';
+import ThemeSwitcher from './ThemeSwitcher';
 
 interface HeaderProps {
   onLogout: () => void;
@@ -35,10 +36,12 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
   }, [popoverRef]);
 
   return (
-    <header className="bg-white/80 backdrop-blur-md shadow-md sticky top-0 z-20">
+    <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-md dark:shadow-lg sticky top-0 z-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
+            <ThemeSwitcher />
+            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-3"></div>
             <LanguageSwitcher />
             <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg mr-3 ml-4">
               {logoUrl ? (
@@ -56,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
                  <button
                   onClick={onOpenAdminPanel}
                   title="Painel Administrativo"
-                  className="p-2 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
                 >
                   <SettingsIcon className="w-5 h-5" />
                 </button>
@@ -64,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
              <button
               onClick={onOpenDocs}
               title={t('documentationTitle')}
-              className="p-2 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
             >
               <BookOpenIcon className="w-5 h-5" />
             </button>
@@ -72,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
                 <button
                     onClick={() => setIsPopoverOpen(!isPopoverOpen)}
                     title={t('notificationsTitle')}
-                    className="relative p-2 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    className="relative p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
                 >
                     <BellIcon className="w-5 h-5" />
                     {notificationCount > 0 && (
@@ -85,7 +88,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
             </div>
             <button
               onClick={onLogout}
-              className="flex items-center px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="flex items-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
             >
               <LogoutIcon className="w-5 h-5 mr-2" />
               {t('logoutButton')}

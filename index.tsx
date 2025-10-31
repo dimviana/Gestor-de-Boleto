@@ -1,9 +1,12 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { WhitelabelProvider } from './contexts/WhitelabelContext';
 import { ProcessingMethodProvider } from './contexts/ProcessingMethodContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AiSettingsProvider } from './contexts/AiSettingsContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -13,12 +16,16 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <LanguageProvider>
-      <WhitelabelProvider>
-        <ProcessingMethodProvider>
-          <App />
-        </ProcessingMethodProvider>
-      </WhitelabelProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <WhitelabelProvider>
+          <ProcessingMethodProvider>
+            <AiSettingsProvider>
+              <App />
+            </AiSettingsProvider>
+          </ProcessingMethodProvider>
+        </WhitelabelProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );

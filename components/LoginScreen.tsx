@@ -51,7 +51,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-2xl">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl dark:shadow-blue-900/50">
         <div className="text-center">
            <div className="flex flex-col items-center justify-center space-y-4 mb-4">
             {logoUrl ? (
@@ -65,30 +65,30 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
             )}
             </div>
           <h1 className="text-4xl font-bold text-blue-600">{appName}</h1>
-          <p className="mt-2 text-gray-500">{t('loginSubtitle')}</p>
+          <p className="mt-2 text-gray-500 dark:text-gray-400">{t('loginSubtitle')}</p>
         </div>
         
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
                 onClick={() => handleSwitchMode('login')}
-                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
                 {t('loginTab')}
             </button>
             <button
                 onClick={() => handleSwitchMode('register')}
-                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
                 {t('registerTab')}
             </button>
         </div>
 
-        {authError && <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg text-center">{t(authError as TranslationKey)}</div>}
-        {registrationSuccess && <div className="p-3 text-sm text-green-700 bg-green-100 rounded-lg text-center">{t('registrationSuccess')}</div>}
+        {authError && <div className="p-3 text-sm text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-center">{t(authError as TranslationKey)}</div>}
+        {registrationSuccess && <div className="p-3 text-sm text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-300 rounded-lg text-center">{t('registrationSuccess')}</div>}
 
         <div className="space-y-4">
             <div>
-                <label htmlFor="email" className="text-sm font-medium text-gray-700">{t('emailLabel')}</label>
+                <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('emailLabel')}</label>
                 <input 
                     id="email"
                     type="email"
@@ -96,11 +96,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder={t('emailPlaceholder')}
-                    className="w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 mt-1 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
             </div>
             <div>
-                 <label htmlFor="password" className="text-sm font-medium text-gray-700">{mode === 'login' ? t('passwordLabel') : t('passwordLabelRegister')}</label>
+                 <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">{mode === 'login' ? t('passwordLabel') : t('passwordLabelRegister')}</label>
                 <input 
                     id="password"
                     type="password"
@@ -108,10 +108,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder={t('passwordPlaceholder')}
-                    className="w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 mt-1 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
             </div>
-             {mode === 'login' && <p className="text-xs text-center text-gray-500">{t('adminHint')}</p>}
+             {mode === 'login' && <p className="text-xs text-center text-gray-500 dark:text-gray-400">{t('adminHint')}</p>}
         </div>
        
         <button

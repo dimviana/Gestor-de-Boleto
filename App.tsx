@@ -8,7 +8,7 @@ const App: React.FC = () => {
   const { user, login, logout, register, authError, setAuthError, getUsers, addUser, updateUser, deleteUser, getLogs } = useAuth();
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-blue-200 min-h-screen text-gray-800 font-sans flex flex-col">
+    <div className="bg-gradient-to-br from-blue-50 to-blue-200 dark:from-gray-900 dark:to-slate-800 min-h-screen text-gray-800 dark:text-gray-200 font-sans flex flex-col">
       <main className="flex-grow">
         {user ? (
           <Dashboard 
@@ -29,7 +29,7 @@ const App: React.FC = () => {
           />
         )}
       </main>
-      <footer className="text-center p-4 text-gray-600 text-sm">
+      <footer className="text-center p-4 text-gray-600 dark:text-gray-400 text-sm">
         © {new Date().getFullYear()} ABILDEVELOPER. Todos os direitos reservados.
       </footer>
     </div>

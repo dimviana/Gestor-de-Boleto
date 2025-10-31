@@ -57,16 +57,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, disabled }) => {
     >
       <label
         htmlFor="dropzone-file"
-        className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100
-        ${isDragging ? 'border-blue-500' : 'border-gray-300'}
+        className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700
+        ${isDragging ? 'border-blue-500' : 'border-gray-300 dark:border-gray-600'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <div className="flex flex-col items-center justify-center pt-5 pb-6">
           <UploadIcon className="w-10 h-10 mb-3 text-gray-400" />
-          <p className="mb-2 text-sm text-gray-500">
+          <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
             <span className="font-semibold">{t('uploadCTA')}</span> {t('uploadOrDrag')}
           </p>
-          <p className="text-xs text-gray-500">{t('uploadHint')}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('uploadHint')}</p>
         </div>
         <input 
           id="dropzone-file" 
