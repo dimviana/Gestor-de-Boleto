@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company } from '../types';
@@ -68,6 +67,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       } else {
           newBoleto = await processBoletoPDFWithRegex(file);
       }
+
+      // Validation for zero-value boletos
+      if (newBoleto.amount === null || newBoleto.amount === undefined || newBoleto.amount === 0) {
+        setErrorModalContent({
+            title: t('freeBoletoErrorTitle'),
+            message: t('freeBoletoErrorText')
+        });
+        setIsErrorModalOpen(true);
+        return; // Stop execution
+      }
+
       await addBoleto(user, newBoleto, method);
     } catch (error: any) {
       console.error("Upload failed:", error);

@@ -1,4 +1,3 @@
-
 export type Language = 'pt' | 'en';
 
 const pt = {
@@ -62,6 +61,8 @@ const pt = {
     genericErrorTitle: 'Ocorreu um Erro',
     genericErrorText: 'Ocorreu um erro inesperado. Por favor, tente novamente.',
     pdfProcessingError: 'Ocorreu um erro ao processar o boleto com a IA.',
+    freeBoletoErrorTitle: 'Boleto de Ato Gratuito',
+    freeBoletoErrorText: 'Este boleto tem valor zerado (ato gratuito) e não pode ser adicionado ao sistema.',
     confirmUserDeletion: 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.',
     confirmBulkDelete: 'Tem certeza que deseja excluir os {{count}} boletos selecionados?',
     deleteUserError: 'Não foi possível excluir o usuário.',
@@ -227,6 +228,8 @@ const en: typeof pt = {
     genericErrorTitle: 'An Error Occurred',
     genericErrorText: 'An unexpected error occurred. Please try again.',
     pdfProcessingError: 'An error occurred while processing the boleto with the AI.',
+    freeBoletoErrorTitle: 'Free Act Boleto',
+    freeBoletoErrorText: 'This boleto has a zero amount (free act) and cannot be added to the system.',
     confirmUserDeletion: 'Are you sure you want to delete this user? This action cannot be undone.',
     confirmBulkDelete: 'Are you sure you want to delete the {{count}} selected boletos?',
     deleteUserError: 'Could not delete the user.',
