@@ -1,159 +1,153 @@
 
-
 import React, { useState, useMemo } from 'react';
+import { useBoletos } from '../hooks/useBoletos';
+import { Boleto, BoletoStatus } from '../types';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
 import Spinner from './Spinner';
+import { processBoletoPDF } from '../services/geminiService';
+import { useLanguage } from '../contexts/LanguageContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
-import { BoletoStatus, Boleto } from '../types';
-import { useBoletos } from '../hooks/useBoletos';
-import { processBoletoPDF } from '../services/geminiService';
-import { CheckCircleIcon, ClockIcon, DocumentTextIcon, XCircleIcon, DollarSignIcon } from './icons/Icons';
-import { useLanguage } from '../contexts/LanguageContext';
-import { TranslationKey } from '../translations';
+import { WalletIcon, HourglassIcon, CheckCircleIcon } from './icons/Icons';
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
-  const { 
-    boletos, 
-    addBoleto, 
-    updateBoletoStatus, 
-    deleteBoleto, 
-    isLoading: isLoadingBoletos, 
-    error: boletosError 
-  } = useBoletos();
-  const [isUploading, setIsUploading] = useState(false);
+  const { boletos, addBoleto, updateBoletoStatus, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos();
+  const [isLoadingUpload, setIsLoadingUpload] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isDocModalOpen, setIsDocModalOpen] = useState(false);
-  const { language, t } = useLanguage();
+  const [isDocsOpen, setIsDocsOpen] = useState(false);
+  const { t, language } = useLanguage();
 
   const handleFileUpload = async (file: File) => {
-    setIsUploading(true);
+    setIsLoadingUpload(true);
     setUploadError(null);
     try {
       const newBoleto = await processBoletoPDF(file, language);
       await addBoleto(newBoleto);
-    } catch (e: any) {
-      const message = e.message || 'unknownError';
-      let translatedError: string;
-
-      if (message.startsWith('duplicateGuideError:')) {
-        const guideNumber = message.split(':')[1];
-        translatedError = t('duplicateGuideError', { guideNumber });
-      } else {
-        translatedError = t(message as TranslationKey);
+    } catch (error: any) {
+      console.error("Upload failed:", error);
+      let errorMessage = t('genericErrorText');
+      let errorTitle = t('genericErrorTitle');
+      
+      if (error.message.startsWith('duplicateGuideError:')) {
+          const guideNumber = error.message.split(':')[1];
+          errorMessage = t('duplicateErrorText', { guideNumber });
+          errorTitle = t('duplicateErrorTitle');
+      } else if (error.message === 'invalidGuideError') {
+          errorMessage = t('invalidGuideErrorText');
+          errorTitle = t('invalidGuideErrorTitle');
+      } else if (error.message === 'pdfProcessingError') {
+          errorMessage = t('pdfProcessingError');
+          errorTitle = t('processingErrorTitle');
       }
 
-      setUploadError(translatedError || t('unknownError'));
-      setTimeout(() => setUploadError(null), 5000);
+      setUploadError(`${errorTitle}: ${errorMessage}`);
     } finally {
-      setIsUploading(false);
+      setIsLoadingUpload(false);
     }
   };
 
-  const totalPaid = useMemo(() => {
-    return boletos
-        .filter(boleto => boleto.status === BoletoStatus.PAID)
-        .reduce((sum, boleto) => sum + (boleto.amount || 0), 0);
-  }, [boletos]);
+  const boletosToDo = boletos.filter(b => b.status === BoletoStatus.TO_PAY);
+  const boletosVerifying = boletos.filter(b => b.status === BoletoStatus.VERIFYING);
+  const boletosPaid = boletos.filter(b => b.status === BoletoStatus.PAID);
+
+  const calculateTotal = (boletosList: Boleto[]) => {
+    return boletosList.reduce((sum, boleto) => sum + (boleto.amount || 0), 0);
+  };
+  
+  const totalToDo = useMemo(() => calculateTotal(boletosToDo), [boletosToDo]);
+  const totalVerifying = useMemo(() => calculateTotal(boletosVerifying), [boletosVerifying]);
+  const totalPaid = useMemo(() => calculateTotal(boletosPaid), [boletosPaid]);
 
   const formatCurrency = (value: number) => {
-      return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
-          style: 'currency',
-          currency: language === 'pt' ? 'BRL' : 'USD'
-      });
+    return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
+      style: 'currency',
+      currency: language === 'pt' ? 'BRL' : 'USD',
+    });
   };
 
-  const columns = [
-    { status: BoletoStatus.TO_PAY, title: t('columnToPay'), icon: <DocumentTextIcon className="w-6 h-6 mr-2 text-red-500" /> },
-    { status: BoletoStatus.VERIFYING, title: t('columnVerifying'), icon: <ClockIcon className="w-6 h-6 mr-2 text-yellow-500" /> },
-    { status: BoletoStatus.PAID, title: t('columnPaid'), icon: <CheckCircleIcon className="w-6 h-6 mr-2 text-green-500" /> },
-  ];
-
-  const renderContent = () => {
-    if (isLoadingBoletos) {
-      return (
-        <div className="flex flex-col items-center justify-center h-64">
-          <Spinner />
-          <p className="mt-4 text-blue-600 font-semibold">{t('loadingBoletos')}</p>
+  const SummaryCard: React.FC<{ icon: React.ReactNode, title: string, value: number, colorClass: string }> = ({ icon, title, value, colorClass }) => (
+    <div className="bg-white/70 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-gray-200 flex items-center space-x-4">
+        <div className={`p-3 rounded-full bg-gray-100 ${colorClass}`}>
+            {icon}
         </div>
-      );
-    }
-
-    if (boletosError) {
-      return (
-         <div className="flex items-center justify-center p-4 text-red-800 rounded-lg bg-red-100 h-64" role="alert">
-            <XCircleIcon className="w-6 h-6 mr-3" />
-            <div>
-              <span className="font-medium">{t('errorTitle')}</span> {boletosError}
-            </div>
-          </div>
-      );
-    }
-
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {columns.map(col => (
-          <KanbanColumn
-            key={col.status}
-            status={col.status}
-            title={col.title}
-            icon={col.icon}
-            boletos={boletos.filter(b => b.status === col.status)}
-            onUpdateStatus={updateBoletoStatus}
-            onDelete={deleteBoleto}
-          />
-        ))}
-      </div>
-    );
-  };
+        <div>
+            <p className="text-sm font-medium text-gray-500">{title}</p>
+            <p className="text-2xl font-bold text-gray-800">{formatCurrency(value)}</p>
+        </div>
+    </div>
+  );
 
   return (
     <>
-      <div className="flex flex-col h-screen">
-        <Header onLogout={onLogout} onOpenDocs={() => setIsDocModalOpen(true)} />
-        <main className="flex-grow p-4 md:p-8 overflow-y-auto">
-          <div className="max-w-7xl mx-auto">
-            <div className="relative p-6 mb-8 bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200">
-              {isUploading && (
-                <div className="absolute inset-0 bg-white/50 flex flex-col items-center justify-center rounded-xl z-10">
-                  <Spinner />
-                  <p className="mt-4 text-blue-600 font-semibold">{t('uploadTitle')}</p>
-                </div>
-              )}
-              <FileUpload onFileUpload={handleFileUpload} disabled={isUploading} />
+      <Header onLogout={onLogout} onOpenDocs={() => setIsDocsOpen(true)} />
+      <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="mb-8 p-6 bg-white/60 rounded-2xl shadow-lg border border-gray-200 backdrop-blur-md">
+          <FileUpload onFileUpload={handleFileUpload} disabled={isLoadingUpload} />
+          {isLoadingUpload && (
+            <div className="flex items-center justify-center mt-4">
+              <Spinner />
+              <p className="ml-4 text-blue-600 font-semibold">{t('processingErrorTitle')}...</p>
             </div>
+          )}
+          {uploadError && <p className="text-red-500 text-center mt-4">{uploadError}</p>}
+        </div>
 
-            {uploadError && (
-              <div className="flex items-center p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
-                <XCircleIcon className="w-5 h-5 mr-3" />
-                <span className="font-medium">{t('errorTitle')}</span> {uploadError}
-              </div>
-            )}
-            
-            <div className="mb-8">
-              <div className="bg-green-100/70 border border-green-200 text-green-800 rounded-xl shadow-lg p-6 flex items-center justify-start">
-                <div className="p-3 bg-white rounded-full mr-4 shadow">
-                  <DollarSignIcon className="w-8 h-8 text-green-500" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold">{t('totalPaid')}</h2>
-                  <p className="text-3xl font-bold text-green-600">{formatCurrency(totalPaid)}</p>
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <SummaryCard 
+                icon={<WalletIcon className="w-6 h-6" />}
+                title={t('totalToPay')}
+                value={totalToDo}
+                colorClass="text-red-500"
+            />
+            <SummaryCard 
+                icon={<HourglassIcon className="w-6 h-6" />}
+                title={t('totalVerifying')}
+                value={totalVerifying}
+                colorClass="text-yellow-500"
+            />
+            <SummaryCard 
+                icon={<CheckCircleIcon className="w-6 h-6" />}
+                title={t('totalPaid')}
+                value={totalPaid}
+                colorClass="text-green-500"
+            />
+        </div>
 
-            {renderContent()}
-
+        {isLoadingBoletos ? (
+          <div className="flex justify-center items-center h-64">
+            <Spinner />
           </div>
-        </main>
-      </div>
-      <Modal isOpen={isDocModalOpen} onClose={() => setIsDocModalOpen(false)} title={t('documentationTitle')}>
+        ) : (
+          <div className="flex flex-col md:flex-row -mx-2">
+            <KanbanColumn 
+                title={t('kanbanTitleToDo')} 
+                boletos={boletosToDo} 
+                onUpdateStatus={updateBoletoStatus} 
+                onDelete={deleteBoleto} 
+            />
+            <KanbanColumn 
+                title={t('kanbanTitleVerifying')} 
+                boletos={boletosVerifying} 
+                onUpdateStatus={updateBoletoStatus} 
+                onDelete={deleteBoleto} 
+            />
+            <KanbanColumn 
+                title={t('kanbanTitlePaid')} 
+                boletos={boletosPaid} 
+                onUpdateStatus={updateBoletoStatus} 
+                onDelete={deleteBoleto} 
+            />
+          </div>
+        )}
+        {dbError && <p className="text-red-500 text-center mt-4">{dbError}</p>}
+      </main>
+      <Modal isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} title={t('documentationTitle')}>
           <Documentation />
       </Modal>
     </>

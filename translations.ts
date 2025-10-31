@@ -1,93 +1,102 @@
 
+export type Language = 'pt' | 'en';
 
-export const translations = {
-  en: {
-    // Login
+const pt = {
     loginTitle: 'Boleto Manager AI',
-    loginSubtitle: 'Intelligent control of your payments.',
-    loginButton: 'Access Dashboard',
-    // Header
-    logoutButton: 'Logout',
-    // Dashboard
-    uploadTitle: 'AI is analyzing your document...',
-    errorTitle: 'Error!',
-    columnToPay: 'To Pay',
-    columnVerifying: 'Verifying',
-    columnPaid: 'Paid',
-    loadingBoletos: 'Loading your boletos...',
-    totalPaid: 'Total Paid',
-    // Documentation
-    documentationTitle: 'System Documentation',
-    downloadPdf: 'Download as PDF',
-    // File Upload
-    uploadCTA: 'Click to upload',
-    uploadOrDrag: 'or drag and drop',
-    uploadHint: 'PDF files only',
-    // Kanban Column
-    emptyColumn: 'No items in this category.',
-    // Boleto Card
-    recipientNotFound: 'Recipient not found',
-    dueDate: 'Due Date:',
-    amount: 'Amount:',
-    guideNumber: 'Guide Number:',
-    barcode: 'Barcode:',
-    notAvailable: 'N/A',
-    markAsPaid: 'Mark as Paid',
-    verifyPayment: 'Verify Payment',
-    paymentCompleted: 'Payment Completed',
-    openPdf: 'Open Original PDF',
-    // Errors
-    duplicateGuideError: 'A boleto with guide number "{{guideNumber}}" already exists.',
-    invalidGuideError: 'Could not extract a valid Guide Number from the PDF. Cannot add boleto.',
-    pdfProcessingError: 'Failed to extract information from the PDF. The document might be invalid or the AI service is unavailable.',
-    unknownError: 'An unknown error occurred.',
-    // Gemini Prompt
-    geminiPrompt: `Analyze this image of a Brazilian 'boleto' (payment slip). Extract the recipient (beneficiário), due date (vencimento), amount (valor), the full barcode number (linha digitável), and the document number (número do documento or similar identifier). Return the data in the specified JSON format. For dueDate, use YYYY-MM-DD. If a document number isn't present, return null for guideNumber.`,
-  },
-  pt: {
-    // Login
-    loginTitle: 'Gestor de Boletos AI',
-    loginSubtitle: 'Controle inteligente dos seus pagamentos.',
-    loginButton: 'Acessar Painel',
-    // Header
+    loginSubtitle: 'Gerencie seus boletos com o poder da IA do Gemini',
+    loginButton: 'Acessar o Painel',
     logoutButton: 'Sair',
-    // Dashboard
-    uploadTitle: 'A IA está analisando seu documento...',
-    errorTitle: 'Erro!',
-    columnToPay: 'PAGAR',
-    columnVerifying: 'VERIFICAR',
-    columnPaid: 'PAGO',
-    loadingBoletos: 'Carregando seus boletos...',
-    totalPaid: 'Total Pago',
-    // Documentation
-    documentationTitle: 'Documentação do Sistema',
-    downloadPdf: 'Baixar como PDF',
-    // File Upload
     uploadCTA: 'Clique para enviar',
     uploadOrDrag: 'ou arraste e solte',
     uploadHint: 'Apenas arquivos PDF',
-    // Kanban Column
-    emptyColumn: 'Nenhum item nesta categoria.',
-    // Boleto Card
-    recipientNotFound: 'Beneficiário não encontrado',
-    dueDate: 'Vencimento:',
-    amount: 'Valor:',
-    guideNumber: 'Nº da Guia:',
-    barcode: 'Código de Barras:',
-    notAvailable: 'N/D',
+    kanbanTitleToDo: 'Pagar',
+    kanbanTitleVerifying: 'Verificando',
+    kanbanTitlePaid: 'Pago',
+    totalToPay: 'Total a Pagar',
+    totalVerifying: 'Total em Verificação',
+    totalPaid: 'Total Pago',
     markAsPaid: 'Marcar como Pago',
     verifyPayment: 'Verificar Pagamento',
     paymentCompleted: 'Pagamento Concluído',
-    openPdf: 'Abrir PDF Original',
-    // Errors
-    duplicateGuideError: 'Um boleto com o número de guia "{{guideNumber}}" já existe.',
-    invalidGuideError: 'Não foi possível extrair um Número de Guia válido do PDF. O boleto não pode ser adicionado.',
-    pdfProcessingError: 'Falha ao extrair informações do PDF. O documento pode ser inválido ou o serviço de IA está indisponível.',
-    unknownError: 'Ocorreu um erro desconhecido.',
-    // Gemini Prompt
-    geminiPrompt: `Analise esta imagem de um boleto brasileiro. Extraia o beneficiário, a data de vencimento, o valor, a linha digitável completa, e o número do documento (ou identificador similar). Retorne os dados no formato JSON especificado. Para a data de vencimento, use o formato YYYY-MM-DD. Se o número do documento não estiver presente, retorne null para guideNumber.`,
-  }
+    recipientNotFound: 'Destinatário não encontrado',
+    dueDate: 'Vencimento:',
+    amount: 'Valor:',
+    barcode: 'Código de Barras:',
+    guideNumber: 'Nº do Documento:',
+    notAvailable: 'N/A',
+    openPdf: 'Abrir PDF original',
+    documentationTitle: 'Documentação',
+    downloadPdf: 'Baixar Documentação em PDF',
+    processingErrorTitle: 'Erro ao Processar',
+    processingErrorText: 'Ocorreu um erro ao tentar processar o arquivo PDF com a IA. Verifique o console para mais detalhes.',
+    duplicateErrorTitle: 'Boleto Duplicado',
+    duplicateErrorText: 'Um boleto com o número de documento "{{guideNumber}}" já existe.',
+    invalidGuideErrorTitle: 'Dados Inválidos',
+    invalidGuideErrorText: 'O número do documento não pôde ser extraído do boleto. Verifique o arquivo e tente novamente.',
+    genericErrorTitle: 'Ocorreu um Erro',
+    genericErrorText: 'Ocorreu um erro inesperado. Por favor, tente novamente.',
+    pdfProcessingError: 'Ocorreu um erro ao processar o boleto com a IA.',
+    geminiPrompt: `
+        Você é um assistente especialista em extrair informações de boletos bancários brasileiros a partir de uma imagem.
+        Analise a imagem e retorne um objeto JSON com as seguintes informações. Se uma informação não for encontrada, retorne null para aquele campo.
+        A data de vencimento deve estar no formato AAAA-MM-DD.
+        O valor deve ser um número, usando ponto como separador decimal.
+        - recipient: O nome do beneficiário/cedente.
+        - dueDate: A data de vencimento.
+        - amount: O valor do documento.
+        - barcode: A linha digitável completa, com todos os números e pontos.
+        - guideNumber: O "Número do Documento".
+    `,
 };
 
-export type Language = keyof typeof translations;
-export type TranslationKey = keyof typeof translations['en'];
+const en: typeof pt = {
+    loginTitle: 'Boleto Manager AI',
+    loginSubtitle: 'Manage your payment slips with the power of Gemini AI',
+    loginButton: 'Access Dashboard',
+    logoutButton: 'Logout',
+    uploadCTA: 'Click to upload',
+    uploadOrDrag: 'or drag and drop',
+    uploadHint: 'PDF files only',
+    kanbanTitleToDo: 'To Pay',
+    kanbanTitleVerifying: 'Verifying',
+    kanbanTitlePaid: 'Paid',
+    totalToPay: 'Total to Pay',
+    totalVerifying: 'Total Verifying',
+    totalPaid: 'Total Paid',
+    markAsPaid: 'Mark as Paid',
+    verifyPayment: 'Verify Payment',
+    paymentCompleted: 'Payment Completed',
+    recipientNotFound: 'Recipient not found',
+    dueDate: 'Due Date:',
+    amount: 'Amount:',
+    barcode: 'Barcode:',
+    guideNumber: 'Document No:',
+    notAvailable: 'N/A',
+    openPdf: 'Open original PDF',
+    documentationTitle: 'Documentation',
+    downloadPdf: 'Download Documentation as PDF',
+    processingErrorTitle: 'Processing Error',
+    processingErrorText: 'An error occurred while trying to process the PDF file with the AI. Check the console for more details.',
+    duplicateErrorTitle: 'Duplicate Boleto',
+    duplicateErrorText: 'A boleto with document number "{{guideNumber}}" already exists.',
+    invalidGuideErrorTitle: 'Invalid Data',
+    invalidGuideErrorText: 'The document number could not be extracted from the boleto. Please check the file and try again.',
+    genericErrorTitle: 'An Error Occurred',
+    genericErrorText: 'An unexpected error occurred. Please try again.',
+    pdfProcessingError: 'An error occurred while processing the boleto with the AI.',
+    geminiPrompt: `
+        You are an expert assistant specialized in extracting information from Brazilian bank slips (boletos) from an image.
+        Analyze the image and return a JSON object with the following information. If a piece of information is not found, return null for that field.
+        The due date must be in YYYY-MM-DD format.
+        The amount must be a number, using a period as the decimal separator.
+        - recipient: The name of the beneficiary/payee.
+        - dueDate: The due date.
+        - amount: The document amount.
+        - barcode: The complete digitable line (linha digitável), with all numbers and periods.
+        - guideNumber: The "Número do Documento" (Document Number).
+    `,
+};
+
+export const translations = { pt, en };
+
+export type TranslationKey = keyof typeof pt;
