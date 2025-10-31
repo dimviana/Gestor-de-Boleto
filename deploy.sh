@@ -1,0 +1,164 @@
+#!/bin/bash
+
+# Color codes for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}=============================================${NC}"
+echo -e "${GREEN}   Deploy Automático - Boleto Manager AI   ${NC}"
+echo -e "${GREEN}=============================================${NC}"
+echo ""
+
+# Function to check for required commands
+check_command() {
+    if ! command -v $1 &> /dev/null
+    then
+        echo -e "${RED}ERRO: O comando '$1' não foi encontrado. Por favor, instale-o e tente novamente.${NC}"
+        exit 1
+    fi
+}
+
+# --- 1. Verificação de Dependências ---
+echo -e "${YELLOW}Verificando dependências...${NC}"
+check_command git
+check_command node
+check_command npm
+check_command pm2
+check_command mysql
+echo -e "${GREEN}Todas as dependências foram encontradas.${NC}"
+echo ""
+
+# --- 2. Coletar Informações ---
+read -p "Insira a URL do repositório Git (HTTPS): " GIT_REPO
+read -p "Insira o nome da pasta para o projeto (ex: boleto-manager): " PROJECT_FOLDER
+read -p "Insira a URL de acesso da aplicação (ex: http://localhost:3001): " APP_URL
+read -p "Insira o Host do banco de dados (ex: localhost): " DB_HOST
+read -p "Insira o Usuário do banco de dados (ex: root): " DB_USER
+read -s -p "Insira a Senha do banco de dados: " DB_PASSWORD
+echo ""
+read -p "Insira o Nome do banco de dados (ex: boleto_manager_ai): " DB_DATABASE
+read -p "Insira a sua Chave da API do Google Gemini: " API_KEY
+read -p "Insira um segredo para JWT (pode ser qualquer texto longo e aleatório): " JWT_SECRET
+
+# Extract port from APP_URL
+PORT=$(echo $APP_URL | sed -E 's/.*:([0-9]+)\/?/\1/')
+if [[ ! "$PORT" =~ ^[0-9]+$ ]]; then
+    PORT=3001 # Default port if not found
+fi
+
+echo ""
+echo -e "${YELLOW}--- Resumo das Informações ---${NC}"
+echo "Repositório Git: $GIT_REPO"
+echo "Pasta do Projeto: $PROJECT_FOLDER"
+echo "URL da Aplicação: $APP_URL"
+echo "Porta do Servidor: $PORT"
+echo "Banco de Dados: $DB_DATABASE em $DB_HOST"
+echo "API Key Gemini: [Oculto]"
+echo "Segredo JWT: [Oculto]"
+echo ""
+read -p "As informações estão corretas? (s/n) " confirm && [[ $confirm == [sS] || $confirm == [sS][iI][mM] ]] || exit 1
+echo ""
+
+
+# --- 3. Execução do Deploy ---
+
+# Clonar repositório
+if [ -d "$PROJECT_FOLDER" ]; then
+    echo -e "${YELLOW}A pasta '$PROJECT_FOLDER' já existe. Removendo para uma nova clonagem...${NC}"
+    rm -rf "$PROJECT_FOLDER"
+fi
+echo -e "${YELLOW}Clonando o repositório...${NC}"
+git clone "$GIT_REPO" "$PROJECT_FOLDER"
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Falha ao clonar o repositório. Verifique a URL e suas permissões.${NC}"
+    exit 1
+fi
+cd "$PROJECT_FOLDER"
+
+# Criar arquivo .env
+echo -e "${YELLOW}Criando o arquivo de configuração .env...${NC}"
+cat > .env << EOL
+# Variáveis de Ambiente para Boleto Manager AI
+
+# Configuração do Banco de Dados MySQL
+DB_HOST=${DB_HOST}
+DB_USER=${DB_USER}
+DB_PASSWORD=${DB_PASSWORD}
+DB_DATABASE=${DB_DATABASE}
+
+# Chave da API do Google Gemini
+API_KEY=${API_KEY}
+
+# Configuração do Servidor
+PORT=${PORT}
+
+# Segredo JWT para Autenticação
+JWT_SECRET=${JWT_SECRET}
+EOL
+echo -e "${GREEN}Arquivo .env criado com sucesso.${NC}"
+
+# Instalar dependências
+echo -e "${YELLOW}Instalando dependências do projeto (npm install)...${NC}"
+npm install
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Falha ao instalar as dependências com npm.${NC}"
+    exit 1
+fi
+
+# Compilar o projeto (se for TypeScript)
+if [ -f "tsconfig.json" ]; then
+    echo -e "${YELLOW}Compilando o projeto TypeScript (npm run build)...${NC}"
+    npm run build
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Falha ao compilar o projeto TypeScript.${NC}"
+        exit 1
+    fi
+fi
+
+# Configurar o banco de dados
+echo -e "${YELLOW}Configurando o banco de dados...${NC}"
+echo "CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`;" > setup.sql
+cat database/schema.txt >> setup.sql
+
+echo -e "Tentando executar o script SQL. Pode ser necessário digitar a senha do MySQL."
+mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" < setup.sql
+if [ $? -ne 0 ]; then
+    echo -e "${YELLOW}Aviso: Falha ao executar o script SQL. Isso pode ser esperado se o banco de dados já existir.${NC}"
+fi
+rm setup.sql
+echo -e "${GREEN}Banco de dados configurado.${NC}"
+
+
+# Iniciar a aplicação com PM2
+APP_NAME="boleto-manager-ai"
+echo -e "${YELLOW}Iniciando a aplicação '$APP_NAME' com PM2...${NC}"
+
+# Parar e deletar a versão antiga, se existir
+pm2 stop "$APP_NAME" &> /dev/null
+pm2 delete "$APP_NAME" &> /dev/null
+
+# Iniciar nova versão
+# Assumindo que o ponto de entrada após o build é 'dist/api/index.js'
+pm2 start dist/api/index.js --name "$APP_NAME"
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Falha ao iniciar a aplicação com PM2.${NC}"
+    exit 1
+fi
+
+pm2 startup
+pm2 save
+echo -e "${GREEN}Aplicação iniciada com sucesso via PM2.${NC}"
+echo ""
+
+# --- 4. Conclusão ---
+echo -e "${GREEN}===================================${NC}"
+echo -e "${GREEN}      DEPLOY FINALIZADO!           ${NC}"
+echo -e "${GREEN}===================================${NC}"
+echo ""
+echo -e "A aplicação está rodando e pode ser acessada em: ${YELLOW}${APP_URL}${NC}"
+echo -e "Para ver os logs, use o comando: ${YELLOW}pm2 logs $APP_NAME${NC}"
+echo -e "Para parar a aplicação, use o comando: ${YELLOW}pm2 stop $APP_NAME${NC}"
+echo ""
