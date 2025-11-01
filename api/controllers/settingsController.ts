@@ -1,9 +1,9 @@
-// FIX: Aliased Request and Response types to avoid conflict with global DOM types.
-import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+// FIX: Changed to use namespace import to avoid conflicts with global DOM types.
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-export const getSettings = async (req: ExpressRequest, res: ExpressResponse) => {
+export const getSettings = async (req: express.Request, res: express.Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -22,7 +22,7 @@ export const getSettings = async (req: ExpressRequest, res: ExpressResponse) => 
   }
 };
 
-export const updateSettings = async (req: ExpressRequest, res: ExpressResponse) => {
+export const updateSettings = async (req: express.Request, res: express.Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {

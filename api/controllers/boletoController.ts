@@ -1,5 +1,5 @@
-// FIX: Aliased Express Response type to avoid conflict with global DOM types.
-import { Response as ExpressResponse } from 'express';
+// FIX: Changed to use namespace import to avoid conflicts with global DOM types.
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus, AiSettings } from '../../types';
@@ -7,7 +7,7 @@ import { RowDataPacket, OkPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { extractBoletoInfo } from '../services/geminiService';
 
-export const getBoletos = async (req: AuthRequest, res: ExpressResponse) => {
+export const getBoletos = async (req: AuthRequest, res: express.Response) => {
   const user = req.user!;
   try {
     let query = 'SELECT * FROM boletos';
@@ -30,7 +30,7 @@ export const getBoletos = async (req: AuthRequest, res: ExpressResponse) => {
   }
 };
 
-export const createBoleto = async (req: AuthRequest, res: ExpressResponse) => {
+export const createBoleto = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
     if (!user.companyId) {
         return res.status(400).json({ message: 'User is not associated with a company' });
@@ -76,7 +76,7 @@ export const createBoleto = async (req: AuthRequest, res: ExpressResponse) => {
     }
 };
 
-export const updateBoletoStatus = async (req: AuthRequest, res: ExpressResponse) => {
+export const updateBoletoStatus = async (req: AuthRequest, res: express.Response) => {
     const { status } = req.body;
     try {
         await pool.query('UPDATE boletos SET status = ? WHERE id = ?', [status, req.params.id]);
@@ -86,7 +86,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: ExpressResponse)
     }
 };
 
-export const updateBoletoComments = async (req: AuthRequest, res: ExpressResponse) => {
+export const updateBoletoComments = async (req: AuthRequest, res: express.Response) => {
     const { comments } = req.body;
     try {
         await pool.query('UPDATE boletos SET comments = ? WHERE id = ?', [comments, req.params.id]);
@@ -96,7 +96,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: ExpressRespons
     }
 };
 
-export const deleteBoleto = async (req: AuthRequest, res: ExpressResponse) => {
+export const deleteBoleto = async (req: AuthRequest, res: express.Response) => {
     try {
         await pool.query('DELETE FROM boletos WHERE id = ?', [req.params.id]);
         res.json({ message: 'Boleto deleted' });

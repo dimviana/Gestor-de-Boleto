@@ -24,9 +24,23 @@ command_exists() {
 echo "Atualizando a lista de pacotes do sistema (apt-get update)..."
 sudo apt-get update -y
 
-# Instalar dependências essenciais do sistema (git, curl, build-essential, python3)
-echo "Instalando pacotes essenciais (git, curl, mysql-client, build-essential, python3)..."
-sudo apt-get install -y git curl mysql-client build-essential python3
+# Pré-configurar as seleções do phpMyAdmin para evitar interatividade
+echo "Pré-configurando phpMyAdmin..."
+sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/dbconfig-install boolean true'
+sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/app-password-confirm password dvsviana'
+sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/mysql/admin-pass password dvsviana'
+sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/mysql/app-pass password dvsviana'
+sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2'
+
+# Instalar dependências essenciais do sistema (git, curl, apache, mysql, php, build tools)
+echo "Instalando pacotes essenciais (git, curl, apache2, mysql-server, phpmyadmin...)"
+sudo apt-get install -y git curl build-essential python3 apache2 mysql-server phpmyadmin php-mbstring php-gettext php-zip
+
+# Configurar senha do usuário root do MySQL de forma não-interativa
+echo "Configurando a senha do usuário root do MySQL para 'dvsviana'..."
+sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'dvsviana';"
+sudo mysql -e "FLUSH PRIVILEGES;"
+echo -e "${GREEN}Senha do root do MySQL configurada com sucesso.${NC}"
 
 # Verificar e instalar Node.js LTS
 if ! command_exists node; then
@@ -57,9 +71,9 @@ read -p "Insira a URL do repositório Git (HTTPS): " GIT_REPO
 read -p "Insira o nome da pasta para o projeto (ex: boleto-manager): " PROJECT_FOLDER
 read -p "Insira a URL de acesso da aplicação (ex: http://localhost:3001): " APP_URL
 read -p "Insira o Host do banco de dados (ex: localhost): " DB_HOST
-read -p "Insira o Usuário do banco de dados (ex: root): " DB_USER
-read -s -p "Insira a Senha do banco de dados: " DB_PASSWORD
-echo ""
+# DB_USER and DB_PASSWORD are now fixed
+DB_USER="root"
+DB_PASSWORD="dvsviana"
 read -p "Insira o Nome do banco de dados (ex: boleto_manager_ai): " DB_DATABASE
 read -p "Insira a sua Chave da API do Google Gemini: " API_KEY
 read -p "Insira um segredo para JWT (pode ser qualquer texto longo e aleatório): " JWT_SECRET
@@ -70,6 +84,9 @@ if [[ ! "$PORT" =~ ^[0-9]+$ ]]; then
     PORT=3001 # Default port if not found
 fi
 
+# Extract base URL for phpMyAdmin
+APP_URL_BASE=$(echo $APP_URL | sed -E 's|:[0-9]+/?$||' | sed 's/\/$//')
+
 echo ""
 echo -e "${YELLOW}--- Resumo das Informações ---${NC}"
 echo "Repositório Git: $GIT_REPO"
@@ -77,6 +94,8 @@ echo "Pasta do Projeto: $PROJECT_FOLDER"
 echo "URL da Aplicação: $APP_URL"
 echo "Porta do Servidor: $PORT"
 echo "Banco de Dados: $DB_DATABASE em $DB_HOST"
+echo "Usuário do DB: $DB_USER (fixo)"
+echo "Senha do DB: [Oculto] (fixo como 'dvsviana')"
 echo "API Key Gemini: [Oculto]"
 echo "Segredo JWT: [Oculto]"
 echo ""
@@ -144,10 +163,13 @@ echo -e "${YELLOW}Configurando o banco de dados...${NC}"
 echo "CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`;" > setup.sql
 cat database/schema.txt >> setup.sql
 
-echo -e "Tentando executar o script SQL. Pode ser necessário digitar a senha do MySQL."
+echo -e "Executando o script SQL para criar tabelas..."
 mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" < setup.sql
 if [ $? -ne 0 ]; then
-    echo -e "${YELLOW}Aviso: Falha ao executar o script SQL. Isso pode ser esperado se o banco de dados já existir.${NC}"
+    echo -e "${RED}ERRO: Falha ao executar o script SQL. Verifique as credenciais e o status do MySQL Server.${NC}"
+    # Remove password from file on failure for security
+    rm setup.sql
+    exit 1
 fi
 rm setup.sql
 echo -e "${GREEN}Banco de dados configurado.${NC}"
@@ -181,6 +203,8 @@ echo -e "${GREEN}      DEPLOY FINALIZADO!           ${NC}"
 echo -e "${GREEN}===================================${NC}"
 echo ""
 echo -e "A aplicação está rodando e pode ser acessada em: ${YELLOW}${APP_URL}${NC}"
+echo -e "O phpMyAdmin está disponível em: ${YELLOW}${APP_URL_BASE}/phpmyadmin${NC}"
+echo -e "  (Usuário: root, Senha: dvsviana)"
 echo -e "Para ver os logs, use o comando: ${YELLOW}pm2 logs $APP_NAME${NC}"
 echo -e "Para parar a aplicação, use o comando: ${YELLOW}pm2 stop $APP_NAME${NC}"
 echo ""

@@ -1,5 +1,5 @@
-// FIX: Corrected express import to use type-only imports, resolving type conflicts.
-import express, { type Express, type Request as ExpressRequest, type Response as ExpressResponse } from 'express';
+// FIX: Corrected express import to be a namespace import to resolve type conflicts with DOM types.
+import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { testDbConnection } from '../config/db';
@@ -13,7 +13,7 @@ import settingsRoutes from './routes/settings';
 
 dotenv.config();
 
-const app: Express = express();
+const app: express.Express = express();
 const port = process.env.PORT || 3001;
 
 // Middleware
@@ -30,7 +30,7 @@ testDbConnection().catch(err => {
 });
 
 // API Routes
-app.get('/api', (req: ExpressRequest, res: ExpressResponse) => {
+app.get('/api', (req: express.Request, res: express.Response) => {
   res.send('Boleto Manager AI Backend is running!');
 });
 
