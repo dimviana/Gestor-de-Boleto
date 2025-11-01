@@ -1,5 +1,5 @@
 // FIX: Aliased Request and Response types to avoid conflicts with global DOM types.
-import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';

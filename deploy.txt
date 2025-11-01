@@ -11,24 +11,46 @@ echo -e "${GREEN}   Deploy Automático - Boleto Manager AI   ${NC}"
 echo -e "${GREEN}=============================================${NC}"
 echo ""
 
-# Function to check for required commands
-check_command() {
-    if ! command -v $1 &> /dev/null
-    then
-        echo -e "${RED}ERRO: O comando '$1' não foi encontrado. Por favor, instale-o e tente novamente.${NC}"
-        exit 1
-    fi
+# --- 1. Verificação e Instalação de Dependências ---
+echo -e "${YELLOW}Verificando e instalando dependências... (Pode ser necessário inserir a senha sudo)${NC}"
+echo ""
+
+# Função para verificar se um comando existe
+command_exists() {
+    command -v "$1" &> /dev/null
 }
 
-# --- 1. Verificação de Dependências ---
-echo -e "${YELLOW}Verificando dependências...${NC}"
-check_command git
-check_command node
-check_command npm
-check_command pm2
-check_command mysql
-echo -e "${GREEN}Todas as dependências foram encontradas.${NC}"
+# Atualizar a lista de pacotes do sistema
+echo "Atualizando a lista de pacotes do sistema (apt-get update)..."
+sudo apt-get update -y
+
+# Instalar dependências essenciais do sistema (git, curl, build-essential, python3)
+echo "Instalando pacotes essenciais (git, curl, mysql-client, build-essential, python3)..."
+sudo apt-get install -y git curl mysql-client build-essential python3
+
+# Verificar e instalar Node.js LTS
+if ! command_exists node; then
+    echo "Node.js não encontrado. Instalando a versão LTS (20.x)..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    echo -e "${GREEN}Node.js LTS instalado com sucesso.${NC}"
+else
+    echo -e "${GREEN}Node.js já está instalado. Versão: $(node -v)${NC}"
+fi
+
+# Verificar e instalar PM2
+if ! command_exists pm2; then
+    echo "PM2 não encontrado. Instalando globalmente via npm..."
+    sudo npm install -g pm2
+    echo -e "${GREEN}PM2 instalado com sucesso.${NC}"
+else
+    echo -e "${GREEN}PM2 já está instalado.${NC}"
+fi
+
 echo ""
+echo -e "${GREEN}Verificação de dependências concluída.${NC}"
+echo ""
+
 
 # --- 2. Coletar Informações ---
 read -p "Insira a URL do repositório Git (HTTPS): " GIT_REPO

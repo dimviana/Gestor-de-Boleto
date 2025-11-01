@@ -1,5 +1,5 @@
 // FIX: Aliased Request and Response types to avoid conflict with global DOM types.
-import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 

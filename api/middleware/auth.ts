@@ -2,7 +2,8 @@
 // use type-only imports for all Express-related types. This ensures that
 // properties like `.headers`, `.body`, etc., are correctly recognized.
 // FIX: Aliased Request and Response to prevent conflicts with global DOM types.
-import type { Request as ExpressRequest, Response as ExpressResponse, NextFunction } from 'express';
+// FIX: Changed to a regular import to ensure correct type resolution for extension.
+import { Request as ExpressRequest, Response as ExpressResponse, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 

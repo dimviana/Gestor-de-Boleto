@@ -1,5 +1,5 @@
 // FIX: Aliased Express Response type to avoid conflict with global DOM types.
-import type { Response as ExpressResponse } from 'express';
+import { Response as ExpressResponse } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus, AiSettings } from '../../types';
