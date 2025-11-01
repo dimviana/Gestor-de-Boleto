@@ -116,6 +116,7 @@ const performOcr = async (canvas: HTMLCanvasElement): Promise<string> => {
 // FIX: Corrected typo 'Bleto' to 'Boleto'.
 const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     const apiKey = getApiKey();
+    // FIX: Correctly initialize GoogleGenAI with a named apiKey parameter.
     const ai = new GoogleGenAI({ apiKey });
     
     const canvas = await renderPdfPageToCanvas(file);
@@ -138,6 +139,7 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSe
     // Combine the main prompt with the extracted OCR text
     const fullPromptWithOcr = `${prompt}\n\n--- TEXTO EXTRAÍDO VIA OCR ---\n${ocrText}\n--- FIM DO TEXTO EXTRAÍDO ---`;
 
+    // FIX: Updated to the correct generateContent method call.
     const response = await ai.models.generateContent({
         model: aiSettings.model,
         contents: {
@@ -170,6 +172,7 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSe
         },
     });
 
+    // FIX: Correctly access the generated text from the response.
     const parsedJson = JSON.parse(response.text);
 
     // Normalize barcode by removing all non-digit characters for consistent duplicate checks

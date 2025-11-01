@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
@@ -64,7 +65,7 @@ export const extractBoletoInfo = async (
         throw new Error("API key is missing.");
     }
     // FIX: Correctly initialize GoogleGenAI with a named apiKey parameter.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
     
     const canvas = await renderPdfPageToCanvas(pdfBuffer);
     const ocrText = await performOcr(canvas);

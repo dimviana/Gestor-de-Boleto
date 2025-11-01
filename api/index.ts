@@ -1,4 +1,5 @@
 
+
 // FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
 import * as express from 'express';
 import dotenv from 'dotenv';
@@ -14,7 +15,7 @@ import settingsRoutes from './routes/settings';
 
 dotenv.config();
 
-const app: express.Express = express();
+const app: express.Application = express();
 const port = process.env.PORT || 3001;
 
 // Middleware
