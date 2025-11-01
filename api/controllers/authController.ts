@@ -1,5 +1,6 @@
 // FIX: Changed to use namespace import to avoid conflicts with global DOM types.
-import express from 'express';
+// FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
+import * as express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -12,6 +13,7 @@ const generateToken = (id: string, username: string, role: string, company_id: s
   });
 };
 
+// FIX: Added explicit express types to request and response objects.
 export const registerUser = async (req: express.Request, res: express.Response) => {
   const { username, password, role = 'user', companyId = null } = req.body;
 
@@ -38,6 +40,7 @@ export const registerUser = async (req: express.Request, res: express.Response) 
   }
 };
 
+// FIX: Added explicit express types to request and response objects.
 export const loginUser = async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
 

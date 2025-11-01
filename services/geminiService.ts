@@ -15,19 +15,13 @@ declare const Tesseract: any;
  * It retains compatibility with the original environment by checking for `process.env.API_KEY` as a fallback.
  */
 const getApiKey = (): string => {
-    const keyFromStorage = localStorage.getItem('gemini_api_key');
-    if (keyFromStorage) {
-      return keyFromStorage;
-    }
-
-    // Check for the environment variable for compatibility with the original platform.
-    // We check for `process` to avoid ReferenceError in a pure browser environment.
+    // FIX: API key must be obtained exclusively from process.env.API_KEY.
     if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
       return process.env.API_KEY;
     }
     
     // Provide a helpful error message for local setup.
-    throw new Error("Chave da API não encontrada. Configure-a no console do navegador: localStorage.setItem('gemini_api_key', 'SUA_CHAVE_AQUI');");
+    throw new Error("Chave da API não encontrada. A API Key deve ser configurada na variável de ambiente API_KEY.");
 };
 
 
@@ -119,7 +113,7 @@ const performOcr = async (canvas: HTMLCanvasElement): Promise<string> => {
 };
 
 // FIX: Update return type to exclude companyId as it's not available at this stage.
-const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
+const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Bleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     const apiKey = getApiKey();
     const ai = new GoogleGenAI({ apiKey });
     

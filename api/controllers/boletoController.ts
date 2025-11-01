@@ -1,5 +1,6 @@
 // FIX: Changed to use namespace import to avoid conflicts with global DOM types.
-import express from 'express';
+// FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
+import * as express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus, AiSettings } from '../../types';

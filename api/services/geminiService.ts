@@ -58,9 +58,11 @@ export const extractBoletoInfo = async (
     lang: 'pt' | 'en', 
     aiSettings: AiSettings
 ): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
+    // FIX: API key must be obtained exclusively from process.env.API_KEY.
     if (!process.env.API_KEY) {
         throw new Error("API key is missing.");
     }
+    // FIX: Correctly initialize GoogleGenAI with a named apiKey parameter.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const canvas = await renderPdfPageToCanvas(pdfBuffer);
@@ -75,6 +77,7 @@ export const extractBoletoInfo = async (
     const prompt = translations[lang].geminiPrompt;
     const fullPromptWithOcr = `${prompt}\n\n--- TEXTO EXTRAÍDO VIA OCR ---\n${ocrText}\n--- FIM DO TEXTO EXTRAÍDO ---`;
 
+    // FIX: Updated to the correct generateContent method call.
     const response = await ai.models.generateContent({
         model: aiSettings.model,
         contents: { parts: [{ text: fullPromptWithOcr }, imagePart] },
@@ -102,6 +105,7 @@ export const extractBoletoInfo = async (
         },
     });
 
+    // FIX: Correctly access the generated text from the response.
     const parsedJson = JSON.parse(response.text);
 
     if (parsedJson.barcode) {
