@@ -1,4 +1,4 @@
-// FIX: Corrected express import to be a namespace import to resolve type conflicts with DOM types.
+
 // FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
 import * as express from 'express';
 import dotenv from 'dotenv';

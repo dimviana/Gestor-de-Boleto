@@ -66,17 +66,16 @@ echo -e "${GREEN}Verificação de dependências concluída.${NC}"
 echo ""
 
 
-# --- 2. Coletar Informações ---
-read -p "Insira a URL do repositório Git (HTTPS): " GIT_REPO
-read -p "Insira o nome da pasta para o projeto (ex: boleto-manager): " PROJECT_FOLDER
-read -p "Insira a URL de acesso da aplicação (ex: http://localhost:3001): " APP_URL
-read -p "Insira o Host do banco de dados (ex: localhost): " DB_HOST
-# DB_USER and DB_PASSWORD are now fixed
+# --- 2. Informações de Deploy (Pré-configuradas) ---
+GIT_REPO="https://github.com/dimviana/Gestor-de-Boleto.git"
+PROJECT_FOLDER="boletomanager.abildeveloper.com.br"
+APP_URL="https://boletomanager.abildeveloper.com.br"
+DB_HOST="localhost"
 DB_USER="root"
 DB_PASSWORD="dvsviana"
-read -p "Insira o Nome do banco de dados (ex: boleto_manager_ai): " DB_DATABASE
-read -p "Insira a sua Chave da API do Google Gemini: " API_KEY
-read -p "Insira um segredo para JWT (pode ser qualquer texto longo e aleatório): " JWT_SECRET
+DB_DATABASE="boleto_manager_ai"
+API_KEY="AIzaSyB0zoSEGrIYuRjBtcTvxJX9LVbo5L2GpmA"
+JWT_SECRET="AIzaSyB0zoSEGrIYuRjBtcTvxJX9LVbo5L2GpmAjwt"
 
 # Extract port from APP_URL
 PORT=$(echo $APP_URL | sed -E 's/.*:([0-9]+)\/?/\1/')
@@ -88,7 +87,7 @@ fi
 APP_URL_BASE=$(echo $APP_URL | sed -E 's|:[0-9]+/?$||' | sed 's/\/$//')
 
 echo ""
-echo -e "${YELLOW}--- Resumo das Informações ---${NC}"
+echo -e "${YELLOW}--- Usando configurações de deploy pré-definidas ---${NC}"
 echo "Repositório Git: $GIT_REPO"
 echo "Pasta do Projeto: $PROJECT_FOLDER"
 echo "URL da Aplicação: $APP_URL"
@@ -99,9 +98,6 @@ echo "Senha do DB: [Oculto] (fixo como 'dvsviana')"
 echo "API Key Gemini: [Oculto]"
 echo "Segredo JWT: [Oculto]"
 echo ""
-read -p "As informações estão corretas? (s/n) " confirm && [[ $confirm == [sS] || $confirm == [sS][iI][mM] ]] || exit 1
-echo ""
-
 
 # --- 3. Execução do Deploy ---
 

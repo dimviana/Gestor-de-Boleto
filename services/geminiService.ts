@@ -113,7 +113,8 @@ const performOcr = async (canvas: HTMLCanvasElement): Promise<string> => {
 };
 
 // FIX: Update return type to exclude companyId as it's not available at this stage.
-const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Bleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
+// FIX: Corrected typo 'Bleto' to 'Boleto'.
+const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     const apiKey = getApiKey();
     const ai = new GoogleGenAI({ apiKey });
     

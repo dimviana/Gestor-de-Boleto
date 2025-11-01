@@ -1,4 +1,4 @@
-// FIX: Changed to use namespace import to avoid conflicts with global DOM types.
+
 // FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
 import * as express from 'express';
 import { pool } from '../../config/db';
