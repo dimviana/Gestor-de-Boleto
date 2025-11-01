@@ -1,4 +1,5 @@
-import express, { Express, Request as ExpressRequest, Response as ExpressResponse } from 'express';
+// FIX: Corrected express import to use type-only imports, resolving type conflicts.
+import express, { type Express, type Request, type Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { testDbConnection } from '../config/db';
@@ -29,7 +30,7 @@ testDbConnection().catch(err => {
 });
 
 // API Routes
-app.get('/api', (req: ExpressRequest, res: ExpressResponse) => {
+app.get('/api', (req: Request, res: Response) => {
   res.send('Boleto Manager AI Backend is running!');
 });
 

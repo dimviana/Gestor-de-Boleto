@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Application Service
+  app:
+    # Build the image from the Dockerfile in the current directory
+    build:
+      context: .
+      dockerfile: dockerlife.txt
+    container_name: boleto-manager-ai-app
+    restart: unless-stopped
+    ports:
+      # Map host port 3001 to container port 3001
+      - "3001:3001"
+    environment:
+      # --- IMPORTANT: Replace these placeholder values ---
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: your_strong_mysql_password # Replace with a secure password
+      DB_DATABASE: boleto_manager_ai
+      API_KEY: your_gemini_api_key_here # Replace with your Gemini API Key
+      PORT: 3001
+      JWT_SECRET: your_super_secret_and_long_jwt_key # Replace with a long random string
+    depends_on:
+      # Wait for the database service to be healthy before starting the app
+      - db
+    networks:
+      - boleto-network
+
+  # Database Service
+  db:
+    image: mysql:8.0
+    container_name: boleto-manager-ai-db
+    restart: unless-stopped
+    environment:
+      # These must match the values used in the 'app' service environment
+      MYSQL_ROOT_PASSWORD: your_strong_mysql_password # Replace with the same secure password as above
+      MYSQL_DATABASE: boleto_manager_ai
+    ports:
+      # Map host port 3306 to container port 3306 for external access (e.g., with a GUI client)
+      - "3306:3306"
+    volumes:
+      # Persist database data on the host machine
+      - db_data:/var/lib/mysql
+    networks:
+      - boleto-network
+
+# Define the network
+networks:
+  boleto-network:
+    driver: bridge
+
+# Define the named volume for data persistence
+volumes:
+  db_data:

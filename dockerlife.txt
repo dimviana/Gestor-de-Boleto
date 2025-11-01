@@ -1,0 +1,44 @@
+# Stage 1: Builder - Installs all dependencies, including dev, and builds the app
+FROM node:lts-alpine AS builder
+
+# Install necessary build tools for native modules (like node-gyp for canvas)
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package.json ./
+
+# Install all dependencies
+RUN npm install
+
+# Copy the rest of the application source code
+COPY . .
+
+# Build the TypeScript project
+RUN npm run build
+
+# Stage 2: Production - A lean image with only production code and dependencies
+FROM node:lts-alpine
+
+WORKDIR /usr/src/app
+
+# Install pm2 globally
+RUN npm install -g pm2
+
+# Copy production dependencies from the builder stage
+COPY --from=builder /usr/src/app/package.json ./
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+
+# Copy the compiled code from the builder stage
+COPY --from=builder /usr/src/app/dist ./dist
+
+# Copy other necessary files if any (e.g., config files not part of the build)
+# COPY --from=builder /usr/src/app/config ./config
+
+# Expose the port the app runs on
+EXPOSE 3001
+
+# Start the application using pm2-runtime
+# This is the recommended way to run PM2 in a Docker container
+CMD [ "pm2-runtime", "dist/api/index.js" ]

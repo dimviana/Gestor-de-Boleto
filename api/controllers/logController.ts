@@ -1,8 +1,9 @@
-import type { Request, Response } from 'express';
+// FIX: Aliased Request and Response types to avoid conflict with global DOM types.
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-export const getLogs = async (req: Request, res: Response) => {
+export const getLogs = async (req: ExpressRequest, res: ExpressResponse) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');
     res.json(logs);

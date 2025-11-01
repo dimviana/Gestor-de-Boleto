@@ -1,4 +1,5 @@
-import type { Response } from 'express';
+// FIX: Aliased Express Response type to avoid conflict with global DOM types.
+import type { Response as ExpressResponse } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus, AiSettings } from '../../types';
@@ -6,7 +7,7 @@ import { RowDataPacket, OkPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { extractBoletoInfo } from '../services/geminiService';
 
-export const getBoletos = async (req: AuthRequest, res: Response) => {
+export const getBoletos = async (req: AuthRequest, res: ExpressResponse) => {
   const user = req.user!;
   try {
     let query = 'SELECT * FROM boletos';
@@ -29,7 +30,7 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const createBoleto = async (req: AuthRequest, res: Response) => {
+export const createBoleto = async (req: AuthRequest, res: ExpressResponse) => {
     const user = req.user!;
     if (!user.companyId) {
         return res.status(400).json({ message: 'User is not associated with a company' });
@@ -75,7 +76,7 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
+export const updateBoletoStatus = async (req: AuthRequest, res: ExpressResponse) => {
     const { status } = req.body;
     try {
         await pool.query('UPDATE boletos SET status = ? WHERE id = ?', [status, req.params.id]);
@@ -85,7 +86,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
+export const updateBoletoComments = async (req: AuthRequest, res: ExpressResponse) => {
     const { comments } = req.body;
     try {
         await pool.query('UPDATE boletos SET comments = ? WHERE id = ?', [comments, req.params.id]);
@@ -95,7 +96,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const deleteBoleto = async (req: AuthRequest, res: Response) => {
+export const deleteBoleto = async (req: AuthRequest, res: ExpressResponse) => {
     try {
         await pool.query('DELETE FROM boletos WHERE id = ?', [req.params.id]);
         res.json({ message: 'Boleto deleted' });

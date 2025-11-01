@@ -1,10 +1,11 @@
-import type { Request, Response } from 'express';
+// FIX: Aliased Request and Response types to avoid conflict with global DOM types.
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
-export const getUsers = async (req: Request, res: Response) => {
+export const getUsers = async (req: ExpressRequest, res: ExpressResponse) => {
   try {
     const [users] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     res.json(users);
@@ -13,7 +14,7 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-export const createUser = async (req: Request, res: Response) => {
+export const createUser = async (req: ExpressRequest, res: ExpressResponse) => {
   const { username, password, role, companyId } = req.body;
   try {
      const salt = await bcrypt.genSalt(10);
@@ -28,7 +29,7 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (req: ExpressRequest, res: ExpressResponse) => {
   const { username, password, role, companyId } = req.body;
   try {
     let query = 'UPDATE users SET username = ?, role = ?, company_id = ?';
@@ -51,7 +52,7 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (req: ExpressRequest, res: ExpressResponse) => {
   try {
     await pool.query('DELETE FROM users WHERE id = ?', [req.params.id]);
     res.json({ message: 'User deleted' });

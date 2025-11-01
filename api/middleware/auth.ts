@@ -1,15 +1,16 @@
 // FIX: To resolve type conflicts with the global DOM `Request`, we now explicitly
 // use type-only imports for all Express-related types. This ensures that
 // properties like `.headers`, `.body`, etc., are correctly recognized.
-import type { Request, Response, NextFunction } from 'express';
+// FIX: Aliased Request and Response to prevent conflicts with global DOM types.
+import type { Request as ExpressRequest, Response as ExpressResponse, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends ExpressRequest {
   user?: User;
 }
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const protect = (req: AuthRequest, res: ExpressResponse, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -27,7 +28,7 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const admin = (req: AuthRequest, res: ExpressResponse, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
