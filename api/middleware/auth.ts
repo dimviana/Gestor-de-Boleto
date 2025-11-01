@@ -1,11 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
+// FIX: Aliased `Request` to `ExpressRequest` to avoid a naming conflict with the built-in DOM `Request` type.
+import { Request as ExpressRequest, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
 // FIX: To resolve type conflicts with the global DOM `Request`, we now explicitly
 // use the `express` namespace for all Express-related types. This ensures that
 // properties like `.headers`, `.body`, etc., are correctly recognized.
-export interface AuthRequest extends Request {
+export interface AuthRequest extends ExpressRequest {
   user?: User;
 }
 
