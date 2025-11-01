@@ -1,7 +1,5 @@
 
 import express from 'express';
-// FIX: Change type-only import to regular import for express Request and Response
-import { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { testDbConnection } from '../config/db';
@@ -31,7 +29,8 @@ testDbConnection().catch(err => {
 });
 
 // API Routes
-app.get('/api', (req: Request, res: Response) => {
+// FIX: Use express.Request and express.Response for proper typing.
+app.get('/api', (req: express.Request, res: express.Response) => {
   res.send('Boleto Manager AI Backend is running!');
 });
 

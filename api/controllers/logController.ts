@@ -1,10 +1,10 @@
 
-// FIX: Change type-only import to regular import for express types
-import { Request, Response } from 'express';
+// FIX: Use express types directly to avoid conflicts.
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-export const getLogs = async (req: Request, res: Response) => {
+export const getLogs = async (req: express.Request, res: express.Response) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');
     res.json(logs);

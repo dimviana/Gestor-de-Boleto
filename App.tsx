@@ -29,8 +29,19 @@ const App: React.FC = () => {
           />
         )}
       </main>
-      <footer className="text-center p-4 text-gray-600 dark:text-gray-400 text-sm">
-        © {new Date().getFullYear()} ABILDEVELOPER. Todos os direitos reservados.
+      <footer className="p-4 text-gray-600 dark:text-gray-400 text-sm">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <span>© {new Date().getFullYear()} ABILDEVELOPER. Todos os direitos reservados.</span>
+             <a 
+                href="https://github.com/dimviana/Gestor-de-Boleto.git" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="font-mono hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                title="Ver repositório no GitHub"
+            >
+                v1.1.0
+            </a>
+        </div>
       </footer>
     </div>
   );

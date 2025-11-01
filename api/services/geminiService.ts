@@ -101,7 +101,11 @@ export const extractBoletoInfo = async (
             },
         },
     });
-
+    
+    if (!response.text) {
+        console.error("Gemini API returned an empty or invalid response object:", response);
+        throw new Error("A resposta da API da IA está vazia ou é inválida.");
+    }
     const parsedJson = JSON.parse(response.text);
 
     if (parsedJson.barcode) {
