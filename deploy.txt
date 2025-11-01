@@ -156,7 +156,7 @@ fi
 
 # Configurar o banco de dados
 echo -e "${YELLOW}Configurando o banco de dados...${NC}"
-echo "CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`;" > setup.sql
+echo "CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`; USE \`${DB_DATABASE}\`;" > setup.sql
 cat database/schema.txt >> setup.sql
 
 echo -e "Executando o script SQL para criar tabelas..."
@@ -169,6 +169,27 @@ if [ $? -ne 0 ]; then
 fi
 rm setup.sql
 echo -e "${GREEN}Banco de dados configurado.${NC}"
+
+# Criar usuário administrador padrão
+echo -e "${YELLOW}Criando usuário administrador padrão...${NC}"
+ADMIN_UUID=$(node -e "console.log(require('crypto').randomUUID());")
+ADMIN_PASSWORD="dvsviana154"
+HASHED_PASSWORD=$(node -e "console.log(require('bcryptjs').hashSync('${ADMIN_PASSWORD}', 10));")
+
+if [ -z "$HASHED_PASSWORD" ]; then
+    echo -e "${RED}ERRO: Falha ao gerar o hash da senha do administrador.${NC}"
+    exit 1
+fi
+
+INSERT_ADMIN_SQL="INSERT INTO users (id, username, password, role) VALUES ('${ADMIN_UUID}', 'androoiddiviana@gmal.com', '${HASHED_PASSWORD}', 'admin');"
+
+mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" -e "${INSERT_ADMIN_SQL}"
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}ERRO: Falha ao inserir o usuário administrador no banco de dados.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}Usuário administrador 'androoiddiviana@gmal.com' criado com sucesso.${NC}"
 
 
 # Iniciar a aplicação com PM2

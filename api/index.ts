@@ -1,7 +1,6 @@
 
-
 // FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
-import * as express from 'express';
+import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { testDbConnection } from '../config/db';
@@ -33,7 +32,7 @@ testDbConnection().catch(err => {
 
 // API Routes
 // FIX: Add explicit express types to request and response objects.
-app.get('/api', (req: express.Request, res: express.Response) => {
+app.get('/api', (req: Request, res: Response) => {
   res.send('Boleto Manager AI Backend is running!');
 });
 

@@ -1,19 +1,18 @@
 
-
 // FIX: To resolve type conflicts with the global DOM `Request`, we now explicitly
 // use namespace imports for all Express-related types. This ensures that
 // properties like `.headers`, `.body`, etc., are correctly recognized.
 // FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
-import * as express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
-export interface AuthRequest extends express.Request {
+export interface AuthRequest extends Request {
   user?: User;
 }
 
 // FIX: Updated function signature to use express namespaced types.
-export const protect = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -32,7 +31,7 @@ export const protect = (req: AuthRequest, res: express.Response, next: express.N
 };
 
 // FIX: Updated function signature to use express namespaced types.
-export const admin = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {

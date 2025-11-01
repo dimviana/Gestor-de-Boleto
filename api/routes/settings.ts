@@ -1,7 +1,6 @@
 
-
 // FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
-import * as express from 'express';
+import express from 'express';
 import { getSettings, updateSettings } from '../controllers/settingsController';
 import { protect, admin } from '../middleware/auth';
 
