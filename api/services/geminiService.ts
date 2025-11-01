@@ -2,7 +2,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.js';
-import { createCanvas, Canvas, NodeCanvasRenderingContext2D } from 'canvas';
+// FIX: Use CanvasRenderingContext2D instead of NodeCanvasRenderingContext2D
+import { createCanvas, Canvas, CanvasRenderingContext2D } from 'canvas';
 import Tesseract from 'tesseract.js';
 // FIX: Add import for Buffer to resolve 'Cannot find name Buffer' error.
 import { Buffer } from 'buffer';
@@ -19,7 +20,8 @@ const renderPdfPageToCanvas = async (pdfBuffer: Buffer): Promise<Canvas> => {
     const canvas = createCanvas(viewport.width, viewport.height);
     const context = canvas.getContext('2d');
 
-    await page.render({ canvasContext: context as unknown as NodeCanvasRenderingContext2D, viewport: viewport }).promise;
+    // FIX: Use CanvasRenderingContext2D instead of NodeCanvasRenderingContext2D
+    await page.render({ canvasContext: context as unknown as CanvasRenderingContext2D, viewport: viewport }).promise;
     return canvas;
 };
 

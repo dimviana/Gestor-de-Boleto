@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { testDbConnection } from '../config/db';
@@ -29,7 +29,7 @@ testDbConnection().catch(err => {
 });
 
 // API Routes
-app.get('/api', (req: Request, res: Response) => {
+app.get('/api', (req: ExpressRequest, res: ExpressResponse) => {
   res.send('Boleto Manager AI Backend is running!');
 });
 
