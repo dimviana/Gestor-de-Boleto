@@ -1,11 +1,10 @@
 
-// FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
+// FIX: Change type-only import to regular import for express types
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-// FIX: Added explicit express types to request and response objects.
 export const getCompanies = async (req: Request, res: Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
@@ -15,7 +14,6 @@ export const getCompanies = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Added explicit express types to request and response objects.
 export const createCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -27,7 +25,6 @@ export const createCompany = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Added explicit express types to request and response objects.
 export const updateCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   try {
@@ -38,7 +35,6 @@ export const updateCompany = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Added explicit express types to request and response objects.
 export const deleteCompany = async (req: Request, res: Response) => {
   try {
     // Note: The ON DELETE SET NULL constraint in the DB schema will handle un-assigning users.

@@ -1,5 +1,5 @@
 
-// FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
+// FIX: Change type-only import to regular import for express types
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -13,7 +13,6 @@ const generateToken = (id: string, username: string, role: string, company_id: s
   });
 };
 
-// FIX: Added explicit express types to request and response objects.
 export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'user', companyId = null } = req.body;
 
@@ -40,7 +39,6 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Added explicit express types to request and response objects.
 export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 

@@ -4,10 +4,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.js';
-// FIX: Use CanvasRenderingContext2D instead of NodeCanvasRenderingContext2D
-import { createCanvas, Canvas, CanvasRenderingContext2D } from 'canvas';
+import { createCanvas, Canvas } from 'canvas';
+import type { CanvasRenderingContext2D } from 'canvas';
 import Tesseract from 'tesseract.js';
-// FIX: Add import for Buffer to resolve 'Cannot find name Buffer' error.
 import { Buffer } from 'buffer';
 
 // Setting the worker script for pdf.js in a Node.js environment.
@@ -22,7 +21,6 @@ const renderPdfPageToCanvas = async (pdfBuffer: Buffer): Promise<Canvas> => {
     const canvas = createCanvas(viewport.width, viewport.height);
     const context = canvas.getContext('2d');
 
-    // FIX: Use CanvasRenderingContext2D instead of NodeCanvasRenderingContext2D
     await page.render({ canvasContext: context as unknown as CanvasRenderingContext2D, viewport: viewport }).promise;
     return canvas;
 };
@@ -60,12 +58,10 @@ export const extractBoletoInfo = async (
     lang: 'pt' | 'en', 
     aiSettings: AiSettings
 ): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
-    // FIX: API key must be obtained exclusively from process.env.API_KEY.
     if (!process.env.API_KEY) {
         throw new Error("API key is missing.");
     }
-    // FIX: Correctly initialize GoogleGenAI with a named apiKey parameter.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const canvas = await renderPdfPageToCanvas(pdfBuffer);
     const ocrText = await performOcr(canvas);
@@ -79,7 +75,6 @@ export const extractBoletoInfo = async (
     const prompt = translations[lang].geminiPrompt;
     const fullPromptWithOcr = `${prompt}\n\n--- TEXTO EXTRAÍDO VIA OCR ---\n${ocrText}\n--- FIM DO TEXTO EXTRAÍDO ---`;
 
-    // FIX: Updated to the correct generateContent method call.
     const response = await ai.models.generateContent({
         model: aiSettings.model,
         contents: { parts: [{ text: fullPromptWithOcr }, imagePart] },
@@ -107,7 +102,6 @@ export const extractBoletoInfo = async (
         },
     });
 
-    // FIX: Correctly access the generated text from the response.
     const parsedJson = JSON.parse(response.text);
 
     if (parsedJson.barcode) {

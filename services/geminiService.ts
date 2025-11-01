@@ -1,7 +1,6 @@
 
 
 import { GoogleGenAI, Type } from "@google/genai";
-// FIX: Import BoletoStatus to resolve reference error.
 import { Boleto, BoletoStatus, AiSettings } from '../types';
 import { translations } from '../translations';
 
@@ -15,13 +14,16 @@ declare const Tesseract: any;
  * It retains compatibility with the original environment by checking for `process.env.API_KEY` as a fallback.
  */
 const getApiKey = (): string => {
-    // FIX: API key must be obtained exclusively from process.env.API_KEY.
+    // API key must be obtained exclusively from process.env.API_KEY for deployed environments.
     if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
       return process.env.API_KEY;
     }
     
-    // Provide a helpful error message for local setup.
-    throw new Error("Chave da API não encontrada. A API Key deve ser configurada na variável de ambiente API_KEY.");
+    // Fallback for frontend-only mode where backend is not running.
+    const key = localStorage.getItem('gemini_api_key');
+    if(key) return key;
+    
+    throw new Error("Chave da API não encontrada. A API Key deve ser configurada na variável de ambiente API_KEY ou no localStorage para modo de demonstração.");
 };
 
 
@@ -112,16 +114,11 @@ const performOcr = async (canvas: HTMLCanvasElement): Promise<string> => {
     }
 };
 
-// FIX: Update return type to exclude companyId as it's not available at this stage.
-// FIX: Corrected typo 'Bleto' to 'Boleto'.
 const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     const apiKey = getApiKey();
-    // FIX: Correctly initialize GoogleGenAI with a named apiKey parameter.
     const ai = new GoogleGenAI({ apiKey });
     
     const canvas = await renderPdfPageToCanvas(file);
-    
-    // New OCR step
     const ocrText = await performOcr(canvas);
 
     const fileAsBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
@@ -135,11 +132,8 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSe
     };
 
     const prompt = translations[lang].geminiPrompt;
-    
-    // Combine the main prompt with the extracted OCR text
     const fullPromptWithOcr = `${prompt}\n\n--- TEXTO EXTRAÍDO VIA OCR ---\n${ocrText}\n--- FIM DO TEXTO EXTRAÍDO ---`;
 
-    // FIX: Updated to the correct generateContent method call.
     const response = await ai.models.generateContent({
         model: aiSettings.model,
         contents: {
@@ -172,10 +166,8 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSe
         },
     });
 
-    // FIX: Correctly access the generated text from the response.
     const parsedJson = JSON.parse(response.text);
 
-    // Normalize barcode by removing all non-digit characters for consistent duplicate checks
     if (parsedJson.barcode) {
         parsedJson.barcode = parsedJson.barcode.replace(/[^\d]/g, '');
     }
@@ -196,7 +188,6 @@ const extractBoletoInfo = async (file: File, lang: 'pt' | 'en', aiSettings: AiSe
 };
 
 
-// FIX: Update return type to reflect that companyId is not part of the returned object yet.
 export const processBoletoPDF = async (file: File, lang: 'pt' | 'en', aiSettings: AiSettings): Promise<Omit<Boleto, 'companyId'>> => {
     try {
         const [extractedData, fileData] = await Promise.all([
@@ -213,7 +204,6 @@ export const processBoletoPDF = async (file: File, lang: 'pt' | 'en', aiSettings
         };
     } catch (error) {
         console.error("Error processing Boleto with Gemini:", error);
-        // Pass the specific error message to the caller (e.g., if API key is missing)
         if (error instanceof Error) {
             throw error;
         }

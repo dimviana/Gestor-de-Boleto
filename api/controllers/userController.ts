@@ -1,12 +1,11 @@
 
-// FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
+// FIX: Change type-only import to regular import for express types
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
-// FIX: Added explicit express types to request and response objects.
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const [users] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
@@ -16,7 +15,6 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Added explicit express types to request and response objects.
 export const createUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   try {
@@ -32,7 +30,6 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Added explicit express types to request and response objects.
 export const updateUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   try {
@@ -56,7 +53,6 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Added explicit express types to request and response objects.
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     await pool.query('DELETE FROM users WHERE id = ?', [req.params.id]);

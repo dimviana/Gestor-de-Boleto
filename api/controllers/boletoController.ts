@@ -1,10 +1,10 @@
 
-// FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
+// FIX: Change type-only import to regular import for express types
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus, AiSettings } from '../../types';
-import { RowDataPacket, OkPacket } from 'mysql2';
+import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { extractBoletoInfo } from '../services/geminiService';
 

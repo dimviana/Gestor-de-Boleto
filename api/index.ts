@@ -1,6 +1,7 @@
 
-// FIX: Changed express import to a namespace import to resolve type conflicts with DOM types.
-import express, { Request, Response } from 'express';
+import express from 'express';
+// FIX: Change type-only import to regular import for express Request and Response
+import { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { testDbConnection } from '../config/db';
@@ -14,7 +15,7 @@ import settingsRoutes from './routes/settings';
 
 dotenv.config();
 
-const app: express.Application = express();
+const app = express();
 const port = process.env.PORT || 3001;
 
 // Middleware
@@ -25,13 +26,11 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Test DB connection on startup
 testDbConnection().catch(err => {
     console.error("Shutting down due to database connection failure.", err);
-    // FIX: 'process.exit' can cause type errors in mixed environments.
     // Throwing the error causes an unhandled rejection, which will terminate the Node.js process.
     throw err;
 });
 
 // API Routes
-// FIX: Add explicit express types to request and response objects.
 app.get('/api', (req: Request, res: Response) => {
   res.send('Boleto Manager AI Backend is running!');
 });

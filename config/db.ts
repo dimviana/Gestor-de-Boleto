@@ -33,8 +33,7 @@ export async function testDbConnection() {
   } catch (error) {
     console.error('Failed to connect to the database:', error);
     // Exit the process if the database connection fails, as the app cannot run without it.
-    // FIX: `process.exit` is a Node.js API and not available in the browser.
-    // Throwing the original error preserves the "fail fast" intent.
+    // Throwing the original error preserves the "fail fast" intent and avoids type conflicts.
     throw error;
   } finally {
     if (connection) {
