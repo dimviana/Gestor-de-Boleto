@@ -4,7 +4,7 @@
 # These variables are used across install, update, and uninstall functions.
 GIT_REPO="https://github.com/dimviana/Gestor-de-Boleto.git"
 PROJECT_FOLDER="boletomanager.abildeveloper.com.br"
-# Updated APP_URL to reflect one of the new Nginx ports
+# Updated APP_URL to reflect the new Nginx port
 APP_URL="http://boletomanager.abildeveloper.com.br:3000"
 DB_HOST="localhost"
 DB_USER="root"
@@ -76,24 +76,6 @@ configure_nginx() {
 # Vhost listening on port 3000, proxying to the Node app on port ${APP_PORT}
 server {
     listen 3000;
-    server_name ${PROJECT_FOLDER};
-
-    location / {
-        proxy_pass http://localhost:${APP_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-    }
-}
-
-# Vhost listening on port 3001, also proxying to the Node app on port ${APP_PORT}
-server {
-    listen 3001;
     server_name ${PROJECT_FOLDER};
 
     location / {
@@ -197,7 +179,7 @@ EOL
     pm2 save
     
     echo -e "${GREEN}--- Installation Complete! ---${NC}"
-    echo -e "Application is running. Access it via Nginx at: ${YELLOW}${APP_URL}${NC} or ${YELLOW}http://boletomanager.abildeveloper.com.br:3001${NC}"
+    echo -e "Application is running. Access it via Nginx at: ${YELLOW}${APP_URL}${NC}"
     echo -e "The Node.js app is running directly on port: ${YELLOW}${APP_PORT}${NC}"
     echo -e "To see logs, run: ${YELLOW}pm2 logs ${APP_NAME}${NC}"
 }

@@ -1,4 +1,4 @@
-// FIX: Import explicit types from express to avoid conflicts and resolve type errors.
+
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -23,7 +23,6 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // API Routes
-// FIX: Use explicit Request and Response types.
 app.get('/api', (req: Request, res: Response) => {
   res.send('Boleto Manager AI Backend is running!');
 });
@@ -38,7 +37,6 @@ app.use('/api/settings', settingsRoutes);
 const staticPath = path.join(__dirname, '..', '..');
 app.use(express.static(staticPath));
 
-// FIX: Use explicit Request and Response types.
 app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 });

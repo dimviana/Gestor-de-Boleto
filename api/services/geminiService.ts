@@ -1,6 +1,4 @@
 
-
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
@@ -66,7 +64,8 @@ export const extractBoletoInfo = async (
     fileName: string, 
     lang: 'pt' | 'en', 
     aiSettings: AiSettings
-): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId' | 'userId'>> => {
+// FIX: The `Boleto` type does not contain `userId`. It has been removed from the Omit type.
+): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     if (!process.env.API_KEY) {
         throw new Error("API key is missing.");
     }
