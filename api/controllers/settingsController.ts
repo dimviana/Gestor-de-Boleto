@@ -1,10 +1,10 @@
 
 // FIX: Use express types directly to avoid conflicts.
-import { Request, Response } from 'express';
+import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-export const getSettings = async (req: Request, res: Response) => {
+export const getSettings = async (req: ExpressRequest, res: ExpressResponse) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -23,7 +23,7 @@ export const getSettings = async (req: Request, res: Response) => {
   }
 };
 
-export const updateSettings = async (req: Request, res: Response) => {
+export const updateSettings = async (req: ExpressRequest, res: ExpressResponse) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {

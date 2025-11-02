@@ -86,6 +86,5 @@ export interface AiSettings {
   topP: number;
 }
 
-// Add module declaration to fix TypeScript error for pdfjs-dist
-// FIX: Corrected module path for augmentation.
-declare module 'pdfjs-dist/build/pdf.js';
+// Module declaration for pdfjs-dist is no longer needed
+// as the import will now use the main package entry which includes types.

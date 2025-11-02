@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
-import * as pdfjs from 'pdfjs-dist/build/pdf.js';
+import * as pdfjs from 'pdfjs-dist';
 import { createCanvas, Canvas } from 'canvas';
 import type { CanvasRenderingContext2D } from 'canvas';
 import Tesseract from 'tesseract.js';
@@ -19,7 +19,8 @@ const renderPdfPageToCanvas = async (pdfBuffer: Buffer): Promise<Canvas> => {
     const canvas = createCanvas(viewport.width, viewport.height);
     const context = canvas.getContext('2d');
 
-    await page.render({ canvasContext: context as unknown as CanvasRenderingContext2D, viewport: viewport }).promise;
+    // FIX: Cast canvas context to 'any' to resolve type conflict between node-canvas and pdf.js
+    await page.render({ canvasContext: context as any, viewport: viewport }).promise;
     return canvas;
 };
 

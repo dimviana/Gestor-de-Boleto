@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
+
+import { Request as ExpressRequest, Response as ExpressResponse, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
@@ -10,12 +11,12 @@ interface MulterFile {
     size: number;
 }
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends ExpressRequest {
   user?: User;
   file?: MulterFile;
 }
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const protect = (req: AuthRequest, res: ExpressResponse, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -33,7 +34,7 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const admin = (req: AuthRequest, res: ExpressResponse, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
