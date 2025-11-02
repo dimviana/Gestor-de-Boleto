@@ -3,14 +3,17 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.js';
+import * as pdfjs from 'pdfjs-dist/build/pdf.js';
 import { createCanvas, Canvas } from 'canvas';
 import type { CanvasRenderingContext2D } from 'canvas';
 import Tesseract from 'tesseract.js';
 import { Buffer } from 'buffer';
 
+// FIX: Declare require to fix TypeScript error when @types/node is not available.
+declare const require: any;
+
 // Setting the worker script for pdf.js in a Node.js environment.
-pdfjs.GlobalWorkerOptions.workerSrc = `../../node_modules/pdfjs-dist/legacy/build/pdf.worker.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/build/pdf.worker.js');
 
 const renderPdfPageToCanvas = async (pdfBuffer: Buffer): Promise<Canvas> => {
     const data = new Uint8Array(pdfBuffer);
@@ -102,11 +105,12 @@ export const extractBoletoInfo = async (
         },
     });
     
-    if (!response.text) {
+    const responseText = response.text;
+    if (!responseText) {
         console.error("Gemini API returned an empty or invalid response object:", response);
         throw new Error("A resposta da API da IA está vazia ou é inválida.");
     }
-    const parsedJson = JSON.parse(response.text);
+    const parsedJson = JSON.parse(responseText);
 
     if (parsedJson.barcode) {
         parsedJson.barcode = parsedJson.barcode.replace(/[^\d]/g, '');

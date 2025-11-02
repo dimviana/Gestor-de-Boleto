@@ -1,14 +1,14 @@
 
 // FIX: Use express types directly to avoid conflicts.
-import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
-export interface AuthRequest extends express.Request {
+export interface AuthRequest extends Request {
   user?: User;
 }
 
-export const protect = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -26,7 +26,7 @@ export const protect = (req: AuthRequest, res: express.Response, next: express.N
   }
 };
 
-export const admin = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
