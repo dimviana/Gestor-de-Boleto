@@ -19,8 +19,9 @@ const renderPdfPageToCanvas = async (pdfBuffer: Buffer): Promise<Canvas> => {
     const canvas = createCanvas(viewport.width, viewport.height);
     const context = canvas.getContext('2d');
 
-    // FIX: Cast canvas context to 'any' to resolve type conflict between node-canvas and pdf.js
-    await page.render({ canvasContext: context as any, viewport: viewport }).promise;
+    // FIX: Cast the entire render parameters object to 'any' to resolve a type conflict
+    // between node-canvas and pdf.js, which appears to have a faulty type definition.
+    await page.render({ canvasContext: context, viewport: viewport } as any).promise;
     return canvas;
 };
 
