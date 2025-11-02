@@ -1,12 +1,13 @@
 
 
-import { Request, Response, NextFunction } from 'express';
+// FIX: Alias Request to ExpressRequest to avoid name collision with the global Request type.
+import { Request as ExpressRequest, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
 // By extending Request from express, AuthRequest inherits standard properties
 // like `headers`, `body`, `file`, etc., resolving type errors in controllers.
-export interface AuthRequest extends Request {
+export interface AuthRequest extends ExpressRequest {
   user?: User;
 }
 

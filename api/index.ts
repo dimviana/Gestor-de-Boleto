@@ -38,10 +38,8 @@ app.use('/api/settings', settingsRoutes);
 // Serve static files from the React build directory.
 // After the tsc build, __dirname is <project_root>/dist/api,
 // so we go up one level to get to the <project_root>/dist folder which contains the frontend build.
-// FIX: Replace __dirname with a method that doesn't rely on Node.js-specific globals
-// that may not be available in all TypeScript environments. This assumes the server
-// is started from the project root.
-const staticPath = path.join(process.cwd(), 'dist');
+// FIX: Use `__dirname` to construct a reliable path to static assets, which also resolves a TypeScript error on `process.cwd()`.
+const staticPath = path.join(__dirname, '..');
 app.use(express.static(staticPath));
 
 // For any request that doesn't match a static file or an API route,
