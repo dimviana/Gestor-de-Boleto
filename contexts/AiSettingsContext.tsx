@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { AiSettings, User } from '../types';
 import { addLogEntry } from '../services/logService';
@@ -24,7 +23,12 @@ export const AiSettingsProvider: React.FC<{ children: ReactNode }> = ({ children
     try {
         const storedSettings = localStorage.getItem(AI_SETTINGS_KEY);
         if (storedSettings) {
-            return { ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) };
+            const parsedSettings = JSON.parse(storedSettings);
+            // Ensure model is updated if old one is stored
+            if (parsedSettings.model === 'gemini-1.5-flash') {
+                parsedSettings.model = 'gemini-2.5-flash';
+            }
+            return { ...DEFAULT_SETTINGS, ...parsedSettings };
         }
     } catch (error) {
         console.error("Failed to parse AI settings from localStorage", error);

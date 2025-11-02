@@ -1,4 +1,3 @@
-
 export enum BoletoStatus {
   TO_PAY = 'PAGAR',
   VERIFYING = 'VERIFICAR',
@@ -86,3 +85,7 @@ export interface AiSettings {
   topK: number;
   topP: number;
 }
+
+// Add module declaration to fix TypeScript error for pdfjs-dist
+// FIX: Corrected module path for augmentation.
+declare module 'pdfjs-dist';

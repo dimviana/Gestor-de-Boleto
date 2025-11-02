@@ -1,72 +1,7 @@
 #!/bin/bash
 
-# Color codes for output
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-echo -e "${GREEN}=============================================${NC}"
-echo -e "${GREEN}   Deploy Automático - Boleto Manager AI   ${NC}"
-echo -e "${GREEN}=============================================${NC}"
-echo ""
-
-# --- 1. Verificação e Instalação de Dependências ---
-echo -e "${YELLOW}Verificando e instalando dependências... (Pode ser necessário inserir a senha sudo)${NC}"
-echo ""
-
-# Função para verificar se um comando existe
-command_exists() {
-    command -v "$1" &> /dev/null
-}
-
-# Atualizar a lista de pacotes do sistema
-echo "Atualizando a lista de pacotes do sistema (apt-get update)..."
-sudo apt-get update -y
-
-# Pré-configurar as seleções do phpMyAdmin para evitar interatividade
-echo "Pré-configurando phpMyAdmin..."
-sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/dbconfig-install boolean true'
-sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/app-password-confirm password dvsviana'
-sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/mysql/admin-pass password dvsviana'
-sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/mysql/app-pass password dvsviana'
-sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2'
-
-# Instalar dependências essenciais do sistema (git, curl, apache, mysql, php, build tools)
-echo "Instalando pacotes essenciais (git, curl, apache2, mysql-server, phpmyadmin...)"
-sudo apt-get install -y git curl build-essential python3 apache2 mysql-server phpmyadmin php-mbstring php-gettext php-zip
-
-# Configurar senha do usuário root do MySQL de forma não-interativa
-echo "Configurando a senha do usuário root do MySQL para 'dvsviana'..."
-sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'dvsviana';"
-sudo mysql -e "FLUSH PRIVILEGES;"
-echo -e "${GREEN}Senha do root do MySQL configurada com sucesso.${NC}"
-
-# Verificar e instalar Node.js LTS
-if ! command_exists node; then
-    echo "Node.js não encontrado. Instalando a versão LTS (20.x)..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
-    echo -e "${GREEN}Node.js LTS instalado com sucesso.${NC}"
-else
-    echo -e "${GREEN}Node.js já está instalado. Versão: $(node -v)${NC}"
-fi
-
-# Verificar e instalar PM2
-if ! command_exists pm2; then
-    echo "PM2 não encontrado. Instalando globalmente via npm..."
-    sudo npm install -g pm2
-    echo -e "${GREEN}PM2 instalado com sucesso.${NC}"
-else
-    echo -e "${GREEN}PM2 já está instalado.${NC}"
-fi
-
-echo ""
-echo -e "${GREEN}Verificação de dependências concluída.${NC}"
-echo ""
-
-
-# --- 2. Informações de Deploy (Pré-configuradas) ---
+# --- Configuration ---
+# These variables are used across install, update, and uninstall functions.
 GIT_REPO="https://github.com/dimviana/Gestor-de-Boleto.git"
 PROJECT_FOLDER="boletomanager.abildeveloper.com.br"
 APP_URL="https://boletomanager.abildeveloper.com.br"
@@ -76,152 +11,234 @@ DB_PASSWORD="dvsviana"
 DB_DATABASE="boleto_manager_ai"
 API_KEY="AIzaSyB0zoSEGrIYuRjBtcTvxJX9LVbo5L2GpmA"
 JWT_SECRET="AIzaSyB0zoSEGrIYuRjBtcTvxJX9LVbo5L2GpmAjwt"
+APP_NAME="boleto-manager-ai" # Name for the PM2 process
+PORT=3001 # Default port
 
-# Extract port from APP_URL
-PORT=$(echo $APP_URL | sed -E 's/.*:([0-9]+)\/?/\1/')
-if [[ ! "$PORT" =~ ^[0-9]+$ ]]; then
-    PORT=3001 # Default port if not found
-fi
+# Color codes for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-# Extract base URL for phpMyAdmin
-APP_URL_BASE=$(echo $APP_URL | sed -E 's|:[0-9]+/?$||' | sed 's/\/$//')
+# --- Helper Functions ---
+command_exists() {
+    command -v "$1" &> /dev/null
+}
 
-echo ""
-echo -e "${YELLOW}--- Usando configurações de deploy pré-definidas ---${NC}"
-echo "Repositório Git: $GIT_REPO"
-echo "Pasta do Projeto: $PROJECT_FOLDER"
-echo "URL da Aplicação: $APP_URL"
-echo "Porta do Servidor: $PORT"
-echo "Banco de Dados: $DB_DATABASE em $DB_HOST"
-echo "Usuário do DB: $DB_USER (fixo)"
-echo "Senha do DB: [Oculto] (fixo como 'dvsviana')"
-echo "API Key Gemini: [Oculto]"
-echo "Segredo JWT: [Oculto]"
-echo ""
+# --- Core Functions ---
 
-# --- 3. Execução do Deploy ---
+install_dependencies() {
+    echo -e "${YELLOW}Updating system package list...${NC}"
+    sudo apt-get update -y
 
-# Clonar repositório
-if [ -d "$PROJECT_FOLDER" ]; then
-    echo -e "${YELLOW}A pasta '$PROJECT_FOLDER' já existe. Removendo para uma nova clonagem...${NC}"
-    rm -rf "$PROJECT_FOLDER"
-fi
-echo -e "${YELLOW}Clonando o repositório...${NC}"
-git clone "$GIT_REPO" "$PROJECT_FOLDER"
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Falha ao clonar o repositório. Verifique a URL e suas permissões.${NC}"
-    exit 1
-fi
-cd "$PROJECT_FOLDER"
+    echo -e "${YELLOW}Pre-configuring phpMyAdmin to avoid interactive prompts...${NC}"
+    sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/dbconfig-install boolean true'
+    sudo debconf-set-selections <<< "phpmyadmin phpmyadmin/app-password-confirm password ${DB_PASSWORD}"
+    sudo debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/admin-pass password ${DB_PASSWORD}"
+    sudo debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/app-pass password ${DB_PASSWORD}"
+    sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2'
 
-# Criar arquivo .env
-echo -e "${YELLOW}Criando o arquivo de configuração .env...${NC}"
-cat > .env << EOL
-# Variáveis de Ambiente para Boleto Manager AI
+    echo -e "${YELLOW}Installing essential system packages (git, apache2, mysql-server, phpmyadmin, build-essential...)${NC}"
+    sudo apt-get install -y git curl build-essential python3 apache2 mysql-server phpmyadmin php-mbstring php-gettext php-zip
 
-# Configuração do Banco de Dados MySQL
+    if ! command_exists node; then
+        echo "Node.js not found. Installing Node.js LTS (20.x)..."
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+    else
+        echo -e "${GREEN}Node.js is already installed.${NC}"
+    fi
+
+    if ! command_exists pm2; then
+        echo "PM2 not found. Installing globally..."
+        sudo npm install -g pm2
+    else
+        echo -e "${GREEN}PM2 is already installed.${NC}"
+    fi
+
+    echo -e "${GREEN}System dependencies are up to date.${NC}"
+}
+
+configure_mysql() {
+    echo -e "${YELLOW}Attempting to configure MySQL root password to '${DB_PASSWORD}'...${NC}"
+    sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASSWORD}';"
+    sudo mysql -e "FLUSH PRIVILEGES;"
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}MySQL root password configured successfully.${NC}"
+    else
+        echo -e "${YELLOW}Could not set MySQL password. It might be already set. Continuing...${NC}"
+    fi
+}
+
+# --- Main Logic Functions ---
+
+do_install() {
+    echo -e "${GREEN}--- Starting Full Installation ---${NC}"
+
+    install_dependencies
+    configure_mysql
+
+    if [ -d "$PROJECT_FOLDER" ]; then
+        echo -e "${YELLOW}Project folder '$PROJECT_FOLDER' already exists. Removing for a fresh clone.${NC}"
+        rm -rf "$PROJECT_FOLDER"
+    fi
+
+    echo -e "${YELLOW}Cloning repository...${NC}"
+    git clone "$GIT_REPO" "$PROJECT_FOLDER"
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to clone repository.${NC}"; exit 1; fi
+    cd "$PROJECT_FOLDER"
+
+    echo -e "${YELLOW}Creating .env configuration file...${NC}"
+    cat > .env << EOL
 DB_HOST=${DB_HOST}
 DB_USER=${DB_USER}
 DB_PASSWORD=${DB_PASSWORD}
 DB_DATABASE=${DB_DATABASE}
-
-# Chave da API do Google Gemini
 API_KEY=${API_KEY}
-
-# Configuração do Servidor
 PORT=${PORT}
-
-# Segredo JWT para Autenticação
 JWT_SECRET=${JWT_SECRET}
 EOL
-echo -e "${GREEN}Arquivo .env criado com sucesso.${NC}"
 
-# Instalar dependências
-echo -e "${YELLOW}Instalando dependências do projeto (npm install)...${NC}"
-npm install
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Falha ao instalar as dependências com npm.${NC}"
-    exit 1
-fi
+    echo -e "${YELLOW}Installing project dependencies (npm install)...${NC}"
+    npm install
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to install npm dependencies.${NC}"; exit 1; fi
 
-# Compilar o projeto (se for TypeScript)
-if [ -f "tsconfig.json" ]; then
-    echo -e "${YELLOW}Compilando o projeto TypeScript (npm run build)...${NC}"
+    echo -e "${YELLOW}Compiling TypeScript project (npm run build)...${NC}"
     npm run build
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}Falha ao compilar o projeto TypeScript.${NC}"
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to compile TypeScript project.${NC}"; exit 1; fi
+
+    echo -e "${YELLOW}Setting up database schema...${NC}"
+    echo "CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`; USE \`${DB_DATABASE}\`;" > setup.sql
+    cat database/schema.txt >> setup.sql
+    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" < setup.sql
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to set up database schema.${NC}"; rm setup.sql; exit 1; fi
+    rm setup.sql
+
+    echo -e "${YELLOW}Creating default admin user...${NC}"
+    ADMIN_UUID=$(node -e "console.log(require('crypto').randomUUID());")
+    ADMIN_PASSWORD="dvsviana154"
+    HASHED_PASSWORD=$(node -e "console.log(require('bcryptjs').hashSync('${ADMIN_PASSWORD}', 10));")
+    INSERT_ADMIN_SQL="INSERT INTO users (id, username, password, role) VALUES ('${ADMIN_UUID}', 'androoiddiviana@gmal.com', '${HASHED_PASSWORD}', 'admin') ON DUPLICATE KEY UPDATE password='${HASHED_PASSWORD}';"
+    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" -e "${INSERT_ADMIN_SQL}"
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to create admin user.${NC}"; exit 1; fi
+
+    echo -e "${YELLOW}Starting application with PM2...${NC}"
+    pm2 stop "$APP_NAME" &> /dev/null
+    pm2 delete "$APP_NAME" &> /dev/null
+    pm2 start dist/api/index.js --name "$APP_NAME"
+    pm2 startup
+    pm2 save
+    
+    echo -e "${GREEN}--- Installation Complete! ---${NC}"
+    echo -e "Application is running. Access it at: ${YELLOW}${APP_URL}${NC}"
+    echo -e "To see logs, run: ${YELLOW}pm2 logs ${APP_NAME}${NC}"
+}
+
+do_update() {
+    echo -e "${GREEN}--- Starting Application Update ---${NC}"
+
+    if [ ! -d "$PROJECT_FOLDER" ]; then
+        echo -e "${RED}Project folder '$PROJECT_FOLDER' not found. Please install the application first.${NC}"
         exit 1
     fi
-fi
+    cd "$PROJECT_FOLDER"
 
-# Configurar o banco de dados
-echo -e "${YELLOW}Configurando o banco de dados...${NC}"
-echo "CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`; USE \`${DB_DATABASE}\`;" > setup.sql
-cat database/schema.txt >> setup.sql
+    echo -e "${YELLOW}Stopping application with PM2...${NC}"
+    pm2 stop "$APP_NAME"
 
-echo -e "Executando o script SQL para criar tabelas..."
-mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" < setup.sql
-if [ $? -ne 0 ]; then
-    echo -e "${RED}ERRO: Falha ao executar o script SQL. Verifique as credenciais e o status do MySQL Server.${NC}"
-    # Remove password from file on failure for security
-    rm setup.sql
-    exit 1
-fi
-rm setup.sql
-echo -e "${GREEN}Banco de dados configurado.${NC}"
+    echo -e "${YELLOW}Pulling latest changes from Git...${NC}"
+    git pull
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to pull from git repository.${NC}"; pm2 restart "$APP_NAME"; exit 1; fi
 
-# Criar usuário administrador padrão
-echo -e "${YELLOW}Criando usuário administrador padrão...${NC}"
-ADMIN_UUID=$(node -e "console.log(require('crypto').randomUUID());")
-ADMIN_PASSWORD="dvsviana154"
-HASHED_PASSWORD=$(node -e "console.log(require('bcryptjs').hashSync('${ADMIN_PASSWORD}', 10));")
+    echo -e "${YELLOW}Installing/updating project dependencies (npm install)...${NC}"
+    npm install
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to install npm dependencies.${NC}"; pm2 restart "$APP_NAME"; exit 1; fi
 
-if [ -z "$HASHED_PASSWORD" ]; then
-    echo -e "${RED}ERRO: Falha ao gerar o hash da senha do administrador.${NC}"
-    exit 1
-fi
+    echo -e "${YELLOW}Re-compiling TypeScript project (npm run build)...${NC}"
+    npm run build
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to compile TypeScript project.${NC}"; pm2 restart "$APP_NAME"; exit 1; fi
+    
+    echo -e "${YELLOW}Applying latest database schema changes...${NC}"
+    echo "USE \`${DB_DATABASE}\`;" > update.sql
+    cat database/schema.txt >> update.sql
+    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" < update.sql
+    rm update.sql
+    
+    echo -e "${YELLOW}Restarting application with PM2...${NC}"
+    pm2 restart "$APP_NAME"
 
-INSERT_ADMIN_SQL="INSERT INTO users (id, username, password, role) VALUES ('${ADMIN_UUID}', 'androoiddiviana@gmal.com', '${HASHED_PASSWORD}', 'admin');"
+    echo -e "${GREEN}--- Update Complete! ---${NC}"
+}
 
-mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" -e "${INSERT_ADMIN_SQL}"
+do_uninstall() {
+    echo -e "${RED}--- Starting Full Uninstallation ---${NC}"
+    echo -e "${YELLOW}This will remove the application, its database, and optionally the system dependencies.${NC}"
+    
+    read -p "Are you sure you want to continue? [y/N] " confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo "Uninstall cancelled."
+        exit 0
+    fi
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}ERRO: Falha ao inserir o usuário administrador no banco de dados.${NC}"
-    exit 1
-fi
-echo -e "${GREEN}Usuário administrador 'androoiddiviana@gmal.com' criado com sucesso.${NC}"
+    echo -e "${YELLOW}Stopping and deleting PM2 process...${NC}"
+    pm2 stop "$APP_NAME" &> /dev/null
+    pm2 delete "$APP_NAME" &> /dev/null
+    pm2 save --force
 
+    if [ -d "$PROJECT_FOLDER" ]; then
+        read -p "Delete project folder at '${PROJECT_FOLDER}'? [y/N] " confirm
+        if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+            echo -e "${YELLOW}Deleting project folder...${NC}"
+            rm -rf "$PROJECT_FOLDER"
+        fi
+    fi
 
-# Iniciar a aplicação com PM2
-APP_NAME="boleto-manager-ai"
-echo -e "${YELLOW}Iniciando a aplicação '$APP_NAME' com PM2...${NC}"
+    read -p "Drop MySQL database '${DB_DATABASE}'? ${RED}THIS CANNOT BE UNDONE.${NC} [y/N] " confirm
+    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+        echo -e "${YELLOW}Dropping database...${NC}"
+        mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS \`${DB_DATABASE}\`;"
+    fi
 
-# Parar e deletar a versão antiga, se existir
-pm2 stop "$APP_NAME" &> /dev/null
-pm2 delete "$APP_NAME" &> /dev/null
+    read -p "Uninstall system-wide dependencies (apache, mysql, nodejs, pm2)? ${YELLOW}This might affect other applications.${NC} [y/N] " confirm
+    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+        echo -e "${YELLOW}Uninstalling PM2...${NC}"
+        sudo npm uninstall -g pm2
+        echo -e "${YELLOW}Purging system packages...${NC}"
+        sudo apt-get purge --auto-remove -y apache2 mysql-server* phpmyadmin nodejs
+        sudo apt-get autoremove -y
+        sudo apt-get clean
+        echo -e "${YELLOW}Note: Some configuration files might remain in /etc/mysql and /etc/apache2.${NC}"
+    fi
 
-# Iniciar nova versão
-# Assumindo que o ponto de entrada após o build é 'dist/api/index.js'
-pm2 start dist/api/index.js --name "$APP_NAME"
+    echo -e "${GREEN}--- Uninstallation Complete! ---${NC}"
+}
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Falha ao iniciar a aplicação com PM2.${NC}"
-    exit 1
-fi
-
-pm2 startup
-pm2 save
-echo -e "${GREEN}Aplicação iniciada com sucesso via PM2.${NC}"
+# --- Main Menu ---
+clear
+echo -e "${GREEN}=============================================${NC}"
+echo -e "${GREEN}   Management Script - Boleto Manager AI   ${NC}"
+echo -e "${GREEN}=============================================${NC}"
 echo ""
+echo "Please choose an option:"
+echo "  1) Install Application (Fresh Start)"
+echo "  2) Update Application (Git Pull & Restart)"
+echo "  3) Uninstall Application (Remove Everything)"
+echo "  *) Exit"
+echo ""
+read -p "Enter your choice [1-3]: " choice
 
-# --- 4. Conclusão ---
-echo -e "${GREEN}===================================${NC}"
-echo -e "${GREEN}      DEPLOY FINALIZADO!           ${NC}"
-echo -e "${GREEN}===================================${NC}"
-echo ""
-echo -e "A aplicação está rodando e pode ser acessada em: ${YELLOW}${APP_URL}${NC}"
-echo -e "O phpMyAdmin está disponível em: ${YELLOW}${APP_URL_BASE}/phpmyadmin${NC}"
-echo -e "  (Usuário: root, Senha: dvsviana)"
-echo -e "Para ver os logs, use o comando: ${YELLOW}pm2 logs $APP_NAME${NC}"
-echo -e "Para parar a aplicação, use o comando: ${YELLOW}pm2 stop $APP_NAME${NC}"
-echo ""
+case $choice in
+    1)
+        do_install
+        ;;
+    2)
+        do_update
+        ;;
+    3)
+        do_uninstall
+        ;;
+    *)
+        echo "Exiting."
+        exit 0
+        ;;
+esac
