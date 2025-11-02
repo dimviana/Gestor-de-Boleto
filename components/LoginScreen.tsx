@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { TranslationKey } from '../translations';
 
 interface LoginScreenProps {
-  login: (username: string, password?: string) => void;
+  login: (username: string, password?: string) => Promise<void>;
   register: (username: string, password?: string) => boolean;
   authError: string | null;
   setAuthError: (error: string | null) => void;
@@ -28,12 +27,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
     setRegistrationSuccess(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setAuthError(null);
     setRegistrationSuccess(false);
 
     if (mode === 'login') {
-      login(email, password);
+      await login(email, password);
     } else {
       const success = register(email, password);
       if (success) {
@@ -117,7 +116,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
         <button
           onClick={handleSubmit}
           className="w-full px-4 py-3 font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!email || (mode === 'register' && !password)}
+          disabled={!email || !password}
         >
           {mode === 'login' ? t('loginButton') : t('createAccountButton')}
         </button>

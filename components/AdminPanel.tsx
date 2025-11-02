@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company } from '../types';
@@ -23,7 +21,7 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, updateUser, deleteUser, currentUser, getLogs }) => {
     const { t, language } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs'>('settings');
+    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl'>('settings');
     
     // Logs state
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -35,7 +33,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
         }
     }, [activeTab, getLogs]);
     
-    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs', label: string}> = ({ tabId, label}) => (
+    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl', label: string}> = ({ tabId, label}) => (
          <button
             onClick={() => setActiveTab(tabId)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -430,6 +428,65 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
         </div>
     );
 
+    const SslTab = () => {
+        const [cert, setCert] = useState('');
+        const [key, setKey] = useState('');
+
+        const handleSave = async () => {
+            try {
+                await api.updateSettings({
+                    ssl_certificate: cert,
+                    ssl_private_key: key,
+                });
+                alert("Certificado SSL salvo com sucesso! A reinicialização do servidor pode ser necessária para aplicar as alterações.");
+            } catch (error: any) {
+                console.error("Failed to save SSL settings:", error);
+                alert(`Erro ao salvar certificado: ${error.message}`);
+            }
+        };
+
+        return (
+             <div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Configuração de Certificado SSL</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-4">
+                    Cole o conteúdo do seu certificado e chave privada nos campos abaixo. Após salvar, o servidor web precisa ser reiniciado para que as alterações tenham efeito.
+                </p>
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="ssl-cert" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Certificado (CRT/PEM)</label>
+                        <textarea
+                            id="ssl-cert"
+                            rows={8}
+                            value={cert}
+                            onChange={(e) => setCert(e.target.value)}
+                            placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
+                            className="font-mono mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        />
+                    </div>
+                     <div>
+                        <label htmlFor="ssl-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Chave Privada (KEY)</label>
+                        <textarea
+                            id="ssl-key"
+                            rows={8}
+                            value={key}
+                            onChange={(e) => setKey(e.target.value)}
+                             placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"
+                            className="font-mono mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        />
+                    </div>
+                </div>
+                 <div className="flex justify-end pt-4 mt-4">
+                    <button
+                        onClick={handleSave}
+                        className="px-6 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300"
+                    >
+                        Salvar Certificado
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
 
     return (
         <>
@@ -437,12 +494,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
                 <nav className="flex space-x-2">
                     <TabButton tabId="settings" label={t('adminPanelSettingsTab')} />
                     <TabButton tabId="users_companies" label={t('adminPanelUsersCompaniesTab')} />
+                    <TabButton tabId="ssl" label="Certificado SSL" />
                     <TabButton tabId="logs" label={t('adminPanelLogsTab')} />
                 </nav>
             </div>
             
             {activeTab === 'settings' && <SettingsTab />}
             {activeTab === 'users_companies' && <UsersAndCompaniesTab />}
+            {activeTab === 'ssl' && <SslTab />}
             {activeTab === 'logs' && <LogsTab />}
             
             <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { User, RegisteredUser, LogEntry } from '../types';
 import { addLogEntry, getLogsFromStorage } from '../services/logService';
@@ -12,7 +11,17 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | null>(() => {
     try {
       const storedUser = sessionStorage.getItem(USER_SESSION_KEY);
-      return storedUser ? JSON.parse(storedUser) : null;
+      if (storedUser) {
+        const session = JSON.parse(storedUser);
+        // Return only the user part, not the whole session with token
+        return {
+          id: session.id,
+          username: session.username,
+          role: session.role,
+          companyId: session.companyId,
+        };
+      }
+      return null;
     } catch (error) {
       console.error("Failed to parse user session:", error);
       return null;
@@ -35,34 +44,51 @@ export const useAuth = () => {
       localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
   };
 
-  const login = useCallback((username: string, password?: string) => {
+  const login = useCallback(async (username: string, password?: string) => {
     setAuthError(null);
-    if (username.toLowerCase() === 'admin') {
-      const adminUser: User = { id: 'admin-user', username: 'admin', role: 'admin' };
-      sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(adminUser));
-      setUser(adminUser);
-      addLogEntry({ userId: adminUser.id, username: adminUser.username, action: 'LOGIN', details: 'Administrador acessou o sistema.' });
-      return;
-    }
+    try {
+      if (!username || !password) {
+        setAuthError('authErrorInvalidCredentials');
+        return;
+      }
+      
+      const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+      });
 
-    const registeredUsers = getRegisteredUsers();
-    const foundUser = registeredUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
-
-    if (foundUser && foundUser.password === password) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password: _, ...sessionUser } = foundUser;
-      sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(sessionUser));
-      setUser(sessionUser);
-      addLogEntry({ userId: sessionUser.id, username: sessionUser.username, action: 'LOGIN', details: 'Usuário acessou o sistema.' });
-    } else {
-      setAuthError('authErrorInvalidCredentials');
+      if (response.ok) {
+          const sessionData = await response.json(); // { id, username, role, companyId, token }
+          sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(sessionData));
+          
+          const sessionUser: User = {
+              id: sessionData.id,
+              username: sessionData.username,
+              role: sessionData.role,
+              companyId: sessionData.companyId,
+          };
+          
+          setUser(sessionUser);
+          // Logging is now handled by the backend, but we can keep a frontend log for logout
+      } else {
+          setAuthError('authErrorInvalidCredentials');
+      }
+    } catch (error) {
+        console.error("Login API call failed:", error);
+        setAuthError('genericErrorText');
     }
   }, []);
 
   const logout = useCallback(() => {
-    const currentUser = JSON.parse(sessionStorage.getItem(USER_SESSION_KEY) || 'null');
-    if (currentUser) {
-         addLogEntry({ userId: currentUser.id, username: currentUser.username, action: 'LOGOUT', details: 'Usuário saiu do sistema.' });
+    const storedSession = sessionStorage.getItem(USER_SESSION_KEY);
+    if (storedSession) {
+        try {
+            const currentUser = JSON.parse(storedSession);
+            addLogEntry({ userId: currentUser.id, username: currentUser.username, action: 'LOGOUT', details: 'Usuário saiu do sistema.' });
+        } catch(e) {
+            // Ignore if session is malformed
+        }
     }
     sessionStorage.removeItem(USER_SESSION_KEY);
     setUser(null);

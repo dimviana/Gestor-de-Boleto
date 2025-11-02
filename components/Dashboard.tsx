@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
-import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company } from '../types';
+import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, SystemNotification, AnyNotification } from '../types';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
@@ -44,6 +44,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
 
+  // System Update Notification State
+  const [systemUpdate, setSystemUpdate] = useState<SystemNotification | null>(null);
+
   // Admin filter state
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
@@ -57,6 +60,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       loadCompanies();
     }
   }, [user.role]);
+
+  // Effect to check for system updates from GitHub
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      try {
+        const repoOwner = 'dimviana';
+        const repoName = 'Gestor-de-Boleto';
+        const commitsUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/commits?per_page=1`;
+        
+        const response = await fetch(commitsUrl);
+        if (!response.ok) return;
+
+        const commits = await response.json();
+        const latestCommit = commits[0];
+        const lastSeenSha = localStorage.getItem('lastSeenCommitSha');
+
+        if (latestCommit.sha !== lastSeenSha) {
+          const packageJsonUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/package.json`;
+          const pkgResponse = await fetch(packageJsonUrl);
+          if (!pkgResponse.ok) return;
+          const pkg = await pkgResponse.json();
+
+          setSystemUpdate({
+            type: 'system',
+            message: latestCommit.commit.message,
+            version: `v${pkg.version}`,
+            url: latestCommit.html_url,
+            sha: latestCommit.sha,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to check for system updates:", error);
+      }
+    };
+    checkForUpdates();
+  }, []);
 
   const handleFileUpload = async (file: File) => {
     setIsLoadingUpload(true);
@@ -188,7 +227,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const totalVerifying = useMemo(() => calculateTotal(boletosVerifying), [boletosVerifying]);
   const totalPaid = useMemo(() => calculateTotal(boletosPaid), [boletosPaid]);
 
-  const notifications = useMemo((): Notification[] => {
+  const boletoNotifications = useMemo((): Notification[] => {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normalize to the beginning of the day for accurate comparison
 
@@ -220,6 +259,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       .sort((a, b) => a.daysUntilDue - b.daysUntilDue); // Sort by urgency
   }, [filteredBoletos]);
 
+  const allNotifications: AnyNotification[] = useMemo(() => {
+    const notifications: AnyNotification[] = [...boletoNotifications];
+    if (systemUpdate) {
+        notifications.unshift(systemUpdate); // Add system update to the top
+    }
+    return notifications;
+  }, [boletoNotifications, systemUpdate]);
+
+  const handleDismissSystemUpdate = useCallback((sha: string) => {
+    localStorage.setItem('lastSeenCommitSha', sha);
+    setSystemUpdate(null);
+  }, []);
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
       style: 'currency',
@@ -246,7 +298,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
         onLogout={onLogout} 
         onOpenDocs={() => setIsDocsOpen(true)}
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
-        notifications={notifications}
+        notifications={allNotifications}
+        onDismissSystemUpdate={handleDismissSystemUpdate}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">

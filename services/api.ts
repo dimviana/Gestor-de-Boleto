@@ -1,5 +1,3 @@
-
-
 // FIX: Import RegisteredUser to resolve reference error.
 import { Boleto, BoletoStatus, User, Company, RegisteredUser } from '../types';
 
@@ -168,4 +166,40 @@ export const deleteCompany = (id: string): Promise<void> => {
             resolve();
         }, SIMULATED_DELAY / 2);
     });
+};
+
+// --- Real API Calls ---
+// NOTE: The following functions interact with the real backend API.
+// They are being added to support new features that require database persistence.
+
+const getAuthToken = (): string | null => {
+    try {
+        const session = sessionStorage.getItem('user_session');
+        if (!session) return null;
+        const parsedSession = JSON.parse(session);
+        return parsedSession.token || null;
+    } catch (e) {
+        return null;
+    }
+};
+
+export const updateSettings = async (settings: Record<string, any>): Promise<void> => {
+    const token = getAuthToken();
+    if (!token) {
+        throw new Error("Authentication token not found.");
+    }
+
+    const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(settings)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update settings');
+    }
 };

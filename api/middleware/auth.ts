@@ -7,6 +7,7 @@ import { User } from '../../types';
 
 // By extending Request from express, AuthRequest inherits standard properties
 // like `headers`, `body`, `file`, etc., resolving type errors in controllers.
+// Fix for multiple properties (`headers`, etc.) not existing on type 'AuthRequest'.
 export interface AuthRequest extends ExpressRequest {
   user?: User;
 }

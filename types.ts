@@ -78,6 +78,17 @@ export interface Notification {
   daysUntilDue: number;
 }
 
+// New type for System Update Notifications
+export interface SystemNotification {
+    type: 'system';
+    message: string;
+    version: string;
+    url: string;
+    sha: string;
+}
+
+export type AnyNotification = Notification | SystemNotification;
+
 // New type for AI settings
 export interface AiSettings {
   model: string;
