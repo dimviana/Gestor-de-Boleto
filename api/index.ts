@@ -1,6 +1,4 @@
-
-
-
+// FIX: Import explicit types from express to avoid conflicts and resolve type errors.
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -25,6 +23,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // API Routes
+// FIX: Use explicit Request and Response types.
 app.get('/api', (req: Request, res: Response) => {
   res.send('Boleto Manager AI Backend is running!');
 });
@@ -36,25 +35,17 @@ app.use('/api/logs', logRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // --- Frontend Serving ---
-// Serve static files from the React build directory.
-// After the tsc build, __dirname is <project_root>/dist/api,
-// so we go up one level to get to the <project_root>/dist folder which contains the frontend build.
-// FIX: Use `__dirname` to construct a reliable path to static assets, which also resolves a TypeScript error on `process.cwd()`.
-// FIX: Cast `global` to `any` to access `__dirname` and resolve TypeScript's "Cannot find name '__dirname'" error.
-const staticPath = path.join(__dirname, '..');
+const staticPath = path.join(__dirname, '..', '..');
 app.use(express.static(staticPath));
 
-// For any request that doesn't match a static file or an API route,
-// send back the main index.html file. This is crucial for client-side routing.
-app.get('*', (req, res) => {
+// FIX: Use explicit Request and Response types.
+app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 });
-
 
 // Test DB connection on startup
 testDbConnection().catch(err => {
     console.error("Shutting down due to database connection failure.", err);
-    // Throwing the error causes an unhandled rejection, which will terminate the Node.js process.
     throw err;
 });
 

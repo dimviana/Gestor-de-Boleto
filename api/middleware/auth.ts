@@ -1,17 +1,14 @@
-
-
-
-// FIX: Import Request directly from express.
+// FIX: Import explicit types from express to avoid conflicts and resolve type errors.
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
-// By extending Request from express, AuthRequest inherits standard properties
-// like `headers`, `body`, `file`, etc., resolving type errors in controllers.
+// FIX: Extend explicit Request type.
 export interface AuthRequest extends Request {
   user?: User;
 }
 
+// FIX: Use explicit Request, Response, and NextFunction types.
 export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -30,6 +27,7 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
+// FIX: Use explicit Request, Response, and NextFunction types.
 export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();

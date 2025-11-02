@@ -1,5 +1,4 @@
-
-// FIX: Use express types directly to avoid conflicts.
+// FIX: Import explicit types from express to avoid conflicts and resolve type errors.
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -13,6 +12,7 @@ const generateToken = (id: string, username: string, role: string, company_id: s
   });
 };
 
+// FIX: Use explicit Request and Response types.
 export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'user', companyId = null } = req.body;
 
@@ -39,6 +39,7 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
+// FIX: Use explicit Request and Response types.
 export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 

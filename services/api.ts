@@ -1,176 +1,6 @@
-// FIX: Import RegisteredUser to resolve reference error.
-import { Boleto, BoletoStatus, User, Company, RegisteredUser } from '../types';
+import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry } from '../types';
 
-const BOLETOS_DB_KEY = 'boletos';
-const COMPANIES_DB_KEY = 'companies';
-const SIMULATED_DELAY = 500; // ms
-
-// --- Helper Functions ---
-
-const readFromStorage = <T>(key: string): T[] => {
-  try {
-    const storedData = localStorage.getItem(key);
-    return storedData ? JSON.parse(storedData) : [];
-  } catch (error) {
-    console.error(`Failed to parse ${key} from localStorage`, error);
-    localStorage.removeItem(key);
-    return [];
-  }
-};
-
-const writeToStorage = <T>(key: string, data: T[]) => {
-  localStorage.setItem(key, JSON.stringify(data));
-};
-
-// --- Boletos API ---
-
-export const fetchBoletos = (user: User): Promise<Boleto[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-      if (user.role === 'admin' && !user.companyId) {
-        resolve(boletos); // Super admin (no company) sees all boletos
-      } else if (user.companyId) {
-        resolve(boletos.filter(b => b.companyId === user.companyId));
-      } else {
-        resolve([]); // User with no company assigned sees no boletos
-      }
-    }, SIMULATED_DELAY);
-  });
-};
-
-export const createBoleto = (boleto: Boleto): Promise<Boleto> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-      if (!boletos.some(b => b.id === boleto.id)) {
-        const updatedBoletos = [boleto, ...boletos];
-        writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
-      }
-      resolve(boleto);
-    }, SIMULATED_DELAY / 2);
-  });
-};
-
-export const updateBoleto = (id: string, status: BoletoStatus): Promise<Boleto> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-        let updatedBoleto: Boleto | null = null;
-        const updatedBoletos = boletos.map(b => {
-          if (b.id === id) {
-            updatedBoleto = { ...b, status };
-            return updatedBoleto;
-          }
-          return b;
-        });
-  
-        if (updatedBoleto) {
-          writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
-          resolve(updatedBoleto);
-        } else {
-          reject(new Error("Boleto not found"));
-        }
-      }, SIMULATED_DELAY / 2);
-    });
-};
-
-export const updateBoletoComments = (id: string, comments: string): Promise<Boleto> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-            let updatedBoleto: Boleto | null = null;
-            const updatedBoletos = boletos.map(b => {
-                if (b.id === id) {
-                    updatedBoleto = { ...b, comments };
-                    return updatedBoleto;
-                }
-                return b;
-            });
-
-            if (updatedBoleto) {
-                writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
-                resolve(updatedBoleto);
-            } else {
-                reject(new Error("Boleto not found"));
-            }
-        }, SIMULATED_DELAY / 2);
-    });
-};
-
-export const removeBoleto = (id: string): Promise<void> => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-            const updatedBoletos = boletos.filter(b => b.id !== id);
-            writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
-            resolve();
-        }, SIMULATED_DELAY / 2);
-    });
-};
-
-// --- Companies API ---
-
-export const fetchCompanies = (): Promise<Company[]> => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(readFromStorage<Company>(COMPANIES_DB_KEY)), SIMULATED_DELAY / 2);
-    });
-};
-
-export const createCompany = (companyData: Omit<Company, 'id'>): Promise<Company> => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const companies = readFromStorage<Company>(COMPANIES_DB_KEY);
-            const newCompany: Company = { ...companyData, id: crypto.randomUUID() };
-            writeToStorage(COMPANIES_DB_KEY, [...companies, newCompany]);
-            resolve(newCompany);
-        }, SIMULATED_DELAY / 2);
-    });
-};
-
-export const updateCompany = (id: string, updates: Partial<Omit<Company, 'id'>>): Promise<Company> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const companies = readFromStorage<Company>(COMPANIES_DB_KEY);
-            let updatedCompany: Company | null = null;
-            const updatedCompanies = companies.map(c => {
-                if (c.id === id) {
-                    updatedCompany = { ...c, ...updates };
-                    return updatedCompany;
-                }
-                return c;
-            });
-            if (updatedCompany) {
-                writeToStorage(COMPANIES_DB_KEY, updatedCompanies);
-                resolve(updatedCompany);
-            } else {
-                reject(new Error("Company not found"));
-            }
-        }, SIMULATED_DELAY / 2);
-    });
-};
-
-export const deleteCompany = (id: string): Promise<void> => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const companies = readFromStorage<Company>(COMPANIES_DB_KEY);
-            writeToStorage(COMPANIES_DB_KEY, companies.filter(c => c.id !== id));
-            // Also un-assign users from this company
-            const users = readFromStorage<RegisteredUser>('registered_users').map(u => {
-                if (u.companyId === id) {
-                    return { ...u, companyId: undefined };
-                }
-                return u;
-            });
-            writeToStorage('registered_users', users);
-            resolve();
-        }, SIMULATED_DELAY / 2);
-    });
-};
-
-// --- Real API Calls ---
-// NOTE: The following functions interact with the real backend API.
-// They are being added to support new features that require database persistence.
+const API_BASE_URL = '/api';
 
 const getAuthToken = (): string | null => {
     try {
@@ -179,27 +9,177 @@ const getAuthToken = (): string | null => {
         const parsedSession = JSON.parse(session);
         return parsedSession.token || null;
     } catch (e) {
+        console.error("Failed to parse session token", e);
         return null;
     }
 };
 
-export const updateSettings = async (settings: Record<string, any>): Promise<void> => {
+const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
     const token = getAuthToken();
-    if (!token) {
-        throw new Error("Authentication token not found.");
+    const headers: Record<string, string> = {
+        // FIX: Type '{ [x: string]: string; } | ...' is not assignable to type 'Record<string, string>'.
+        // The type of options.headers is too broad for a simple spread into a Record.
+        // Explicitly casting to 'any' to resolve the type conflict.
+        ...((options.headers as any) || {}),
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(settings)
+    // Do not set Content-Type for FormData; the browser does it automatically with the boundary.
+    if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+        ...options,
+        headers,
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update settings');
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(errorData.message || 'An API error occurred');
     }
+    return response;
 };
+
+// --- Boletos API ---
+
+export const fetchBoletos = async (): Promise<Boleto[]> => {
+    const response = await authenticatedFetch('/boletos');
+    return response.json();
+};
+
+export const uploadBoletoFile = async (file: File): Promise<Boleto> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await authenticatedFetch('/boletos', {
+        method: 'POST',
+        body: formData,
+    });
+    return response.json();
+};
+
+export const updateBoleto = async (id: string, status: BoletoStatus): Promise<void> => {
+    await authenticatedFetch(`/boletos/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+    });
+};
+
+export const updateBoletoComments = async (id: string, comments: string): Promise<void> => {
+    await authenticatedFetch(`/boletos/${id}/comments`, {
+        method: 'PUT',
+        body: JSON.stringify({ comments }),
+    });
+};
+
+export const removeBoleto = async (id: string): Promise<void> => {
+    await authenticatedFetch(`/boletos/${id}`, {
+        method: 'DELETE',
+    });
+};
+
+// --- Companies API ---
+
+export const fetchCompanies = async (): Promise<Company[]> => {
+    const response = await authenticatedFetch('/companies');
+    return response.json();
+};
+
+export const createCompany = async (companyData: Omit<Company, 'id'>): Promise<Company> => {
+    const response = await authenticatedFetch('/companies', {
+        method: 'POST',
+        body: JSON.stringify(companyData),
+    });
+    return response.json();
+};
+
+export const updateCompany = async (id: string, updates: Partial<Omit<Company, 'id'>>): Promise<void> => {
+    await authenticatedFetch(`/companies/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+    });
+};
+
+export const deleteCompany = async (id: string): Promise<void> => {
+    await authenticatedFetch(`/companies/${id}`, {
+        method: 'DELETE',
+    });
+};
+
+// --- Users API ---
+
+export const fetchUsers = async (): Promise<RegisteredUser[]> => {
+    const response = await authenticatedFetch('/users');
+    const users = await response.json();
+    return users.map((user: any) => ({ ...user, companyId: user.company_id }));
+};
+
+export const createUser = async (userData: Omit<RegisteredUser, 'id'>): Promise<RegisteredUser> => {
+    const response = await authenticatedFetch('/users', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+    });
+    return response.json();
+};
+
+export const updateUser = async (id: string, updates: Partial<Omit<RegisteredUser, 'id'>>): Promise<void> => {
+    await authenticatedFetch(`/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+    });
+};
+
+export const deleteUser = async (id: string): Promise<void> => {
+    await authenticatedFetch(`/users/${id}`, {
+        method: 'DELETE',
+    });
+};
+
+// --- Logs API ---
+
+export const fetchLogs = async (): Promise<LogEntry[]> => {
+    const response = await authenticatedFetch('/logs');
+    return response.json();
+};
+
+// --- Settings API ---
+export const fetchSettings = async (): Promise<any> => {
+    const response = await authenticatedFetch('/settings');
+    return response.json();
+}
+
+export const updateSettings = async (settings: Record<string, any>): Promise<void> => {
+    await authenticatedFetch('/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settings)
+    });
+};
+
+// --- Auth API ---
+export const login = async (username: string, password?: string): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(errorData.message || 'Login failed');
+    }
+    return response.json();
+}
+
+export const register = async (username: string, password?: string): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+    });
+     if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(errorData.message || 'Registration failed');
+    }
+}

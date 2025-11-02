@@ -1,5 +1,4 @@
-
-// FIX: Use express types directly to avoid conflicts.
+// FIX: Import explicit types from express to avoid conflicts and resolve type errors.
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
@@ -8,16 +7,19 @@ import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { extractBoletoInfo } from '../services/geminiService';
 
+// FIX: Use explicit Request and Response types.
 export const getBoletos = async (req: AuthRequest, res: Response) => {
   const user = req.user!;
   try {
     let query = 'SELECT * FROM boletos';
     const params: string[] = [];
     if (user.role !== 'admin') {
+      if (!user.companyId) {
+        return res.json([]); // User not in a company sees no boletos
+      }
       query += ' WHERE company_id = ?';
-      params.push(user.companyId!);
+      params.push(user.companyId);
     } else if (req.query.companyId) {
-      // Admin can filter by company
       query += ' WHERE company_id = ?';
       params.push(req.query.companyId as string);
     }
@@ -31,6 +33,7 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// FIX: Use explicit Request and Response types.
 export const createBoleto = async (req: AuthRequest, res: Response) => {
     const user = req.user!;
     if (!user.companyId) {
@@ -77,6 +80,7 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// FIX: Use explicit Request and Response types.
 export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     const { status } = req.body;
     try {
@@ -87,6 +91,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// FIX: Use explicit Request and Response types.
 export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     const { comments } = req.body;
     try {
@@ -97,6 +102,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// FIX: Use explicit Request and Response types.
 export const deleteBoleto = async (req: AuthRequest, res: Response) => {
     try {
         await pool.query('DELETE FROM boletos WHERE id = ?', [req.params.id]);

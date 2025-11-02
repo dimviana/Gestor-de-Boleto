@@ -5,7 +5,7 @@ import { TranslationKey } from '../translations';
 
 interface LoginScreenProps {
   login: (username: string, password?: string) => Promise<void>;
-  register: (username: string, password?: string) => boolean;
+  register: (username: string, password?: string) => Promise<boolean>;
   authError: string | null;
   setAuthError: (error: string | null) => void;
 }
@@ -34,10 +34,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
     if (mode === 'login') {
       await login(email, password);
     } else {
-      const success = register(email, password);
+      const success = await register(email, password);
       if (success) {
         setRegistrationSuccess(true);
-        handleSwitchMode('login');
+        setTimeout(() => {
+          handleSwitchMode('login');
+        }, 2000);
       }
     }
   };

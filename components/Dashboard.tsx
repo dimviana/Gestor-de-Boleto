@@ -1,42 +1,31 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
-import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, SystemNotification, AnyNotification } from '../types';
+import { Boleto, BoletoStatus, User, Notification, Company, SystemNotification, AnyNotification } from '../types';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
 import Spinner from './Spinner';
-import { processBoletoPDF as processBoletoWithAI } from '../services/geminiService';
-import { processBoletoPDFWithRegex } from '../services/regexService';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
 import { WalletIcon, HourglassIcon, CheckCircleIcon, TrashIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
 import { BoletoDetailsModal } from './BoletoDetailsModal';
-import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
 
 
 interface DashboardProps {
   onLogout: () => void;
   user: User;
-  getUsers: () => RegisteredUser[];
-  addUser: (actor: User, newUser: Omit<RegisteredUser, 'id'>) => boolean;
-  updateUser: (actor: User, userId: string, updates: Partial<Omit<RegisteredUser, 'id'>>) => boolean;
-  deleteUser: (actor: User, userId: string) => boolean;
-  getLogs: () => LogEntry[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser, updateUser, deleteUser, getLogs }) => {
-  const { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos(user);
+const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
+  const { boletos, uploadBoletoFile, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos(user);
   const [isLoadingUpload, setIsLoadingUpload] = useState(false);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const { t, language } = useLanguage();
-  const { method } = useProcessingMethod();
-  const { aiSettings } = useAiSettings();
   
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
@@ -54,8 +43,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   useEffect(() => {
     if (user.role === 'admin') {
       const loadCompanies = async () => {
-        const fetchedCompanies = await api.fetchCompanies();
-        setCompanies(fetchedCompanies);
+        try {
+          const fetchedCompanies = await api.fetchCompanies();
+          setCompanies(fetchedCompanies);
+        } catch (error) {
+           console.error("Failed to load companies:", error);
+        }
       };
       loadCompanies();
     }
@@ -100,42 +93,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const handleFileUpload = async (file: File) => {
     setIsLoadingUpload(true);
     try {
-      let newBoleto: Omit<Boleto, 'companyId'>;
-      if (method === 'ai') {
-          newBoleto = await processBoletoWithAI(file, language, aiSettings);
-      } else {
-          newBoleto = await processBoletoPDFWithRegex(file);
-      }
-
-      // Validation for zero-value boletos
-      if (newBoleto.amount === null || newBoleto.amount === undefined || newBoleto.amount === 0) {
-        setErrorModalContent({
-            title: t('freeBoletoErrorTitle'),
-            message: t('freeBoletoErrorText')
-        });
-        setIsErrorModalOpen(true);
-        return; // Stop execution
-      }
-
-      await addBoleto(user, newBoleto, method);
+      await uploadBoletoFile(user, file);
     } catch (error: any) {
       console.error("Upload failed:", error);
       let errorMessage = t('genericErrorText');
       let errorTitle = t('genericErrorTitle');
       
-      if (error.message.startsWith('duplicateBarcodeError:')) {
-          const identifier = error.message.split(':')[1];
+      if (error.message.includes('Duplicate barcode')) {
+          const identifier = error.message.split(': ')[1] || 'N/A';
           errorMessage = t('duplicateBarcodeErrorText', { identifier });
           errorTitle = t('duplicateBarcodeErrorTitle');
-      } else if (error.message === 'invalidBarcodeError') {
-          errorMessage = t('invalidBarcodeErrorText');
-          errorTitle = t('invalidBarcodeErrorTitle');
-      } else if (error.message === 'pdfProcessingError') {
-          errorMessage = t('pdfProcessingError');
-          errorTitle = t('processingErrorTitle');
       } else if (error.message === 'userHasNoCompanyError') {
           errorMessage = t('userHasNoCompanyErrorText');
           errorTitle = t('userHasNoCompanyErrorTitle');
+      } else if (error.message.includes('Failed to process boleto')) {
+          errorMessage = t('pdfProcessingError');
+          errorTitle = t('processingErrorTitle');
       }
 
 
@@ -312,7 +285,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
           {isLoadingUpload && (
             <div className="flex items-center justify-center mt-4">
               <Spinner />
-              <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{method === 'ai' ? t('processingStatusOcr') : t('processingStatusRegex')}</p>
+              <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{t('processingStatusOcr')}</p>
             </div>
           )}
 
@@ -452,12 +425,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       <Modal isOpen={isAdminPanelOpen} onClose={() => setIsAdminPanelOpen(false)} title="Painel Administrativo">
           <AdminPanel 
             onClose={() => setIsAdminPanelOpen(false)} 
-            getUsers={getUsers}
-            addUser={addUser}
-            updateUser={updateUser}
-            deleteUser={deleteUser}
             currentUser={user}
-            getLogs={getLogs}
         />
       </Modal>
 

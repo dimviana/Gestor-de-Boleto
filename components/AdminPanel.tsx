@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company } from '../types';
 import { TrashIcon, EditIcon } from './icons/Icons';
@@ -7,31 +7,17 @@ import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
+import Spinner from './Spinner';
 
 
 interface AdminPanelProps {
     onClose: () => void;
-    getUsers: () => RegisteredUser[];
-    addUser: (actor: User, newUser: Omit<RegisteredUser, 'id'>) => boolean;
-    updateUser: (actor: User, userId: string, updates: Partial<Omit<RegisteredUser, 'id'>>) => boolean;
-    deleteUser: (actor: User, userId: string) => boolean;
     currentUser: User;
-    getLogs: () => LogEntry[];
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, updateUser, deleteUser, currentUser, getLogs }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentUser }) => {
     const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl'>('settings');
-    
-    // Logs state
-    const [logs, setLogs] = useState<LogEntry[]>([]);
-
-    useEffect(() => {
-        // Load logs only when the tab is active for performance
-        if (activeTab === 'logs') {
-            setLogs(getLogs());
-        }
-    }, [activeTab, getLogs]);
     
     const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl', label: string}> = ({ tabId, label}) => (
          <button
@@ -46,13 +32,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
         </button>
     );
 
-    const formatLogTimestamp = (isoString: string) => {
-        return new Date(isoString).toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
-            dateStyle: 'short',
-            timeStyle: 'medium'
-        });
-    };
-    
     const SettingsTab = () => {
         const { appName, logoUrl, setAppName, setLogoUrl } = useWhitelabel();
         const { method: currentMethod, setMethod } = useProcessingMethod();
@@ -204,6 +183,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
     const UsersAndCompaniesTab = () => {
         const [users, setUsers] = useState<RegisteredUser[]>([]);
         const [companies, setCompanies] = useState<Company[]>([]);
+        const [isLoading, setIsLoading] = useState(true);
         const [isUserModalOpen, setIsUserModalOpen] = useState(false);
         const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
         const [selectedUser, setSelectedUser] = useState<RegisteredUser | null>(null);
@@ -212,14 +192,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
 
         const [companyForm, setCompanyForm] = useState({ name: '', cnpj: '', address: ''});
 
-        const refreshData = async () => {
-            setUsers(getUsers());
-            setCompanies(await api.fetchCompanies());
-        };
+        const refreshData = useCallback(async () => {
+            setIsLoading(true);
+            try {
+                const [fetchedUsers, fetchedCompanies] = await Promise.all([
+                    api.fetchUsers(),
+                    api.fetchCompanies(),
+                ]);
+                setUsers(fetchedUsers);
+                setCompanies(fetchedCompanies);
+            } catch (error) {
+                console.error("Failed to load admin data:", error);
+                setFormError('genericErrorText');
+            } finally {
+                setIsLoading(false);
+            }
+        }, []);
 
         useEffect(() => {
             refreshData();
-        }, []);
+        }, [refreshData]);
 
         const openAddUserModal = () => {
             setModalMode('add');
@@ -237,51 +229,80 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
             setIsUserModalOpen(true);
         };
         
-        const handleUserFormSubmit = () => {
+        const handleUserFormSubmit = async () => {
             setFormError(null);
-            if (modalMode === 'add') {
-                if (!userForm.username || !userForm.password) {
-                    setFormError('authErrorInvalidCredentials'); return;
-                }
-                const success = addUser(currentUser, { 
-                    username: userForm.username, password: userForm.password, role: userForm.role, companyId: userForm.companyId || undefined
-                });
-                if (success) { refreshData(); setIsUserModalOpen(false); } else { setFormError('authErrorEmailExists'); }
-            } else if (modalMode === 'edit' && selectedUser) {
-                const updates: Partial<Omit<RegisteredUser, 'id'>> = {};
-                if (userForm.username !== selectedUser.username) updates.username = userForm.username;
-                if (userForm.password) updates.password = userForm.password;
-                if (userForm.role !== selectedUser.role) updates.role = userForm.role;
-                if (userForm.companyId !== (selectedUser.companyId || '')) updates.companyId = userForm.companyId;
+            try {
+                if (modalMode === 'add') {
+                    if (!userForm.username || !userForm.password) {
+                        setFormError('authErrorInvalidCredentials'); return;
+                    }
+                    await api.createUser({ 
+                        username: userForm.username, password: userForm.password, role: userForm.role, companyId: userForm.companyId || undefined
+                    });
+                } else if (modalMode === 'edit' && selectedUser) {
+                    const updates: Partial<Omit<RegisteredUser, 'id'>> = {};
+                    if (userForm.username !== selectedUser.username) updates.username = userForm.username;
+                    if (userForm.password) updates.password = userForm.password;
+                    if (userForm.role !== selectedUser.role) updates.role = userForm.role;
+                    if (userForm.companyId !== (selectedUser.companyId || '')) updates.companyId = userForm.companyId;
 
-                if (Object.keys(updates).length > 0) {
-                    const success = updateUser(currentUser, selectedUser.id, updates);
-                    if (success) { refreshData(); setIsUserModalOpen(false); } else { setFormError('addUserErrorDuplicate'); }
-                } else { setIsUserModalOpen(false); }
+                    if (Object.keys(updates).length > 0) {
+                        await api.updateUser(selectedUser.id, updates);
+                    }
+                }
+                refreshData();
+                setIsUserModalOpen(false);
+            } catch (error: any) {
+                 if (error.message.toLowerCase().includes('duplicate')) {
+                    setFormError('authErrorEmailExists');
+                 } else {
+                    setFormError('genericErrorText');
+                 }
             }
         };
         
-        const handleDeleteUser = (userId: string) => {
+        const handleDeleteUser = async (userId: string) => {
+            if (currentUser.id === userId) {
+                alert(t('deleteSelfError'));
+                return;
+            }
             if (window.confirm(t('confirmUserDeletion'))) {
-                if (deleteUser(currentUser, userId)) { refreshData(); } else { alert(t('deleteUserError')); }
+                try {
+                    await api.deleteUser(userId);
+                    refreshData();
+                } catch (error) {
+                    alert(t('deleteUserError'));
+                }
             }
         };
 
         const handleAddCompany = async (e: React.FormEvent) => {
             e.preventDefault();
             if(!companyForm.name || !companyForm.cnpj) return;
-            await api.createCompany(companyForm);
-            setCompanyForm({ name: '', cnpj: '', address: ''});
-            refreshData();
+            try {
+                await api.createCompany(companyForm);
+                setCompanyForm({ name: '', cnpj: '', address: ''});
+                refreshData();
+            } catch (error) {
+                console.error("Failed to add company:", error);
+            }
         };
 
         const handleDeleteCompany = async (id: string) => {
             if (window.confirm('Tem certeza que deseja excluir esta empresa? Os usuários associados não serão excluídos, mas ficarão sem empresa.')) {
-                await api.deleteCompany(id);
-                refreshData();
+                try {
+                    await api.deleteCompany(id);
+                    refreshData();
+                } catch (error) {
+                    console.error("Failed to delete company:", error);
+                }
             }
         }
         
+        if (isLoading) {
+            return <div className="flex justify-center items-center p-8"><Spinner /></div>;
+        }
+
         return (
             <div className="space-y-8">
                  <div>
@@ -392,41 +413,73 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
         )
     };
     
-    const LogsTab = () => (
-         <div className="mt-4">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Logs de Atividades do Sistema</h3>
-            <div className="overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg max-h-[60vh]">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                    <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
-                        <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logDate')}</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logUser')}</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logAction')}</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logDetails')}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
-                        {logs.length > 0 ? logs.map((log) => (
-                            <tr key={log.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatLogTimestamp(log.timestamp)}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{log.username}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
-                                        {log.action}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-normal text-sm text-gray-700 dark:text-gray-300">{log.details}</td>
-                            </tr>
-                        )) : (
+    const LogsTab = () => {
+        const [logs, setLogs] = useState<LogEntry[]>([]);
+        const [isLoading, setIsLoading] = useState(true);
+
+        useEffect(() => {
+            const loadLogs = async () => {
+                setIsLoading(true);
+                try {
+                    setLogs(await api.fetchLogs());
+                } catch (e) {
+                    console.error("Failed to load logs", e);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            if(activeTab === 'logs') {
+                loadLogs();
+            }
+        }, [activeTab]);
+
+        const formatLogTimestamp = (isoString: string) => {
+            return new Date(isoString).toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
+                dateStyle: 'short',
+                timeStyle: 'medium'
+            });
+        };
+
+        if (isLoading) {
+            return <div className="flex justify-center items-center p-8"><Spinner /></div>;
+        }
+
+        return (
+            <div className="mt-4">
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Logs de Atividades do Sistema</h3>
+                <div className="overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg max-h-[60vh]">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                        <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                             <tr>
-                                <td colSpan={4} className="text-center py-10 text-gray-500 dark:text-gray-400">Nenhum registro de atividade encontrado.</td>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logDate')}</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logUser')}</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logAction')}</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logDetails')}</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                            {logs.length > 0 ? logs.map((log) => (
+                                <tr key={log.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatLogTimestamp(log.timestamp)}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{log.username}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                                            {log.action}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-700 dark:text-gray-300">{log.details}</td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan={4} className="text-center py-10 text-gray-500 dark:text-gray-400">Nenhum registro de atividade encontrado.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const SslTab = () => {
         const [cert, setCert] = useState('');

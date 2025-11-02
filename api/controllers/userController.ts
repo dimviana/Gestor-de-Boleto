@@ -1,11 +1,11 @@
-
-// FIX: Use express types directly to avoid conflicts.
+// FIX: Import explicit types from express to avoid conflicts and resolve type errors.
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
+// FIX: Use explicit Request and Response types.
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const [users] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
@@ -15,6 +15,7 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
+// FIX: Use explicit Request and Response types.
 export const createUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   try {
@@ -25,11 +26,15 @@ export const createUser = async (req: Request, res: Response) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userResponse } = newUser;
     res.status(201).json(userResponse);
-  } catch (error) {
+  } catch (error: any) {
+    if(error.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ message: 'User with this email already exists.' });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 };
 
+// FIX: Use explicit Request and Response types.
 export const updateUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   try {
@@ -48,11 +53,15 @@ export const updateUser = async (req: Request, res: Response) => {
 
     await pool.query(query, params);
     res.json({ message: 'User updated' });
-  } catch (error) {
+  } catch (error: any) {
+     if(error.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ message: 'User with this email already exists.' });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 };
 
+// FIX: Use explicit Request and Response types.
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     await pool.query('DELETE FROM users WHERE id = ?', [req.params.id]);
