@@ -1,225 +1,116 @@
-
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { User, RegisteredUser, LogEntry } from '../types';
-import { addLogEntry, getLogsFromStorage } from '../services/logService';
+import * as api from '../services/api';
 
 const USER_SESSION_KEY = 'user_session';
-const REGISTERED_USERS_KEY = 'registered_users';
-
-const isEmailValid = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(() => {
+  const [user, setUser] = useState<User | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
     try {
-      const storedUser = sessionStorage.getItem(USER_SESSION_KEY);
-      return storedUser ? JSON.parse(storedUser) : null;
+      const storedUser = localStorage.getItem(USER_SESSION_KEY);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
     } catch (error) {
       console.error("Failed to parse user session:", error);
-      return null;
+      localStorage.removeItem(USER_SESSION_KEY);
+    } finally {
+      setIsLoading(false);
     }
-  });
+  }, []);
 
-  const [authError, setAuthError] = useState<string | null>(null);
-
-  const getRegisteredUsers = (): RegisteredUser[] => {
-    try {
-        const storedUsers = localStorage.getItem(REGISTERED_USERS_KEY);
-        return storedUsers ? JSON.parse(storedUsers) : [];
-    } catch (error) {
-        console.error("Failed to parse registered users:", error);
-        return [];
-    }
-  };
-
-  const setRegisteredUsers = (users: RegisteredUser[]) => {
-      localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
-  };
-
-  const login = useCallback((username: string, password?: string) => {
+  const login = useCallback(async (username: string, password?: string) => {
     setAuthError(null);
-    if (username.toLowerCase() === 'admin') {
-      const adminUser: User = { id: 'admin-user', username: 'admin', role: 'admin' };
-      sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(adminUser));
-      setUser(adminUser);
-      addLogEntry({ userId: adminUser.id, username: adminUser.username, action: 'LOGIN', details: 'Administrador acessou o sistema.' });
-      return;
-    }
+    try {
+      if (username.toLowerCase() === 'admin' && !password) {
+        // Handle frontend-only admin access for demo/fallback
+        const adminUser: User = { id: 'admin-user', username: 'admin', role: 'admin' };
+        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(adminUser));
+        setUser(adminUser);
+        return;
+      }
 
-    const registeredUsers = getRegisteredUsers();
-    const foundUser = registeredUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
+      if (!password) {
+        setAuthError('authErrorInvalidCredentials');
+        return;
+      }
 
-    if (foundUser && foundUser.password === password) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password: _, ...sessionUser } = foundUser;
-      sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(sessionUser));
-      setUser(sessionUser);
-      addLogEntry({ userId: sessionUser.id, username: sessionUser.username, action: 'LOGIN', details: 'Usuário acessou o sistema.' });
-    } else {
-      setAuthError('authErrorInvalidCredentials');
+      const loggedInUser = await api.login(username, password);
+      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(loggedInUser));
+      setUser(loggedInUser);
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      setAuthError(error.message || 'authErrorInvalidCredentials');
     }
   }, []);
 
   const logout = useCallback(() => {
-    const currentUser = JSON.parse(sessionStorage.getItem(USER_SESSION_KEY) || 'null');
-    if (currentUser) {
-         addLogEntry({ userId: currentUser.id, username: currentUser.username, action: 'LOGOUT', details: 'Usuário saiu do sistema.' });
-    }
-    sessionStorage.removeItem(USER_SESSION_KEY);
+    localStorage.removeItem(USER_SESSION_KEY);
     setUser(null);
   }, []);
 
-  const register = useCallback((username: string, password?: string): boolean => {
+  const register = useCallback(async (username: string, password?: string): Promise<boolean> => {
     setAuthError(null);
-    if (!isEmailValid(username)) {
-        setAuthError('authErrorInvalidEmail');
-        return false;
+    try {
+      await api.register(username, password);
+      return true;
+    } catch (error: any) {
+      console.error("Registration failed:", error);
+      setAuthError(error.message || 'authErrorEmailExists');
+      return false;
     }
-    if (!password || password.length < 6) {
-        setAuthError('authErrorPasswordLength');
-        return false;
-    }
-
-    const registeredUsers = getRegisteredUsers();
-    if (registeredUsers.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-        setAuthError('authErrorEmailExists');
-        return false;
-    }
-
-    const newUser: RegisteredUser = {
-        id: crypto.randomUUID(),
-        username,
-        password,
-        role: 'user',
-        companyId: undefined, // New users start without a company
-    };
-
-    const updatedUsers = [...registeredUsers, newUser];
-    setRegisteredUsers(updatedUsers);
-    
-    addLogEntry({ userId: newUser.id, username: newUser.username, action: 'REGISTER_USER', details: 'Nova conta de usuário criada.' });
-
-    return true;
   }, []);
 
-  const getUsers = useCallback((): RegisteredUser[] => {
-      return getRegisteredUsers();
+  const getUsers = useCallback((): Promise<RegisteredUser[]> => {
+    return api.fetchUsers();
   }, []);
   
-  const addUser = useCallback((actor: User, newUser: Omit<RegisteredUser, 'id'>): boolean => {
-      setAuthError(null);
-      if (!isEmailValid(newUser.username)) {
-          setAuthError('authErrorInvalidEmail');
+  const addUser = useCallback(async (actor: User, newUser: Omit<RegisteredUser, 'id'>): Promise<boolean> => {
+      try {
+          await api.createUser(newUser);
+          return true;
+      } catch (error: any) {
+          setAuthError(error.message || 'addUserErrorDuplicate');
           return false;
       }
-       if (!newUser.password || newUser.password.length < 6) {
-        setAuthError('authErrorPasswordLength');
-        return false;
-    }
-      const users = getRegisteredUsers();
-      if (users.some(u => u.username.toLowerCase() === newUser.username.toLowerCase())) {
-          setAuthError('authErrorEmailExists');
-          return false;
-      }
-      const userToAdd: RegisteredUser = {
-          id: crypto.randomUUID(),
-          ...newUser
-      };
-      setRegisteredUsers([...users, userToAdd]);
-      addLogEntry({
-          userId: actor.id,
-          username: actor.username,
-          action: 'ADMIN_CREATE_USER',
-          details: `Criou o novo usuário ${userToAdd.username} com a permissão ${userToAdd.role}.`
-      });
-      return true;
   }, []);
 
-  const updateUser = useCallback((actor: User, targetUserId: string, updates: Partial<Omit<RegisteredUser, 'id'>>): boolean => {
-      if (targetUserId === 'admin-user') return false;
-      setAuthError(null);
-      const users = getRegisteredUsers();
-      const userIndex = users.findIndex(u => u.id === targetUserId);
-
-      if(userIndex === -1) return false;
-      
-      const targetUser = users[userIndex];
-      const oldUsername = targetUser.username;
-      const oldRole = targetUser.role;
-      const oldCompanyId = targetUser.companyId;
-
-      if (updates.username && updates.username !== oldUsername && users.some(u => u.username.toLowerCase() === updates.username?.toLowerCase())) {
-          setAuthError('authErrorEmailExists');
+  const updateUser = useCallback(async (actor: User, targetUserId: string, updates: Partial<Omit<RegisteredUser, 'id'>>): Promise<boolean> => {
+      try {
+          await api.updateUser(targetUserId, updates);
+          return true;
+      } catch (error: any) {
+          setAuthError(error.message || 'genericErrorText');
           return false;
       }
-
-      if (updates.password && updates.password.length < 6) {
-          setAuthError('authErrorPasswordLength');
-          return false;
-      }
-      
-      if (updates.password === '') {
-          delete updates.password;
-      }
-
-      const updatedUser = { ...targetUser, ...updates };
-      if(updates.companyId === '') updatedUser.companyId = undefined;
-
-      users[userIndex] = updatedUser;
-      setRegisteredUsers(users);
-
-      const details: string[] = [];
-      if (updates.username && updates.username !== oldUsername) {
-          details.push(`e-mail de "${oldUsername}" para "${updates.username}"`);
-      }
-      if (updates.role && updates.role !== oldRole) {
-          details.push(`permissão de "${oldRole}" para "${updates.role}"`);
-      }
-      if (updates.password) {
-          details.push("redefiniu a senha");
-      }
-      if ('companyId' in updates && updates.companyId !== oldCompanyId) {
-          details.push(`alterou a empresa (ID: ${updates.companyId || 'Nenhuma'})`);
-      }
-
-
-      if (details.length > 0) {
-         addLogEntry({
-            userId: actor.id,
-            username: actor.username,
-            action: 'ADMIN_UPDATE_USER',
-            details: `Atualizou o usuário ${oldUsername}: ${details.join(', ')}.`
-        });
-      }
-
-      return true;
   }, []);
 
-  const deleteUser = useCallback((actor: User, targetUserId: string): boolean => {
-      if (targetUserId === 'admin-user' || actor.id === targetUserId) {
-          console.error("Deletion constraints violated.");
+  const deleteUser = useCallback(async (actor: User, targetUserId: string): Promise<boolean> => {
+      if (actor.id === targetUserId) {
+          setAuthError('deleteSelfError');
           return false;
       }
-
-      const users = getRegisteredUsers();
-      const userToDelete = users.find(u => u.id === targetUserId);
-      if (!userToDelete) return false;
-
-      const updatedUsers = users.filter(u => u.id !== targetUserId);
-      setRegisteredUsers(updatedUsers);
-
-      addLogEntry({
-          userId: actor.id,
-          username: actor.username,
-          action: 'DELETE_USER',
-          details: `Excluiu o usuário ${userToDelete.username}.`
-      });
-
-      return true;
+      try {
+          await api.deleteUser(targetUserId);
+          return true;
+      } catch (error: any) {
+          setAuthError(error.message || 'deleteUserError');
+          return false;
+      }
   }, []);
   
-  const getLogs = useCallback((): LogEntry[] => {
-      return getLogsFromStorage();
+  const getLogs = useCallback((): Promise<LogEntry[]> => {
+      return api.fetchLogs();
   }, []);
   
+  // Return isLoading to prevent rendering the app before session is checked
+  if (isLoading) {
+      return { user: null, login, logout, register, authError, setAuthError, getUsers, addUser, updateUser, deleteUser, getLogs };
+  }
+
   return { user, login, logout, register, authError, setAuthError, getUsers, addUser, updateUser, deleteUser, getLogs };
 };

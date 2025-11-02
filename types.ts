@@ -37,10 +37,11 @@ export interface User {
   username: string;
   role: Role;
   companyId?: string; // Added for multi-tenancy
+  token?: string;
 }
 
-// Represents a user as stored in the database (localStorage)
-export interface RegisteredUser extends User {
+// Represents a user as stored in the database
+export interface RegisteredUser extends Omit<User, 'token'>{
   password?: string;
 }
 
@@ -97,5 +98,12 @@ export interface AiSettings {
   topP: number;
 }
 
-// Module declaration for pdfjs-dist is no longer needed
-// as the import will now use the main package entry which includes types.
+// New type for VPS SSH settings
+export interface VpsSettings {
+  id: string;
+  company_id: string;
+  hostname: string;
+  username: string;
+  password?: string; // Should be handled securely
+  ssh_port: number;
+}

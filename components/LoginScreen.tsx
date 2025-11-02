@@ -1,12 +1,12 @@
-
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { TranslationKey } from '../translations';
+import Spinner from './Spinner';
 
 interface LoginScreenProps {
-  login: (username: string, password?: string) => void;
-  register: (username: string, password?: string) => boolean;
+  login: (username: string, password?: string) => Promise<void>;
+  register: (username: string, password?: string) => Promise<boolean>;
   authError: string | null;
   setAuthError: (error: string | null) => void;
 }
@@ -18,6 +18,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
 
   const handleSwitchMode = (newMode: 'login' | 'register') => {
@@ -28,19 +29,21 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
     setRegistrationSuccess(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setAuthError(null);
     setRegistrationSuccess(false);
+    setIsLoading(true);
 
     if (mode === 'login') {
-      login(email, password);
+      await login(email, password);
     } else {
-      const success = register(email, password);
+      const success = await register(email, password);
       if (success) {
         setRegistrationSuccess(true);
         handleSwitchMode('login');
       }
     }
+    setIsLoading(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -83,7 +86,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
             </button>
         </div>
 
-        {authError && <div className="p-3 text-sm text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-center">{t(authError as TranslationKey)}</div>}
+        {authError && <div className="p-3 text-sm text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-center">{t(authError as TranslationKey) || authError}</div>}
         {registrationSuccess && <div className="p-3 text-sm text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-300 rounded-lg text-center">{t('registrationSuccess')}</div>}
 
         <div className="space-y-4">
@@ -116,10 +119,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
        
         <button
           onClick={handleSubmit}
-          className="w-full px-4 py-3 font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!email || (mode === 'register' && !password)}
+          className="w-full px-4 py-3 font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          disabled={isLoading || !email || (mode === 'register' && !password)}
         >
-          {mode === 'login' ? t('loginButton') : t('createAccountButton')}
+          {isLoading ? <Spinner /> : (mode === 'login' ? t('loginButton') : t('createAccountButton'))}
         </button>
       </div>
     </div>

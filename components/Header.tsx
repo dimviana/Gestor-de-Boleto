@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { LogoutIcon, BookOpenIcon, SettingsIcon, BellIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -14,10 +13,10 @@ interface HeaderProps {
   onOpenAdminPanel: () => void;
   user: User;
   notifications: AnyNotification[];
-  onDismissSystemUpdate: (sha: string) => void;
+  onSystemUpdateClick: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, user, notifications, onDismissSystemUpdate }) => {
+const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, user, notifications, onSystemUpdateClick }) => {
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -85,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
                         </span>
                     )}
                 </button>
-                {isPopoverOpen && <NotificationPopover notifications={notifications} onDismissSystemUpdate={onDismissSystemUpdate}/>}
+                {isPopoverOpen && <NotificationPopover notifications={notifications} onSystemUpdateClick={onSystemUpdateClick}/>}
             </div>
             <button
               onClick={onLogout}

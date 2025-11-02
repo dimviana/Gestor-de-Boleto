@@ -1,171 +1,146 @@
+import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, VpsSettings } from '../types';
 
-
-// FIX: Import RegisteredUser to resolve reference error.
-import { Boleto, BoletoStatus, User, Company, RegisteredUser } from '../types';
-
-const BOLETOS_DB_KEY = 'boletos';
-const COMPANIES_DB_KEY = 'companies';
-const SIMULATED_DELAY = 500; // ms
+const API_BASE_URL = '/api'; // Use relative URL to proxy to the backend
 
 // --- Helper Functions ---
-
-const readFromStorage = <T>(key: string): T[] => {
-  try {
-    const storedData = localStorage.getItem(key);
-    return storedData ? JSON.parse(storedData) : [];
-  } catch (error) {
-    console.error(`Failed to parse ${key} from localStorage`, error);
-    localStorage.removeItem(key);
-    return [];
-  }
+const getAuthToken = (): string | null => {
+    try {
+        const session = localStorage.getItem('user_session');
+        if (!session) return null;
+        const user: User = JSON.parse(session);
+        return user.token || null;
+    } catch (e) {
+        return null;
+    }
 };
 
-const writeToStorage = <T>(key: string, data: T[]) => {
-  localStorage.setItem(key, JSON.stringify(data));
+const apiFetch = async (url: string, options: RequestInit = {}) => {
+    const token = getAuthToken();
+    const headers = {
+        ...options.headers,
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+
+    if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(`${API_BASE_URL}${url}`, { ...options, headers });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
 };
+
+
+// --- Auth API ---
+export const login = (username: string, password?: string): Promise<User> => {
+    return apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+    });
+};
+
+export const register = (username?: string, password?: string): Promise<any> => {
+    return apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+    });
+};
+
 
 // --- Boletos API ---
+export const fetchBoletos = (): Promise<Boleto[]> => apiFetch('/boletos');
 
-export const fetchBoletos = (user: User): Promise<Boleto[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-      if (user.role === 'admin' && !user.companyId) {
-        resolve(boletos); // Super admin (no company) sees all boletos
-      } else if (user.companyId) {
-        resolve(boletos.filter(b => b.companyId === user.companyId));
-      } else {
-        resolve([]); // User with no company assigned sees no boletos
-      }
-    }, SIMULATED_DELAY);
-  });
-};
-
-export const createBoleto = (boleto: Boleto): Promise<Boleto> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-      if (!boletos.some(b => b.id === boleto.id)) {
-        const updatedBoletos = [boleto, ...boletos];
-        writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
-      }
-      resolve(boleto);
-    }, SIMULATED_DELAY / 2);
-  });
-};
-
-export const updateBoleto = (id: string, status: BoletoStatus): Promise<Boleto> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-        let updatedBoleto: Boleto | null = null;
-        const updatedBoletos = boletos.map(b => {
-          if (b.id === id) {
-            updatedBoleto = { ...b, status };
-            return updatedBoleto;
-          }
-          return b;
-        });
-  
-        if (updatedBoleto) {
-          writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
-          resolve(updatedBoleto);
-        } else {
-          reject(new Error("Boleto not found"));
-        }
-      }, SIMULATED_DELAY / 2);
+export const createBoleto = (file: File): Promise<Boleto> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiFetch('/boletos', {
+        method: 'POST',
+        body: formData,
     });
 };
 
-export const updateBoletoComments = (id: string, comments: string): Promise<Boleto> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-            let updatedBoleto: Boleto | null = null;
-            const updatedBoletos = boletos.map(b => {
-                if (b.id === id) {
-                    updatedBoleto = { ...b, comments };
-                    return updatedBoleto;
-                }
-                return b;
-            });
-
-            if (updatedBoleto) {
-                writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
-                resolve(updatedBoleto);
-            } else {
-                reject(new Error("Boleto not found"));
-            }
-        }, SIMULATED_DELAY / 2);
+export const updateBoletoStatus = (id: string, status: BoletoStatus): Promise<{ message: string }> => {
+    return apiFetch(`/boletos/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
     });
 };
 
-export const removeBoleto = (id: string): Promise<void> => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            const boletos = readFromStorage<Boleto>(BOLETOS_DB_KEY);
-            const updatedBoletos = boletos.filter(b => b.id !== id);
-            writeToStorage(BOLETOS_DB_KEY, updatedBoletos);
-            resolve();
-        }, SIMULATED_DELAY / 2);
+export const updateBoletoComments = (id: string, comments: string): Promise<{ message: string }> => {
+    return apiFetch(`/boletos/${id}/comments`, {
+        method: 'PUT',
+        body: JSON.stringify({ comments }),
     });
 };
+
+export const removeBoleto = (id: string): Promise<{ message: string }> => {
+    return apiFetch(`/boletos/${id}`, { method: 'DELETE' });
+};
+
+
+// --- Users API ---
+export const fetchUsers = (): Promise<RegisteredUser[]> => apiFetch('/users');
+
+export const createUser = (userData: Omit<RegisteredUser, 'id'>): Promise<RegisteredUser> => {
+    return apiFetch('/users', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+    });
+};
+
+export const updateUser = (id: string, updates: Partial<Omit<RegisteredUser, 'id'>>): Promise<{ message: string }> => {
+    return apiFetch(`/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+    });
+};
+
+export const deleteUser = (id: string): Promise<{ message: string }> => {
+    return apiFetch(`/users/${id}`, { method: 'DELETE' });
+};
+
 
 // --- Companies API ---
-
-export const fetchCompanies = (): Promise<Company[]> => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(readFromStorage<Company>(COMPANIES_DB_KEY)), SIMULATED_DELAY / 2);
-    });
-};
+export const fetchCompanies = (): Promise<Company[]> => apiFetch('/companies');
 
 export const createCompany = (companyData: Omit<Company, 'id'>): Promise<Company> => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const companies = readFromStorage<Company>(COMPANIES_DB_KEY);
-            const newCompany: Company = { ...companyData, id: crypto.randomUUID() };
-            writeToStorage(COMPANIES_DB_KEY, [...companies, newCompany]);
-            resolve(newCompany);
-        }, SIMULATED_DELAY / 2);
+    return apiFetch('/companies', {
+        method: 'POST',
+        body: JSON.stringify(companyData),
     });
 };
 
-export const updateCompany = (id: string, updates: Partial<Omit<Company, 'id'>>): Promise<Company> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const companies = readFromStorage<Company>(COMPANIES_DB_KEY);
-            let updatedCompany: Company | null = null;
-            const updatedCompanies = companies.map(c => {
-                if (c.id === id) {
-                    updatedCompany = { ...c, ...updates };
-                    return updatedCompany;
-                }
-                return c;
-            });
-            if (updatedCompany) {
-                writeToStorage(COMPANIES_DB_KEY, updatedCompanies);
-                resolve(updatedCompany);
-            } else {
-                reject(new Error("Company not found"));
-            }
-        }, SIMULATED_DELAY / 2);
+export const updateCompany = (id: string, updates: Partial<Omit<Company, 'id'>>): Promise<{ message: string }> => {
+    return apiFetch(`/companies/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
     });
 };
 
-export const deleteCompany = (id: string): Promise<void> => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const companies = readFromStorage<Company>(COMPANIES_DB_KEY);
-            writeToStorage(COMPANIES_DB_KEY, companies.filter(c => c.id !== id));
-            // Also un-assign users from this company
-            const users = readFromStorage<RegisteredUser>('registered_users').map(u => {
-                if (u.companyId === id) {
-                    return { ...u, companyId: undefined };
-                }
-                return u;
-            });
-            writeToStorage('registered_users', users);
-            resolve();
-        }, SIMULATED_DELAY / 2);
-    });
+export const deleteCompany = (id: string): Promise<{ message: string }> => {
+    return apiFetch(`/companies/${id}`, { method: 'DELETE' });
+};
+
+// --- Logs API ---
+export const fetchLogs = (): Promise<LogEntry[]> => apiFetch('/logs');
+
+
+// --- VPS Settings API ---
+export const fetchVpsSettings = (): Promise<VpsSettings> => apiFetch('/vps');
+
+export const saveVpsSettings = (settings: VpsSettings): Promise<{ message: string }> => {
+  return apiFetch('/vps', {
+    method: 'POST',
+    body: JSON.stringify(settings),
+  });
+};
+
+export const triggerVpsUpdate = (): Promise<{ message: string; output: string; }> => {
+  return apiFetch('/vps/update', {
+    method: 'POST',
+  });
 };

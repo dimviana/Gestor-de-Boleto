@@ -5,10 +5,10 @@ import { CalendarIcon, DollarSignIcon } from './icons/Icons';
 
 interface NotificationPopoverProps {
   notifications: AnyNotification[];
-  onDismissSystemUpdate: (sha: string) => void;
+  onSystemUpdateClick: () => void;
 }
 
-const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications, onDismissSystemUpdate }) => {
+const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications, onSystemUpdateClick }) => {
   const { t, language } = useLanguage();
 
   const formatCurrency = (value: number | null) => {
@@ -21,24 +21,12 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
 
   const getStatusLabel = (notification: Notification) => {
     if (notification.type === 'overdue') {
-      return (
-        <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
-          {t('overdueAlert')}
-        </span>
-      );
+      return <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">{t('overdueAlert')}</span>;
     }
     if (notification.daysUntilDue === 0) {
-        return (
-            <span className="px-2 py-1 text-xs font-bold text-yellow-800 bg-yellow-300 rounded-full">
-                {t('dueTodayAlert')}
-            </span>
-        )
+      return <span className="px-2 py-1 text-xs font-bold text-yellow-800 bg-yellow-300 rounded-full">{t('dueTodayAlert')}</span>;
     }
-    return (
-      <span className="px-2 py-1 text-xs font-bold text-orange-800 bg-orange-300 rounded-full">
-        {t('dueSoonAlert', { days: String(notification.daysUntilDue) })}
-      </span>
-    );
+    return <span className="px-2 py-1 text-xs font-bold text-orange-800 bg-orange-300 rounded-full">{t('dueSoonAlert', { days: String(notification.daysUntilDue) })}</span>;
   };
   
   const renderBoletoNotification = (notification: Notification) => {
@@ -50,14 +38,8 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
               {getStatusLabel(notification)}
             </div>
             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
-              <span className="flex items-center">
-                <DollarSignIcon className="w-3 h-3 mr-1" />
-                {formatCurrency(boleto.amount)}
-              </span>
-              <span className="flex items-center">
-                <CalendarIcon className="w-3 h-3 mr-1" />
-                {boleto.dueDate}
-              </span>
+              <span className="flex items-center"><DollarSignIcon className="w-3 h-3 mr-1" />{formatCurrency(boleto.amount)}</span>
+              <span className="flex items-center"><CalendarIcon className="w-3 h-3 mr-1" />{boleto.dueDate}</span>
             </div>
         </li>
       );
@@ -65,20 +47,15 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
 
   const renderSystemNotification = (notification: SystemNotification) => {
       return (
-        <li key={notification.sha} className="p-3 border-b border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30">
+        <li key={notification.sha} className="p-3 border-b border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 cursor-pointer" onClick={onSystemUpdateClick}>
             <div className="flex justify-between items-center mb-2">
                 <p className="font-bold text-sm text-blue-800 dark:text-blue-200">Atualização do Sistema</p>
-                <span className="px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-full">
-                    {notification.version}
-                </span>
+                <span className="px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-full">{notification.version}</span>
             </div>
             <p className="text-xs text-gray-700 dark:text-gray-300 mb-2 italic">"{notification.message}"</p>
-             <div className="flex items-center justify-between text-xs mt-2">
-                 <a href={notification.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:underline">Ver Detalhes</a>
-                <button onClick={() => onDismissSystemUpdate(notification.sha)} className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">
-                    Dispensar
-                </button>
-             </div>
+            <div className="flex items-center justify-end text-xs mt-2">
+                 <span className="font-semibold text-blue-600">Clique para atualizar</span>
+            </div>
         </li>
       );
   };

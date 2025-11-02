@@ -1,19 +1,21 @@
 #!/bin/bash
 
 # --- Configuration ---
-# These variables are used across install, update, and uninstall functions.
+# These variables can be customized.
 GIT_REPO="https://github.com/dimviana/Gestor-de-Boleto.git"
-PROJECT_FOLDER="boletomanager.abildeveloper.com.br"
-# Updated APP_URL to reflect the new Nginx port
-APP_URL="https://boletomanager.abildeveloper.com.br"
+PROJECT_PARENT_DIR="/home/abildeveloper-boletomanager"
+PROJECT_FOLDER_NAME="htdocs"
+PROJECT_PATH="${PROJECT_PARENT_DIR}/${PROJECT_FOLDER_NAME}"
+NGINX_CONF_NAME="boletomanager" # Name for nginx config file
 DB_HOST="localhost"
-DB_USER="admmaager"
-DB_PASSWORD="E6uoXi34ZwwAINCD5T25"
-DB_DATABASE="boletomanagerai"
-API_KEY="AIzaSyB0zoSEGrIYuRjBtcTvxJX9LVbo5L2GpmA"
-JWT_SECRET="AIzaSyB0zoSEGrIYuRjBtcTvxJX9LVbo5L2GpmAjwt"
+DB_USER="root"
+DB_PASSWORD="your_strong_password_here" # CHANGE THIS
+DB_DATABASE="boleto_manager_ai"
+API_KEY="your_gemini_api_key_here" # CHANGE THIS
+JWT_SECRET="your_super_secret_jwt_key_here" # CHANGE THIS
 APP_NAME="boleto-manager-ai" # Name for the PM2 process
-APP_PORT=3000 # Internal port for the Node.js application
+NODE_PORT=3001 # Internal port for the Node.js app
+NGINX_PORT=3000 # External port for Nginx
 
 # Color codes for output
 GREEN='\033[0;32m'
@@ -32,20 +34,15 @@ install_dependencies() {
     echo -e "${YELLOW}Updating system package list...${NC}"
     sudo apt-get update -y
 
-    echo -e "${YELLOW}Pre-configuring phpMyAdmin to avoid interactive prompts...${NC}"
-    sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/dbconfig-install boolean true'
-    sudo debconf-set-selections <<< "phpmyadmin phpmyadmin/app-password-confirm password ${DB_PASSWORD}"
-    sudo debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/admin-pass password ${DB_PASSWORD}"
-    sudo debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/app-pass password ${DB_PASSWORD}"
-    sudo debconf-set-selections <<< 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2'
-
-    echo -e "${YELLOW}Installing essential system packages (git, apache2, mysql-server, phpmyadmin, build-essential...)${NC}"
-    sudo apt-get install -y git curl build-essential python3 apache2 mysql-server phpmyadmin php-mbstring php-gettext php-zip
+    echo -e "${YELLOW}Installing essential system packages (git, nginx, mysql-server, build-essential...)${NC}"
+    sudo apt-get install -y git curl build-essential python3 nginx mysql-server
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to install base packages.${NC}"; exit 1; fi
 
     if ! command_exists node; then
         echo "Node.js not found. Installing Node.js LTS (20.x)..."
         curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         sudo apt-get install -y nodejs
+        if [ $? -ne 0 ]; then echo -e "${RED}Failed to install Node.js.${NC}"; exit 1; fi
     else
         echo -e "${GREEN}Node.js is already installed.${NC}"
     fi
@@ -53,6 +50,7 @@ install_dependencies() {
     if ! command_exists pm2; then
         echo "PM2 not found. Installing globally..."
         sudo npm install -g pm2
+        if [ $? -ne 0 ]; then echo -e "${RED}Failed to install PM2.${NC}"; exit 1; fi
     else
         echo -e "${GREEN}PM2 is already installed.${NC}"
     fi
@@ -61,15 +59,61 @@ install_dependencies() {
 }
 
 configure_mysql() {
-    echo -e "${YELLOW}Attempting to configure MySQL root password to '${DB_PASSWORD}'...${NC}"
+    echo -e "${YELLOW}Configuring MySQL...${NC}"
     sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASSWORD}';"
-    sudo mysql -e "FLUSH PRIVILEGES;"
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}MySQL root password configured successfully.${NC}"
-    else
+    if [ $? -ne 0 ]; then
         echo -e "${YELLOW}Could not set MySQL password. It might be already set. Continuing...${NC}"
+    else
+        echo -e "${GREEN}MySQL root password configured successfully.${NC}"
     fi
+    sudo mysql -e "FLUSH PRIVILEGES;"
 }
+
+configure_nginx() {
+    echo -e "${YELLOW}Configuring NGINX...${NC}"
+    NGINX_CONFIG_PATH="/etc/nginx/sites-available/${NGINX_CONF_NAME}"
+    
+    # Create the Nginx config file
+    sudo tee "$NGINX_CONFIG_PATH" > /dev/null <<EOL
+server {
+    listen ${NGINX_PORT};
+    server_name _;
+
+    location / {
+        proxy_pass http://localhost:${NODE_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOL
+
+    # Enable the site by creating a symbolic link
+    if [ ! -L "/etc/nginx/sites-enabled/${NGINX_CONF_NAME}" ]; then
+        sudo ln -s "$NGINX_CONFIG_PATH" "/etc/nginx/sites-enabled/"
+    fi
+    
+    # Remove the default site if it exists
+    if [ -L "/etc/nginx/sites-enabled/default" ]; then
+        sudo rm "/etc/nginx/sites-enabled/default"
+    fi
+
+    # Test Nginx configuration and restart the service
+    sudo nginx -t
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}NGINX configuration test failed. Please check ${NGINX_CONFIG_PATH}.${NC}"
+        exit 1
+    fi
+    
+    sudo systemctl restart nginx
+    echo -e "${GREEN}NGINX configured successfully to listen on port ${NGINX_PORT}.${NC}"
+}
+
 
 # --- Main Logic Functions ---
 
@@ -78,16 +122,19 @@ do_install() {
 
     install_dependencies
     configure_mysql
+    
+    sudo mkdir -p "$PROJECT_PARENT_DIR"
+    sudo chown -R $USER:$USER "$PROJECT_PARENT_DIR"
 
-    if [ -d "$PROJECT_FOLDER" ]; then
-        echo -e "${YELLOW}Project folder '$PROJECT_FOLDER' already exists. Removing for a fresh clone.${NC}"
-        rm -rf "$PROJECT_FOLDER"
+    if [ -d "$PROJECT_PATH" ]; then
+        echo -e "${YELLOW}Project folder '$PROJECT_PATH' already exists. Removing for a fresh clone.${NC}"
+        rm -rf "$PROJECT_PATH"
     fi
 
-    echo -e "${YELLOW}Cloning repository...${NC}"
-    git clone "$GIT_REPO" "$PROJECT_FOLDER"
+    echo -e "${YELLOW}Cloning repository into ${PROJECT_PATH}...${NC}"
+    git clone "$GIT_REPO" "$PROJECT_PATH"
     if [ $? -ne 0 ]; then echo -e "${RED}Failed to clone repository.${NC}"; exit 1; fi
-    cd "$PROJECT_FOLDER"
+    cd "$PROJECT_PATH"
 
     echo -e "${YELLOW}Creating .env configuration file...${NC}"
     cat > .env << EOL
@@ -96,7 +143,7 @@ DB_USER=${DB_USER}
 DB_PASSWORD=${DB_PASSWORD}
 DB_DATABASE=${DB_DATABASE}
 API_KEY=${API_KEY}
-PORT=${PORT}
+PORT=${NODE_PORT}
 JWT_SECRET=${JWT_SECRET}
 EOL
 
@@ -109,40 +156,34 @@ EOL
     if [ $? -ne 0 ]; then echo -e "${RED}Failed to compile TypeScript project.${NC}"; exit 1; fi
 
     echo -e "${YELLOW}Setting up database schema...${NC}"
-    echo "CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`; USE \`${DB_DATABASE}\`;" > setup.sql
-    cat database/schema.txt >> setup.sql
-    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" < setup.sql
-    if [ $? -ne 0 ]; then echo -e "${RED}Failed to set up database schema.${NC}"; rm setup.sql; exit 1; fi
-    rm setup.sql
-
-    echo -e "${YELLOW}Creating default admin user...${NC}"
-    ADMIN_UUID=$(node -e "console.log(require('crypto').randomUUID());")
-    ADMIN_PASSWORD="dvsviana154"
-    HASHED_PASSWORD=$(node -e "console.log(require('bcryptjs').hashSync('${ADMIN_PASSWORD}', 10));")
-    INSERT_ADMIN_SQL="INSERT INTO users (id, username, password, role) VALUES ('${ADMIN_UUID}', 'androiddiviana@gmal.com', '${HASHED_PASSWORD}', 'admin') ON DUPLICATE KEY UPDATE password='${HASHED_PASSWORD}';"
-    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" -e "${INSERT_ADMIN_SQL}"
-    if [ $? -ne 0 ]; then echo -e "${RED}Failed to create admin user.${NC}"; exit 1; fi
+    echo "CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`;" | mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD"
+    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" < database/schema.txt
+    if [ $? -ne 0 ]; then echo -e "${RED}Failed to set up database schema.${NC}"; exit 1; fi
 
     echo -e "${YELLOW}Starting application with PM2...${NC}"
     pm2 stop "$APP_NAME" &> /dev/null
     pm2 delete "$APP_NAME" &> /dev/null
     pm2 start dist/api/index.js --name "$APP_NAME"
     pm2 startup
+    sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
     pm2 save
     
+    configure_nginx
+
     echo -e "${GREEN}--- Installation Complete! ---${NC}"
-    echo -e "Application is running. Access it at: ${YELLOW}${APP_URL}${NC}"
+    echo -e "Application is running via PM2."
+    echo -e "Access it through NGINX at: ${YELLOW}http://<your_server_ip>:${NGINX_PORT}${NC}"
     echo -e "To see logs, run: ${YELLOW}pm2 logs ${APP_NAME}${NC}"
 }
 
 do_update() {
     echo -e "${GREEN}--- Starting Application Update ---${NC}"
 
-    if [ ! -d "$PROJECT_FOLDER" ]; then
-        echo -e "${RED}Project folder '$PROJECT_FOLDER' not found. Please install the application first.${NC}"
+    if [ ! -d "$PROJECT_PATH" ]; then
+        echo -e "${RED}Project folder '$PROJECT_PATH' not found. Please install the application first.${NC}"
         exit 1
     fi
-    cd "$PROJECT_FOLDER"
+    cd "$PROJECT_PATH"
 
     echo -e "${YELLOW}Stopping application with PM2...${NC}"
     pm2 stop "$APP_NAME"
@@ -160,10 +201,7 @@ do_update() {
     if [ $? -ne 0 ]; then echo -e "${RED}Failed to compile TypeScript project.${NC}"; pm2 restart "$APP_NAME"; exit 1; fi
     
     echo -e "${YELLOW}Applying latest database schema changes...${NC}"
-    echo "USE \`${DB_DATABASE}\`;" > update.sql
-    cat database/schema.txt >> update.sql
-    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" < update.sql
-    rm update.sql
+    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" < database/schema.txt
     
     echo -e "${YELLOW}Restarting application with PM2...${NC}"
     pm2 restart "$APP_NAME"
@@ -173,9 +211,7 @@ do_update() {
 
 do_uninstall() {
     echo -e "${RED}--- Starting Full Uninstallation ---${NC}"
-    echo -e "${YELLOW}This will remove the application, its database, and optionally the system dependencies.${NC}"
-    
-    read -p "Are you sure you want to continue? [y/N] " confirm
+    read -p "Are you sure? This will remove the application, its database, and NGINX config. [y/N] " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo "Uninstall cancelled."
         exit 0
@@ -186,29 +222,18 @@ do_uninstall() {
     pm2 delete "$APP_NAME" &> /dev/null
     pm2 save --force
 
-    if [ -d "$PROJECT_FOLDER" ]; then
-        read -p "Delete project folder at '${PROJECT_FOLDER}'? [y/N] " confirm
-        if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-            echo -e "${YELLOW}Deleting project folder...${NC}"
-            rm -rf "$PROJECT_FOLDER"
-        fi
-    fi
+    echo -e "${YELLOW}Removing NGINX configuration...${NC}"
+    sudo rm -f "/etc/nginx/sites-available/${NGINX_CONF_NAME}"
+    sudo rm -f "/etc/nginx/sites-enabled/${NGINX_CONF_NAME}"
+    sudo systemctl restart nginx
+
+    echo -e "${YELLOW}Deleting project folder at ${PROJECT_PATH}...${NC}"
+    rm -rf "$PROJECT_PATH"
 
     read -p "Drop MySQL database '${DB_DATABASE}'? ${RED}THIS CANNOT BE UNDONE.${NC} [y/N] " confirm
     if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
         echo -e "${YELLOW}Dropping database...${NC}"
         mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS \`${DB_DATABASE}\`;"
-    fi
-
-    read -p "Uninstall system-wide dependencies (apache, mysql, nodejs, pm2)? ${YELLOW}This might affect other applications.${NC} [y/N] " confirm
-    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-        echo -e "${YELLOW}Uninstalling PM2...${NC}"
-        sudo npm uninstall -g pm2
-        echo -e "${YELLOW}Purging system packages...${NC}"
-        sudo apt-get purge --auto-remove -y apache2 mysql-server* phpmyadmin nodejs
-        sudo apt-get autoremove -y
-        sudo apt-get clean
-        echo -e "${YELLOW}Note: Some configuration files might remain in /etc/mysql and /etc/apache2.${NC}"
     fi
 
     echo -e "${GREEN}--- Uninstallation Complete! ---${NC}"

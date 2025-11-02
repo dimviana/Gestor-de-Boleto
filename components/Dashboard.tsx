@@ -15,6 +15,7 @@ import { WalletIcon, HourglassIcon, CheckCircleIcon, TrashIcon } from './icons/I
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
 import { BoletoDetailsModal } from './BoletoDetailsModal';
+import VpsUpdateModal from './VpsUpdateModal';
 import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
 
@@ -22,11 +23,11 @@ import * as api from '../services/api';
 interface DashboardProps {
   onLogout: () => void;
   user: User;
-  getUsers: () => RegisteredUser[];
-  addUser: (actor: User, newUser: Omit<RegisteredUser, 'id'>) => boolean;
-  updateUser: (actor: User, userId: string, updates: Partial<Omit<RegisteredUser, 'id'>>) => boolean;
-  deleteUser: (actor: User, userId: string) => boolean;
-  getLogs: () => LogEntry[];
+  getUsers: () => Promise<RegisteredUser[]>;
+  addUser: (actor: User, newUser: Omit<RegisteredUser, 'id'>) => Promise<boolean>;
+  updateUser: (actor: User, userId: string, updates: Partial<Omit<RegisteredUser, 'id'>>) => Promise<boolean>;
+  deleteUser: (actor: User, userId: string) => Promise<boolean>;
+  getLogs: () => Promise<LogEntry[]>;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser, updateUser, deleteUser, getLogs }) => {
@@ -44,10 +45,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
 
-  // System Update Notification State
   const [systemUpdate, setSystemUpdate] = useState<SystemNotification | null>(null);
+  const [isVpsModalOpen, setIsVpsModalOpen] = useState(false);
 
-  // Admin filter state
+
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
 
@@ -61,7 +62,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
     }
   }, [user.role]);
 
-  // Effect to check for system updates from GitHub
   useEffect(() => {
     const checkForUpdates = async () => {
       try {
@@ -100,44 +100,32 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const handleFileUpload = async (file: File) => {
     setIsLoadingUpload(true);
     try {
-      let newBoleto: Omit<Boleto, 'companyId'>;
-      if (method === 'ai') {
-          newBoleto = await processBoletoWithAI(file, language, aiSettings);
-      } else {
-          newBoleto = await processBoletoPDFWithRegex(file);
-      }
-
-      // Validation for zero-value boletos
-      if (newBoleto.amount === null || newBoleto.amount === undefined || newBoleto.amount === 0) {
-        setErrorModalContent({
-            title: t('freeBoletoErrorTitle'),
-            message: t('freeBoletoErrorText')
-        });
-        setIsErrorModalOpen(true);
-        return; // Stop execution
-      }
-
-      await addBoleto(user, newBoleto, method);
+      // The backend now handles the processing method, but we can keep this for UI feedback
+      let newBoleto: Omit<Boleto, 'companyId' | 'id'> & { id?: string }; // id can be optional as backend assigns it
+       if (method === 'ai') {
+           newBoleto = await processBoletoWithAI(file, language, aiSettings);
+       } else {
+           newBoleto = await processBoletoPDFWithRegex(file);
+       }
+       if (newBoleto.amount === null || newBoleto.amount === undefined || newBoleto.amount === 0) {
+         setErrorModalContent({ title: t('freeBoletoErrorTitle'), message: t('freeBoletoErrorText') });
+         setIsErrorModalOpen(true);
+         return;
+       }
+      await addBoleto(user, file, method);
     } catch (error: any) {
       console.error("Upload failed:", error);
       let errorMessage = t('genericErrorText');
       let errorTitle = t('genericErrorTitle');
       
-      if (error.message.startsWith('duplicateBarcodeError:')) {
-          const identifier = error.message.split(':')[1];
+      if (error.message.includes('Duplicate barcode')) {
+          const identifier = error.message.split(': ')[1] || 'N/A';
           errorMessage = t('duplicateBarcodeErrorText', { identifier });
           errorTitle = t('duplicateBarcodeErrorTitle');
-      } else if (error.message === 'invalidBarcodeError') {
-          errorMessage = t('invalidBarcodeErrorText');
-          errorTitle = t('invalidBarcodeErrorTitle');
-      } else if (error.message === 'pdfProcessingError') {
-          errorMessage = t('pdfProcessingError');
-          errorTitle = t('processingErrorTitle');
-      } else if (error.message === 'userHasNoCompanyError') {
+      } else if (error.message.includes('User is not associated with a company')) {
           errorMessage = t('userHasNoCompanyErrorText');
           errorTitle = t('userHasNoCompanyErrorTitle');
       }
-
 
       setErrorModalContent({ title: errorTitle, message: errorMessage });
       setIsErrorModalOpen(true);
@@ -159,10 +147,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       const allSelectedInColumn = columnIds.length > 0 && columnIds.every(id => selectedBoletoIds.includes(id));
 
       if (allSelectedInColumn) {
-          // Deselect all from this column
           setSelectedBoletoIds(prev => prev.filter(id => !columnIds.includes(id)));
       } else {
-          // Select all from this column (and keep existing selections from other columns)
           setSelectedBoletoIds(prev => [...new Set([...prev, ...columnIds])]);
       }
   }, [selectedBoletoIds]);
@@ -194,7 +180,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
 
   const handleDelete = (id: string) => {
     deleteBoleto(user, id);
-    // Also remove from selection if it was selected
     setSelectedBoletoIds(prev => prev.filter(selectedId => selectedId !== id));
   };
 
@@ -204,14 +189,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
 
   const filteredBoletos = useMemo(() => {
     if (user.role === 'admin') {
-      // If no company is selected, show nothing.
-      if (!selectedCompanyFilter) {
-        return [];
-      }
-      // Otherwise, filter by the selected company.
+      if (!selectedCompanyFilter) return [];
       return boletos.filter(boleto => boleto.companyId === selectedCompanyFilter);
     }
-    // For non-admin users, the boletos are already filtered by the useBoletos hook.
     return boletos;
   }, [boletos, user.role, selectedCompanyFilter]);
 
@@ -219,9 +199,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const boletosVerifying = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.VERIFYING), [filteredBoletos]);
   const boletosPaid = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.PAID), [filteredBoletos]);
 
-  const calculateTotal = (boletosList: Boleto[]) => {
-    return boletosList.reduce((sum, boleto) => sum + (boleto.amount || 0), 0);
-  };
+  const calculateTotal = (boletosList: Boleto[]) => boletosList.reduce((sum, boleto) => sum + (boleto.amount || 0), 0);
   
   const totalToDo = useMemo(() => calculateTotal(boletosToDo), [boletosToDo]);
   const totalVerifying = useMemo(() => calculateTotal(boletosVerifying), [boletosVerifying]);
@@ -229,61 +207,48 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
 
   const boletoNotifications = useMemo((): Notification[] => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize to the beginning of the day for accurate comparison
+    today.setHours(0, 0, 0, 0);
 
     return filteredBoletos
       .filter(b => b.status === BoletoStatus.TO_PAY && b.dueDate)
       .map(boleto => {
-        // Ensure dueDate is not null and is a valid date string
         if (!boleto.dueDate) return null;
-        
         try {
           const dueDate = new Date(`${boleto.dueDate}T00:00:00`);
           const timeDiff = dueDate.getTime() - today.getTime();
           const daysUntilDue = Math.ceil(timeDiff / (1000 * 3600 * 24));
           
-          if (daysUntilDue < 0) {
-            return { boleto, type: 'overdue', daysUntilDue };
-          }
-          if (daysUntilDue <= 3) { // Includes today and the next 3 days
-            return { boleto, type: 'dueSoon', daysUntilDue };
-          }
+          if (daysUntilDue < 0) return { boleto, type: 'overdue', daysUntilDue };
+          if (daysUntilDue <= 3) return { boleto, type: 'dueSoon', daysUntilDue };
           return null;
         } catch (e) {
             console.error("Invalid date format for boleto:", boleto.id, boleto.dueDate);
             return null;
         }
-
       })
       .filter((notification): notification is Notification => notification !== null)
-      .sort((a, b) => a.daysUntilDue - b.daysUntilDue); // Sort by urgency
+      .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
   }, [filteredBoletos]);
 
   const allNotifications: AnyNotification[] = useMemo(() => {
     const notifications: AnyNotification[] = [...boletoNotifications];
     if (systemUpdate) {
-        notifications.unshift(systemUpdate); // Add system update to the top
+        notifications.unshift(systemUpdate);
     }
     return notifications;
   }, [boletoNotifications, systemUpdate]);
 
-  const handleDismissSystemUpdate = useCallback((sha: string) => {
-    localStorage.setItem('lastSeenCommitSha', sha);
-    setSystemUpdate(null);
-  }, []);
+  const handleSystemUpdateClick = useCallback(() => {
+    if (user.role === 'admin' && systemUpdate) {
+        setIsVpsModalOpen(true);
+    }
+  }, [user.role, systemUpdate]);
 
-  const formatCurrency = (value: number) => {
-    return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
-      style: 'currency',
-      currency: language === 'pt' ? 'BRL' : 'USD',
-    });
-  };
+  const formatCurrency = (value: number) => value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', { style: 'currency', currency: language === 'pt' ? 'BRL' : 'USD' });
 
   const SummaryCard: React.FC<{ icon: React.ReactNode, title: string, value: number, colorClass: string }> = ({ icon, title, value, colorClass }) => (
     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 flex items-center space-x-4">
-        <div className={`p-3 rounded-full bg-gray-100 dark:bg-gray-700 ${colorClass}`}>
-            {icon}
-        </div>
+        <div className={`p-3 rounded-full bg-gray-100 dark:bg-gray-700 ${colorClass}`}>{icon}</div>
         <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
             <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(value)}</p>
@@ -299,7 +264,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
         onOpenDocs={() => setIsDocsOpen(true)}
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
         notifications={allNotifications}
-        onDismissSystemUpdate={handleDismissSystemUpdate}
+        onSystemUpdateClick={handleSystemUpdateClick}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">
@@ -312,99 +277,38 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
           {isLoadingUpload && (
             <div className="flex items-center justify-center mt-4">
               <Spinner />
-              <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{method === 'ai' ? t('processingStatusOcr') : t('processingStatusRegex')}</p>
+              <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{t('processingStatus')}</p>
             </div>
           )}
 
           {user.role === 'admin' && (
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <label htmlFor="company-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('filterByCompany')}
-              </label>
+              <label htmlFor="company-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('filterByCompany')}</label>
               <select
                 id="company-filter"
                 value={selectedCompanyFilter}
                 onChange={(e) => setSelectedCompanyFilter(e.target.value)}
                 className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
               >
-                <option value="" disabled>
-                  {t('selectCompanyPrompt')}
-                </option>
-                {companies.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
+                <option value="" disabled>{t('selectCompanyPrompt')}</option>
+                {companies.map((company) => (<option key={company.id} value={company.id}>{company.name}</option>))}
               </select>
             </div>
           )}
-
            <FolderWatcher onFileUpload={handleFileUpload} disabled={isLoadingUpload || !user.companyId} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <SummaryCard 
-                icon={<WalletIcon className="w-6 h-6" />}
-                title={t('totalToPay')}
-                value={totalToDo}
-                colorClass="text-red-500"
-            />
-            <SummaryCard 
-                icon={<HourglassIcon className="w-6 h-6" />}
-                title={t('totalVerifying')}
-                value={totalVerifying}
-                colorClass="text-yellow-500"
-            />
-            <SummaryCard 
-                icon={<CheckCircleIcon className="w-6 h-6" />}
-                title={t('totalPaid')}
-                value={totalPaid}
-                colorClass="text-green-500"
-            />
+            <SummaryCard icon={<WalletIcon className="w-6 h-6" />} title={t('totalToPay')} value={totalToDo} colorClass="text-red-500" />
+            <SummaryCard icon={<HourglassIcon className="w-6 h-6" />} title={t('totalVerifying')} value={totalVerifying} colorClass="text-yellow-500" />
+            <SummaryCard icon={<CheckCircleIcon className="w-6 h-6" />} title={t('totalPaid')} value={totalPaid} colorClass="text-green-500" />
         </div>
 
-        {isLoadingBoletos ? (
-          <div className="flex justify-center items-center h-64">
-            <Spinner />
-          </div>
-        ) : (
+        {isLoadingBoletos ? <div className="flex justify-center items-center h-64"><Spinner /></div> : (
           <div className="flex flex-col md:flex-row -mx-2">
-            <KanbanColumn 
-                title={t('kanbanTitleToDo')} 
-                boletos={boletosToDo} 
-                status={BoletoStatus.TO_PAY}
-                onUpdateStatus={handleUpdateStatus} 
-                onDelete={handleDelete}
-                onUpdateComments={handleUpdateComments}
-                selectedBoletoIds={selectedBoletoIds}
-                onToggleSelection={handleToggleBoletoSelection}
-                onToggleSelectAll={handleToggleSelectAll}
-                onViewDetails={handleViewBoletoDetails}
-            />
-            <KanbanColumn 
-                title={t('kanbanTitleVerifying')} 
-                boletos={boletosVerifying} 
-                status={BoletoStatus.VERIFYING}
-                onUpdateStatus={handleUpdateStatus} 
-                onDelete={handleDelete} 
-                onUpdateComments={handleUpdateComments}
-                selectedBoletoIds={selectedBoletoIds}
-                onToggleSelection={handleToggleBoletoSelection}
-                onToggleSelectAll={handleToggleSelectAll}
-                onViewDetails={handleViewBoletoDetails}
-            />
-            <KanbanColumn 
-                title={t('kanbanTitlePaid')} 
-                boletos={boletosPaid} 
-                status={BoletoStatus.PAID}
-                onUpdateStatus={handleUpdateStatus} 
-                onDelete={handleDelete} 
-                onUpdateComments={handleUpdateComments}
-                selectedBoletoIds={selectedBoletoIds}
-                onToggleSelection={handleToggleBoletoSelection}
-                onToggleSelectAll={handleToggleSelectAll}
-                onViewDetails={handleViewBoletoDetails}
-            />
+            <KanbanColumn title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewDetails={handleViewBoletoDetails} />
+            <KanbanColumn title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewDetails={handleViewBoletoDetails} />
+            <KanbanColumn title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewDetails={handleViewBoletoDetails} />
           </div>
         )}
         {dbError && <p className="text-red-500 text-center mt-4">{dbError}</p>}
@@ -413,60 +317,39 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       {selectedBoletoIds.length > 0 && (
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl p-4 z-30">
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 animate-fade-in-up">
-                <p className="font-semibold text-gray-700 dark:text-gray-200">
-                    {t('itemsSelected', { count: selectedBoletoIds.length.toString() })}
-                </p>
+                <p className="font-semibold text-gray-700 dark:text-gray-200">{t('itemsSelected', { count: selectedBoletoIds.length.toString() })}</p>
                 <div className="flex items-center space-x-2">
                     <button onClick={() => handleBulkUpdateStatus(BoletoStatus.TO_PAY)} className="px-3 py-2 text-sm font-medium text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/60">{t('moveTo', { status: t('kanbanTitleToDo')})}</button>
                     <button onClick={() => handleBulkUpdateStatus(BoletoStatus.VERIFYING)} className="px-3 py-2 text-sm font-medium text-yellow-600 bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300 rounded-md hover:bg-yellow-200 dark:hover:bg-yellow-900/60">{t('moveTo', { status: t('kanbanTitleVerifying')})}</button>
                     <button onClick={() => handleBulkUpdateStatus(BoletoStatus.PAID)} className="px-3 py-2 text-sm font-medium text-green-600 bg-green-100 dark:bg-green-900/40 dark:text-green-300 rounded-md hover:bg-green-200 dark:hover:bg-green-900/60">{t('moveTo', { status: t('kanbanTitlePaid')})}</button>
                     <button onClick={handleBulkDelete} className="p-2 text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/60" title={t('deleteSelected')}><TrashIcon className="w-5 h-5"/></button>
                 </div>
-                <button onClick={() => setSelectedBoletoIds([])} className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-                    {t('deselectAll')}
-                </button>
+                <button onClick={() => setSelectedBoletoIds([])} className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">{t('deselectAll')}</button>
             </div>
         </div>
       )}
 
-      <Modal 
-          isOpen={isErrorModalOpen} 
-          onClose={() => setIsErrorModalOpen(false)} 
-          title={errorModalContent.title}
-      >
+      <Modal isOpen={isErrorModalOpen} onClose={() => setIsErrorModalOpen(false)} title={errorModalContent.title}>
           <div className="text-center p-4">
               <p className="text-gray-600 dark:text-gray-300 mb-6">{errorModalContent.message}</p>
-              <button
-                  onClick={() => setIsErrorModalOpen(false)}
-                  className="px-8 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300"
-              >
-                  OK
-              </button>
+              <button onClick={() => setIsErrorModalOpen(false)} className="px-8 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300">OK</button>
           </div>
       </Modal>
 
-      <Modal isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} title={t('documentationTitle')}>
-          <Documentation />
-      </Modal>
+      <Modal isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} title={t('documentationTitle')}><Documentation /></Modal>
       
       <Modal isOpen={isAdminPanelOpen} onClose={() => setIsAdminPanelOpen(false)} title="Painel Administrativo">
-          <AdminPanel 
-            onClose={() => setIsAdminPanelOpen(false)} 
-            getUsers={getUsers}
-            addUser={addUser}
-            updateUser={updateUser}
-            deleteUser={deleteUser}
-            currentUser={user}
-            getLogs={getLogs}
-        />
+          <AdminPanel onClose={() => setIsAdminPanelOpen(false)} getUsers={getUsers} addUser={addUser} updateUser={updateUser} deleteUser={deleteUser} currentUser={user} getLogs={getLogs} />
       </Modal>
-
-      {viewingBoleto && (
-          <BoletoDetailsModal
-            boleto={viewingBoleto}
-            onClose={() => setViewingBoleto(null)}
+      
+      {isVpsModalOpen && systemUpdate && (
+          <VpsUpdateModal
+            systemUpdateInfo={systemUpdate}
+            onClose={() => setIsVpsModalOpen(false)}
           />
-        )}
+      )}
+
+      {viewingBoleto && (<BoletoDetailsModal boleto={viewingBoleto} onClose={() => setViewingBoleto(null)} />)}
     </>
   );
 };

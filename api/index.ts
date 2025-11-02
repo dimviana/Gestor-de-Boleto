@@ -1,5 +1,4 @@
 
-
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -12,6 +11,7 @@ import companyRoutes from './routes/companies';
 import userRoutes from './routes/users';
 import logRoutes from './routes/logs';
 import settingsRoutes from './routes/settings';
+import vpsRoutes from './routes/vps'; // Import new VPS routes
 
 dotenv.config();
 
@@ -33,18 +33,13 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/vps', vpsRoutes); // Add new VPS routes
 
 // --- Frontend Serving ---
-// Serve static files from the React build directory.
-// After the tsc build, __dirname is <project_root>/dist/api,
-// so we go up one level to get to the <project_root>/dist folder which contains the frontend build.
-// FIX: Use `__dirname` to construct a reliable path to static assets, which also resolves a TypeScript error on `process.cwd()`.
 const staticPath = path.join(__dirname, '..');
 app.use(express.static(staticPath));
 
-// For any request that doesn't match a static file or an API route,
-// send back the main index.html file. This is crucial for client-side routing.
-app.get('*', (req, res) => {
+app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 });
 
@@ -52,7 +47,6 @@ app.get('*', (req, res) => {
 // Test DB connection on startup
 testDbConnection().catch(err => {
     console.error("Shutting down due to database connection failure.", err);
-    // Throwing the error causes an unhandled rejection, which will terminate the Node.js process.
     throw err;
 });
 
