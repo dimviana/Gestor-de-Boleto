@@ -88,4 +88,4 @@ export interface AiSettings {
 
 // Add module declaration to fix TypeScript error for pdfjs-dist
 // FIX: Corrected module path for augmentation.
-declare module 'pdfjs-dist';
+declare module 'pdfjs-dist/build/pdf.js';

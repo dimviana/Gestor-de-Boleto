@@ -1,13 +1,13 @@
-// FIX: Use express types directly to avoid conflicts.
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
-// FIX: Add minimal Multer file interface to avoid Express namespace issues.
-// The `Express.Multer.File` type was causing a "Cannot find namespace 'Express'" error.
+// Add minimal Multer file interface to avoid Express namespace issues.
 interface MulterFile {
     buffer: Buffer;
     originalname: string;
+    mimetype: string;
+    size: number;
 }
 
 export interface AuthRequest extends Request {

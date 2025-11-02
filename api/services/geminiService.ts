@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
@@ -8,9 +6,6 @@ import { createCanvas, Canvas } from 'canvas';
 import type { CanvasRenderingContext2D } from 'canvas';
 import Tesseract from 'tesseract.js';
 import { Buffer } from 'buffer';
-
-// FIX: Declare require to fix TypeScript error when @types/node is not available.
-declare const require: any;
 
 // Setting the worker script for pdf.js in a Node.js environment.
 pdfjs.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/build/pdf.worker.js');
@@ -60,7 +55,7 @@ export const extractBoletoInfo = async (
     fileName: string, 
     lang: 'pt' | 'en', 
     aiSettings: AiSettings
-): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
+): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId' | 'userId'>> => {
     if (!process.env.API_KEY) {
         throw new Error("API key is missing.");
     }
