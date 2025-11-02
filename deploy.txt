@@ -4,15 +4,16 @@
 # These variables are used across install, update, and uninstall functions.
 GIT_REPO="https://github.com/dimviana/Gestor-de-Boleto.git"
 PROJECT_FOLDER="boletomanager.abildeveloper.com.br"
+# Updated APP_URL to reflect the new Nginx port
 APP_URL="https://boletomanager.abildeveloper.com.br"
 DB_HOST="localhost"
-DB_USER="root"
-DB_PASSWORD="dvsviana"
-DB_DATABASE="boleto_manager_ai"
+DB_USER="admmaager"
+DB_PASSWORD="E6uoXi34ZwwAINCD5T25"
+DB_DATABASE="boletomanagerai"
 API_KEY="AIzaSyB0zoSEGrIYuRjBtcTvxJX9LVbo5L2GpmA"
 JWT_SECRET="AIzaSyB0zoSEGrIYuRjBtcTvxJX9LVbo5L2GpmAjwt"
 APP_NAME="boleto-manager-ai" # Name for the PM2 process
-PORT=3001 # Default port
+APP_PORT=3000 # Internal port for the Node.js application
 
 # Color codes for output
 GREEN='\033[0;32m'
@@ -118,7 +119,7 @@ EOL
     ADMIN_UUID=$(node -e "console.log(require('crypto').randomUUID());")
     ADMIN_PASSWORD="dvsviana154"
     HASHED_PASSWORD=$(node -e "console.log(require('bcryptjs').hashSync('${ADMIN_PASSWORD}', 10));")
-    INSERT_ADMIN_SQL="INSERT INTO users (id, username, password, role) VALUES ('${ADMIN_UUID}', 'androoiddiviana@gmal.com', '${HASHED_PASSWORD}', 'admin') ON DUPLICATE KEY UPDATE password='${HASHED_PASSWORD}';"
+    INSERT_ADMIN_SQL="INSERT INTO users (id, username, password, role) VALUES ('${ADMIN_UUID}', 'androiddiviana@gmal.com', '${HASHED_PASSWORD}', 'admin') ON DUPLICATE KEY UPDATE password='${HASHED_PASSWORD}';"
     mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" -e "${INSERT_ADMIN_SQL}"
     if [ $? -ne 0 ]; then echo -e "${RED}Failed to create admin user.${NC}"; exit 1; fi
 
