@@ -1,10 +1,10 @@
-
-// FIX: Use standard express Request and Response types.
+// FIX: Import explicit types from express to avoid conflicts and resolve type errors.
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
+// FIX: Use explicit Request and Response types.
 export const getCompanies = async (req: Request, res: Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
@@ -14,6 +14,7 @@ export const getCompanies = async (req: Request, res: Response) => {
   }
 };
 
+// FIX: Use explicit Request and Response types.
 export const createCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -25,6 +26,7 @@ export const createCompany = async (req: Request, res: Response) => {
   }
 };
 
+// FIX: Use explicit Request and Response types.
 export const updateCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   try {
@@ -35,6 +37,7 @@ export const updateCompany = async (req: Request, res: Response) => {
   }
 };
 
+// FIX: Use explicit Request and Response types.
 export const deleteCompany = async (req: Request, res: Response) => {
   try {
     await pool.query('DELETE FROM companies WHERE id = ?', [req.params.id]);

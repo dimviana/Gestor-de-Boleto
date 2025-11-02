@@ -1,19 +1,15 @@
-
-// FIX: Using module augmentation to correctly add the 'user' property to Express's Request type.
-// This resolves a global type conflict that was causing properties like 'headers', 'body', 'status', etc., to be unrecognized.
+// FIX: Import explicit types from express to avoid conflicts and resolve type errors.
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
-declare global {
-  namespace Express {
-    export interface Request {
-      user?: User;
-    }
-  }
+// FIX: Extend explicit Request type.
+export interface AuthRequest extends Request {
+  user?: User;
 }
 
-export const protect = (req: Request, res: Response, next: NextFunction) => {
+// FIX: Use explicit Request, Response, and NextFunction types.
+export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -31,7 +27,8 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export const admin = (req: Request, res: Response, next: NextFunction) => {
+// FIX: Use explicit Request, Response, and NextFunction types.
+export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
