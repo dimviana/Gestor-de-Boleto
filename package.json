@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/api/index.js",
     "dev": "ts-node-dev --respawn --transpile-only api/index.ts",
-    "build": "tsc"
+    "build": "vite build && tsc"
   },
   "dependencies": {
     "@google/genai": "^1.28.0",

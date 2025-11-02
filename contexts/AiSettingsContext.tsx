@@ -4,6 +4,7 @@ import { addLogEntry } from '../services/logService';
 
 const AI_SETTINGS_KEY = 'ai_settings';
 
+// FIX: Use current recommended model 'gemini-2.5-flash' instead of deprecated 'gemini-1.5-flash'.
 const DEFAULT_SETTINGS: AiSettings = {
   model: 'gemini-2.5-flash',
   temperature: 0.2,
@@ -24,7 +25,7 @@ export const AiSettingsProvider: React.FC<{ children: ReactNode }> = ({ children
         const storedSettings = localStorage.getItem(AI_SETTINGS_KEY);
         if (storedSettings) {
             const parsedSettings = JSON.parse(storedSettings);
-            // Ensure model is updated if old one is stored
+            // FIX: Ensure model is updated if old one is stored
             if (parsedSettings.model === 'gemini-1.5-flash') {
                 parsedSettings.model = 'gemini-2.5-flash';
             }

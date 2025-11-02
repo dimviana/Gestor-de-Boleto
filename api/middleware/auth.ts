@@ -1,12 +1,11 @@
 
+
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
-// The `Express.Multer.File` type is globally available via `@types/multer`
-// and is automatically added to the Express.Request interface. By extending
-// Express.Request, AuthRequest inherits the correct `file` property.
-// The previous custom `MulterFile` interface and explicit property override caused a type conflict.
+// By extending Request from express, AuthRequest inherits standard properties
+// like `headers`, `body`, `file`, etc., resolving type errors in controllers.
 export interface AuthRequest extends Request {
   user?: User;
 }

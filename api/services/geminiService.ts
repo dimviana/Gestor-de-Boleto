@@ -1,3 +1,5 @@
+
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
@@ -6,6 +8,12 @@ import { createCanvas, Canvas } from 'canvas';
 import type { CanvasRenderingContext2D } from 'canvas';
 import Tesseract from 'tesseract.js';
 import { Buffer } from 'buffer';
+
+// FIX: Update 'require' declaration to include the 'resolve' method for Node.js compatibility.
+declare const require: {
+    (id: string): any;
+    resolve(id: string): string;
+};
 
 // Setting the worker script for pdf.js in a Node.js environment.
 pdfjs.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/build/pdf.worker.js');

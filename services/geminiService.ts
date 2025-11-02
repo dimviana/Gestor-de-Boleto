@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Boleto, BoletoStatus, AiSettings } from '../types';
 import { translations } from '../translations';
