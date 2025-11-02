@@ -105,7 +105,5 @@ INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 ('whitelabel_appName', 'Boleto Manager AI'),
 ('whitelabel_logoUrl', ''),
 ('processing_method', 'ai'),
-('ai_settings', '{"model": "gemini-2.5-flash", "temperature": 0.2, "topK": 1, "topP": 1}'),
-('ssl_certificate', ''),
-('ssl_private_key', '')
+('ai_settings', '{"model": "gemini-2.5-flash", "temperature": 0.2, "topK": 1, "topP": 1}')
 ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);

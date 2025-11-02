@@ -1,16 +1,18 @@
-// FIX: Import explicit types from express to avoid conflicts and resolve type errors.
+
+// FIX: Use express types directly to avoid conflicts.
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-// FIX: Use explicit Request and Response types.
 export const getSettings = async (req: Request, res: Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
         try {
+            // Attempt to parse JSON strings
             acc[setting.setting_key] = JSON.parse(setting.setting_value);
         } catch (e) {
+            // Otherwise, use the raw value
             acc[setting.setting_key] = setting.setting_value;
         }
         return acc;
@@ -21,7 +23,6 @@ export const getSettings = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Use explicit Request and Response types.
 export const updateSettings = async (req: Request, res: Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();

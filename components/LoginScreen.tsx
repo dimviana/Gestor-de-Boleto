@@ -1,11 +1,12 @@
+
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { TranslationKey } from '../translations';
 
 interface LoginScreenProps {
-  login: (username: string, password?: string) => Promise<void>;
-  register: (username: string, password?: string) => Promise<boolean>;
+  login: (username: string, password?: string) => void;
+  register: (username: string, password?: string) => boolean;
   authError: string | null;
   setAuthError: (error: string | null) => void;
 }
@@ -27,19 +28,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
     setRegistrationSuccess(false);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     setAuthError(null);
     setRegistrationSuccess(false);
 
     if (mode === 'login') {
-      await login(email, password);
+      login(email, password);
     } else {
-      const success = await register(email, password);
+      const success = register(email, password);
       if (success) {
         setRegistrationSuccess(true);
-        setTimeout(() => {
-          handleSwitchMode('login');
-        }, 2000);
+        handleSwitchMode('login');
       }
     }
   };
@@ -118,7 +117,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
         <button
           onClick={handleSubmit}
           className="w-full px-4 py-3 font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!email || !password}
+          disabled={!email || (mode === 'register' && !password)}
         >
           {mode === 'login' ? t('loginButton') : t('createAccountButton')}
         </button>
