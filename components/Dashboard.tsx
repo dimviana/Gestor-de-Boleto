@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, SystemNotification, AnyNotification } from '../types';
@@ -6,27 +5,38 @@ import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
 import Spinner from './Spinner';
+import { processBoletoPDF as processBoletoWithAI } from '../services/geminiService';
+import { processBoletoPDFWithRegex } from '../services/regexService';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
 import { WalletIcon, HourglassIcon, CheckCircleIcon, TrashIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
 import { BoletoDetailsModal } from './BoletoDetailsModal';
+import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
 
 
 interface DashboardProps {
   onLogout: () => void;
   user: User;
+  getUsers: () => RegisteredUser[];
+  addUser: (actor: User, newUser: Omit<RegisteredUser, 'id'>) => boolean;
+  updateUser: (actor: User, userId: string, updates: Partial<Omit<RegisteredUser, 'id'>>) => boolean;
+  deleteUser: (actor: User, userId: string) => boolean;
+  getLogs: () => LogEntry[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
-  const { boletos, uploadBoletoFile, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError, fetchUserBoletos } = useBoletos(user);
+const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser, updateUser, deleteUser, getLogs }) => {
+  const { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos(user);
   const [isLoadingUpload, setIsLoadingUpload] = useState(false);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const { t, language } = useLanguage();
+  const { method } = useProcessingMethod();
+  const { aiSettings } = useAiSettings();
   
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
@@ -34,33 +44,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
 
+  // System Update Notification State
   const [systemUpdate, setSystemUpdate] = useState<SystemNotification | null>(null);
 
+  // Admin filter state
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
 
   useEffect(() => {
     if (user.role === 'admin') {
       const loadCompanies = async () => {
-        try {
-          const fetchedCompanies = await api.fetchCompanies();
-          setCompanies(fetchedCompanies);
-        } catch(e) {
-          console.error("Failed to load companies:", e);
-        }
+        const fetchedCompanies = await api.fetchCompanies();
+        setCompanies(fetchedCompanies);
       };
       loadCompanies();
     }
   }, [user.role]);
-  
-  // When admin selects a different company, refetch boletos for that company
-  useEffect(() => {
-      if (user.role === 'admin' && selectedCompanyFilter) {
-          fetchUserBoletos(user, selectedCompanyFilter);
-      }
-  }, [selectedCompanyFilter, user.role, fetchUserBoletos, user]);
 
-
+  // Effect to check for system updates from GitHub
   useEffect(() => {
     const checkForUpdates = async () => {
       try {
@@ -99,20 +100,44 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   const handleFileUpload = async (file: File) => {
     setIsLoadingUpload(true);
     try {
-      await uploadBoletoFile(file);
+      let newBoleto: Omit<Boleto, 'companyId'>;
+      if (method === 'ai') {
+          newBoleto = await processBoletoWithAI(file, language, aiSettings);
+      } else {
+          newBoleto = await processBoletoPDFWithRegex(file);
+      }
+
+      // Validation for zero-value boletos
+      if (newBoleto.amount === null || newBoleto.amount === undefined || newBoleto.amount === 0) {
+        setErrorModalContent({
+            title: t('freeBoletoErrorTitle'),
+            message: t('freeBoletoErrorText')
+        });
+        setIsErrorModalOpen(true);
+        return; // Stop execution
+      }
+
+      await addBoleto(user, newBoleto, method);
     } catch (error: any) {
       console.error("Upload failed:", error);
-      let errorMessage = error.message || t('genericErrorText');
+      let errorMessage = t('genericErrorText');
       let errorTitle = t('genericErrorTitle');
       
-      if (error.message.includes('Duplicate barcode')) {
-          const identifier = error.message.split(': ')[1] || 'N/A';
+      if (error.message.startsWith('duplicateBarcodeError:')) {
+          const identifier = error.message.split(':')[1];
           errorMessage = t('duplicateBarcodeErrorText', { identifier });
           errorTitle = t('duplicateBarcodeErrorTitle');
-      } else if (error.message.includes('not associated with a company')) {
+      } else if (error.message === 'invalidBarcodeError') {
+          errorMessage = t('invalidBarcodeErrorText');
+          errorTitle = t('invalidBarcodeErrorTitle');
+      } else if (error.message === 'pdfProcessingError') {
+          errorMessage = t('pdfProcessingError');
+          errorTitle = t('processingErrorTitle');
+      } else if (error.message === 'userHasNoCompanyError') {
           errorMessage = t('userHasNoCompanyErrorText');
           errorTitle = t('userHasNoCompanyErrorTitle');
       }
+
 
       setErrorModalContent({ title: errorTitle, message: errorMessage });
       setIsErrorModalOpen(true);
@@ -134,24 +159,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
       const allSelectedInColumn = columnIds.length > 0 && columnIds.every(id => selectedBoletoIds.includes(id));
 
       if (allSelectedInColumn) {
+          // Deselect all from this column
           setSelectedBoletoIds(prev => prev.filter(id => !columnIds.includes(id)));
       } else {
+          // Select all from this column (and keep existing selections from other columns)
           setSelectedBoletoIds(prev => [...new Set([...prev, ...columnIds])]);
       }
   }, [selectedBoletoIds]);
 
   const handleUpdateStatus = useCallback((id: string, status: BoletoStatus) => {
-    updateBoletoStatus(id, status);
-  }, [updateBoletoStatus]);
+    updateBoletoStatus(user, id, status);
+  }, [user, updateBoletoStatus]);
 
   const handleUpdateComments = useCallback((id: string, comments: string) => {
-    updateBoletoComments(id, comments);
-  }, [updateBoletoComments]);
+    updateBoletoComments(user, id, comments);
+  }, [user, updateBoletoComments]);
 
 
   const handleBulkUpdateStatus = async (status: BoletoStatus) => {
       await Promise.all(
-          selectedBoletoIds.map(id => updateBoletoStatus(id, status))
+          selectedBoletoIds.map(id => updateBoletoStatus(user, id, status))
       );
       setSelectedBoletoIds([]);
   };
@@ -159,14 +186,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   const handleBulkDelete = async () => {
       if (window.confirm(t('confirmBulkDelete', { count: selectedBoletoIds.length.toString() }))) {
           await Promise.all(
-              selectedBoletoIds.map(id => deleteBoleto(id))
+              selectedBoletoIds.map(id => deleteBoleto(user, id))
           );
           setSelectedBoletoIds([]);
       }
   };
 
   const handleDelete = (id: string) => {
-    deleteBoleto(id);
+    deleteBoleto(user, id);
+    // Also remove from selection if it was selected
     setSelectedBoletoIds(prev => prev.filter(selectedId => selectedId !== id));
   };
 
@@ -175,14 +203,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   }, []);
 
   const filteredBoletos = useMemo(() => {
-    // For admin, if no company is selected, show nothing.
-    if (user.role === 'admin' && !selectedCompanyFilter) {
-      return [];
+    if (user.role === 'admin') {
+      // If no company is selected, show nothing.
+      if (!selectedCompanyFilter) {
+        return [];
+      }
+      // Otherwise, filter by the selected company.
+      return boletos.filter(boleto => boleto.companyId === selectedCompanyFilter);
     }
-    // Boletos are already filtered by the hook based on user/selection
+    // For non-admin users, the boletos are already filtered by the useBoletos hook.
     return boletos;
   }, [boletos, user.role, selectedCompanyFilter]);
-
 
   const boletosToDo = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.TO_PAY), [filteredBoletos]);
   const boletosVerifying = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.VERIFYING), [filteredBoletos]);
@@ -198,11 +229,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
 
   const boletoNotifications = useMemo((): Notification[] => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); 
+    today.setHours(0, 0, 0, 0); // Normalize to the beginning of the day for accurate comparison
 
     return filteredBoletos
       .filter(b => b.status === BoletoStatus.TO_PAY && b.dueDate)
       .map(boleto => {
+        // Ensure dueDate is not null and is a valid date string
         if (!boleto.dueDate) return null;
         
         try {
@@ -213,7 +245,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
           if (daysUntilDue < 0) {
             return { boleto, type: 'overdue', daysUntilDue };
           }
-          if (daysUntilDue <= 3) { 
+          if (daysUntilDue <= 3) { // Includes today and the next 3 days
             return { boleto, type: 'dueSoon', daysUntilDue };
           }
           return null;
@@ -224,13 +256,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
 
       })
       .filter((notification): notification is Notification => notification !== null)
-      .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+      .sort((a, b) => a.daysUntilDue - b.daysUntilDue); // Sort by urgency
   }, [filteredBoletos]);
 
   const allNotifications: AnyNotification[] = useMemo(() => {
     const notifications: AnyNotification[] = [...boletoNotifications];
     if (systemUpdate) {
-        notifications.unshift(systemUpdate);
+        notifications.unshift(systemUpdate); // Add system update to the top
     }
     return notifications;
   }, [boletoNotifications, systemUpdate]);
@@ -280,7 +312,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
           {isLoadingUpload && (
             <div className="flex items-center justify-center mt-4">
               <Spinner />
-              <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{t('processingStatusOcr')}</p>
+              <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{method === 'ai' ? t('processingStatusOcr') : t('processingStatusRegex')}</p>
             </div>
           )}
 
@@ -420,7 +452,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
       <Modal isOpen={isAdminPanelOpen} onClose={() => setIsAdminPanelOpen(false)} title="Painel Administrativo">
           <AdminPanel 
             onClose={() => setIsAdminPanelOpen(false)} 
+            getUsers={getUsers}
+            addUser={addUser}
+            updateUser={updateUser}
+            deleteUser={deleteUser}
             currentUser={user}
+            getLogs={getLogs}
         />
       </Modal>
 

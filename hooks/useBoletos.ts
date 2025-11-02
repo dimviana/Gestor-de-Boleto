@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { Boleto, BoletoStatus, User } from '../types';
+import { Boleto, BoletoStatus, User, ProcessingMethod } from '../types';
 import * as api from '../services/api';
 import { addLogEntry } from '../services/logService';
 
@@ -9,96 +9,97 @@ export const useBoletos = (user: User | null) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUserBoletos = useCallback(async (currentUser: User, companyId?: string) => {
-    try {
+  useEffect(() => {
+    const loadBoletos = async () => {
+      if (!user) {
+        setBoletos([]);
+        setIsLoading(false);
+        return;
+      }
+      try {
         setError(null);
         setIsLoading(true);
-        const fetchedBoletos = await api.fetchBoletos(currentUser, companyId);
+        const fetchedBoletos = await api.fetchBoletos(user);
         setBoletos(fetchedBoletos);
-    } catch (e: any) {
+      } catch (e) {
         console.error("Failed to load boletos:", e);
-        setError(e.message || "Failed to load boletos from the database.");
-    } finally {
+        setError("Failed to load boletos from the database.");
+      } finally {
         setIsLoading(false);
-    }
-  }, []);
+      }
+    };
+    loadBoletos();
+  }, [user]);
 
-  useEffect(() => {
-    if (user) {
-      // For non-admin users, companyId is not needed as API will scope it.
-      // For admins, this initial load can be empty, waiting for company selection.
-      fetchUserBoletos(user, user.companyId);
-    } else {
-      setBoletos([]);
-      setIsLoading(false);
+  const addBoleto = useCallback(async (user: User, boleto: Omit<Boleto, 'companyId'>, method: ProcessingMethod) => {
+    if (!user.companyId) {
+        throw new Error('userHasNoCompanyError');
     }
-  }, [user, fetchUserBoletos]);
 
-  const uploadBoletoFile = useCallback(async (file: File) => {
-    if (!user) throw new Error("User not authenticated");
+    if (boleto.barcode && boletos.some(b => b.barcode && b.barcode === boleto.barcode)) {
+        const existingBoleto = boletos.find(b => b.barcode === boleto.barcode);
+        const identifier = existingBoleto?.guideNumber || existingBoleto?.recipient || 'N/A';
+        throw new Error(`duplicateBarcodeError:${identifier}`);
+    }
+    if (!boleto.barcode || boleto.barcode.trim() === '') {
+        throw new Error('invalidBarcodeError');
+    }
     
-    const newBoleto = await api.uploadBoletoFile(file);
+    const newBoletoWithCompany: Boleto = { ...boleto, companyId: user.companyId };
+    const newBoleto = await api.createBoleto(newBoletoWithCompany);
     setBoletos(prev => [newBoleto, ...prev]);
     
     addLogEntry({
         userId: user.id,
         username: user.username,
         action: 'CREATE_BOLETO',
-        details: `Criou o boleto "${newBoleto.recipient || 'N/A'}" (Nº doc: ${newBoleto.guideNumber || 'N/A'}) via upload.`
+        details: `Criou o boleto "${newBoleto.recipient || 'N/A'}" (Nº doc: ${newBoleto.guideNumber || 'N/A'}) usando o método ${method.toUpperCase()}.`
     });
-  }, [user]);
 
-  const updateBoletoStatus = useCallback(async (id: string, status: BoletoStatus) => {
-    if (!user) return;
-    try {
-        const updatedBoleto = await api.updateBoletoStatus(id, status);
-        setBoletos(prev => prev.map(b => (b.id === id ? { ...b, status } : b)));
-         addLogEntry({
-            userId: user.id,
-            username: user.username,
-            action: 'UPDATE_BOLETO_STATUS',
-            details: `Atualizou o status do boleto "${updatedBoleto.recipient}" para ${status}.`
-        });
-    } catch(e) {
-        console.error("Failed to update status:", e);
-    }
-  }, [user]);
+  }, [boletos]);
 
-  const updateBoletoComments = useCallback(async (id: string, comments: string) => {
-    if(!user) return;
-    try {
-        const updatedBoleto = await api.updateBoletoComments(id, comments);
-        setBoletos(prev => prev.map(b => (b.id === id ? { ...b, comments } : b)));
+  const updateBoletoStatus = useCallback(async (user: User, id: string, status: BoletoStatus) => {
+    const updatedBoleto = await api.updateBoleto(id, status);
+    setBoletos(prev =>
+      prev.map(b => (b.id === id ? updatedBoleto : b))
+    );
+
+     addLogEntry({
+        userId: user.id,
+        username: user.username,
+        action: 'UPDATE_BOLETO_STATUS',
+        details: `Atualizou o status do boleto "${updatedBoleto.recipient}" para ${status}.`
+    });
+  }, []);
+
+  const updateBoletoComments = useCallback(async (user: User, id: string, comments: string) => {
+    const updatedBoleto = await api.updateBoletoComments(id, comments);
+    setBoletos(prev =>
+      prev.map(b => (b.id === id ? updatedBoleto : b))
+    );
+    addLogEntry({
+        userId: user.id,
+        username: user.username,
+        action: 'UPDATE_BOLETO_COMMENT',
+        details: `Adicionou/editou comentário no boleto "${updatedBoleto.recipient || 'N/A'}" (Nº doc: ${updatedBoleto.guideNumber || 'N/A'}).`
+    });
+  }, []);
+
+
+  const deleteBoleto = useCallback(async (user: User, id: string) => {
+    const boletoToDelete = boletos.find(b => b.id === id);
+    await api.removeBoleto(id);
+    setBoletos(prev => prev.filter(b => b.id !== id));
+
+    if (boletoToDelete) {
         addLogEntry({
             userId: user.id,
             username: user.username,
-            action: 'UPDATE_BOLETO_COMMENT',
-            details: `Adicionou/editou comentário no boleto "${updatedBoleto.recipient || 'N/A'}" (Nº doc: ${updatedBoleto.guideNumber || 'N/A'}).`
+            action: 'DELETE_BOLETO',
+            details: `Excluiu o boleto "${boletoToDelete.recipient}" (Nº: ${boletoToDelete.guideNumber}).`
         });
-    } catch (e) {
-        console.error("Failed to update comments:", e);
     }
-  }, [user]);
+  }, [boletos]);
 
-  const deleteBoleto = useCallback(async (id: string) => {
-    if(!user) return;
-    const boletoToDelete = boletos.find(b => b.id === id);
-    try {
-        await api.removeBoleto(id);
-        setBoletos(prev => prev.filter(b => b.id !== id));
-
-        if (boletoToDelete) {
-            addLogEntry({
-                userId: user.id,
-                username: user.username,
-                action: 'DELETE_BOLETO',
-                details: `Excluiu o boleto "${boletoToDelete.recipient}" (Nº: ${boletoToDelete.guideNumber}).`
-            });
-        }
-    } catch(e) {
-        console.error("Failed to delete boleto:", e);
-    }
-  }, [user, boletos]);
-
-  return { boletos, uploadBoletoFile, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading, error, fetchUserBoletos };
+  return { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading, error };
 };

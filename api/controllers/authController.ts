@@ -1,8 +1,6 @@
 
-
-
-// FIX: Use express default import and qualified types to resolve conflicts.
-import express from 'express';
+// FIX: Use express types directly to avoid conflicts.
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -15,7 +13,7 @@ const generateToken = (id: string, username: string, role: string, company_id: s
   });
 };
 
-export const registerUser = async (req: express.Request, res: express.Response) => {
+export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'user', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -41,7 +39,7 @@ export const registerUser = async (req: express.Request, res: express.Response) 
   }
 };
 
-export const loginUser = async (req: express.Request, res: express.Response) => {
+export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {

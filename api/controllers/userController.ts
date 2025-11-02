@@ -1,14 +1,12 @@
 
-
-
-// FIX: Use express default import and qualified types to resolve conflicts.
-import express from 'express';
+// FIX: Use express types directly to avoid conflicts.
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
-export const getUsers = async (req: express.Request, res: express.Response) => {
+export const getUsers = async (req: Request, res: Response) => {
   try {
     const [users] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     res.json(users);
@@ -17,7 +15,7 @@ export const getUsers = async (req: express.Request, res: express.Response) => {
   }
 };
 
-export const createUser = async (req: express.Request, res: express.Response) => {
+export const createUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   try {
      const salt = await bcrypt.genSalt(10);
@@ -32,7 +30,7 @@ export const createUser = async (req: express.Request, res: express.Response) =>
   }
 };
 
-export const updateUser = async (req: express.Request, res: express.Response) => {
+export const updateUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   try {
     let query = 'UPDATE users SET username = ?, role = ?, company_id = ?';
@@ -55,7 +53,7 @@ export const updateUser = async (req: express.Request, res: express.Response) =>
   }
 };
 
-export const deleteUser = async (req: express.Request, res: express.Response) => {
+export const deleteUser = async (req: Request, res: Response) => {
   try {
     await pool.query('DELETE FROM users WHERE id = ?', [req.params.id]);
     res.json({ message: 'User deleted' });
