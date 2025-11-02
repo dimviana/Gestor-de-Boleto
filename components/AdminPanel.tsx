@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company } from '../types';
@@ -7,31 +8,37 @@ import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
+import Spinner from './Spinner';
 
 
 interface AdminPanelProps {
     onClose: () => void;
-    getUsers: () => RegisteredUser[];
-    addUser: (actor: User, newUser: Omit<RegisteredUser, 'id'>) => boolean;
-    updateUser: (actor: User, userId: string, updates: Partial<Omit<RegisteredUser, 'id'>>) => boolean;
-    deleteUser: (actor: User, userId: string) => boolean;
     currentUser: User;
-    getLogs: () => LogEntry[];
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, updateUser, deleteUser, currentUser, getLogs }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentUser }) => {
     const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl'>('settings');
     
     // Logs state
     const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
     useEffect(() => {
-        // Load logs only when the tab is active for performance
-        if (activeTab === 'logs') {
-            setLogs(getLogs());
+        const loadLogs = async () => {
+             if (activeTab === 'logs') {
+                setIsLoadingLogs(true);
+                try {
+                    setLogs(await api.fetchLogs());
+                } catch(e) {
+                    console.error("Failed to load logs:", e);
+                } finally {
+                    setIsLoadingLogs(false);
+                }
+            }
         }
-    }, [activeTab, getLogs]);
+        loadLogs();
+    }, [activeTab]);
     
     const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl', label: string}> = ({ tabId, label}) => (
          <button
@@ -64,12 +71,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
         const handleSaveWhitelabel = () => {
             setAppName(currentAppName);
             setLogoUrl(currentLogoUrl);
+            api.updateSettings({ whitelabel_appName: currentAppName, whitelabel_logoUrl: currentLogoUrl });
         };
         const handleSaveAiSettings = () => {
             setAiSettings(currentAiSettings, currentUser);
+            api.updateSettings({ ai_settings: currentAiSettings });
         };
         const handleMethodChange = (newMethod: ProcessingMethod) => {
             setMethod(newMethod, currentUser);
+            api.updateSettings({ processing_method: newMethod });
         };
 
         return (
@@ -109,6 +119,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
                  <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
                  <div>
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('extractionMethodTitle')}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Esta configuração define o método de extração padrão para o backend.</p>
                     <fieldset className="mt-4">
                         <legend className="sr-only">{t('extractionMethodTitle')}</legend>
                         <div className="space-y-4">
@@ -123,10 +134,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
                             </div>
                             <div className="flex items-start">
                                 <div className="flex items-center h-5">
-                                    <input id="method-regex" name="processing-method" type="radio" checked={currentMethod === 'regex'} onChange={() => handleMethodChange('regex')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-500 dark:bg-gray-700"/>
+                                    <input id="method-regex" name="processing-method" type="radio" disabled checked={currentMethod === 'regex'} onChange={() => handleMethodChange('regex')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-500 dark:bg-gray-700 disabled:opacity-50"/>
                                 </div>
                                 <div className="ml-3 text-sm">
-                                    <label htmlFor="method-regex" className="font-medium text-gray-800 dark:text-gray-200">{t('extractionMethodRegex')}</label>
+                                    <label htmlFor="method-regex" className="font-medium text-gray-800 dark:text-gray-200">{t('extractionMethodRegex')} (Indisponível no Backend)</label>
                                     <p className="text-gray-500 dark:text-gray-400">{t('extractionMethodRegexDescription')}</p>
                                 </div>
                             </div>
@@ -204,6 +215,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
     const UsersAndCompaniesTab = () => {
         const [users, setUsers] = useState<RegisteredUser[]>([]);
         const [companies, setCompanies] = useState<Company[]>([]);
+        const [isLoading, setIsLoading] = useState(true);
         const [isUserModalOpen, setIsUserModalOpen] = useState(false);
         const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
         const [selectedUser, setSelectedUser] = useState<RegisteredUser | null>(null);
@@ -211,11 +223,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
         const [formError, setFormError] = useState<string | null>(null);
 
         const [companyForm, setCompanyForm] = useState({ name: '', cnpj: '', address: ''});
-
+        
         const refreshData = async () => {
-            setUsers(getUsers());
-            setCompanies(await api.fetchCompanies());
+            setIsLoading(true);
+            try {
+                const [fetchedUsers, fetchedCompanies] = await Promise.all([
+                    api.fetchUsers(),
+                    api.fetchCompanies()
+                ]);
+                setUsers(fetchedUsers);
+                setCompanies(fetchedCompanies);
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+            } finally {
+                setIsLoading(false);
+            }
         };
+
 
         useEffect(() => {
             refreshData();
@@ -237,33 +261,42 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
             setIsUserModalOpen(true);
         };
         
-        const handleUserFormSubmit = () => {
+        const handleUserFormSubmit = async () => {
             setFormError(null);
-            if (modalMode === 'add') {
-                if (!userForm.username || !userForm.password) {
-                    setFormError('authErrorInvalidCredentials'); return;
-                }
-                const success = addUser(currentUser, { 
-                    username: userForm.username, password: userForm.password, role: userForm.role, companyId: userForm.companyId || undefined
-                });
-                if (success) { refreshData(); setIsUserModalOpen(false); } else { setFormError('authErrorEmailExists'); }
-            } else if (modalMode === 'edit' && selectedUser) {
-                const updates: Partial<Omit<RegisteredUser, 'id'>> = {};
-                if (userForm.username !== selectedUser.username) updates.username = userForm.username;
-                if (userForm.password) updates.password = userForm.password;
-                if (userForm.role !== selectedUser.role) updates.role = userForm.role;
-                if (userForm.companyId !== (selectedUser.companyId || '')) updates.companyId = userForm.companyId;
+            try {
+                if (modalMode === 'add') {
+                    if (!userForm.username || !userForm.password) {
+                        setFormError('authErrorInvalidCredentials'); return;
+                    }
+                    await api.createUser({ 
+                        username: userForm.username, password: userForm.password, role: userForm.role, companyId: userForm.companyId || undefined
+                    });
+                } else if (modalMode === 'edit' && selectedUser) {
+                    const updates: Partial<Omit<RegisteredUser, 'id'>> = {};
+                    if (userForm.username !== selectedUser.username) updates.username = userForm.username;
+                    if (userForm.password) updates.password = userForm.password;
+                    if (userForm.role !== selectedUser.role) updates.role = userForm.role;
+                    if (userForm.companyId !== (selectedUser.companyId || '')) updates.companyId = userForm.companyId;
 
-                if (Object.keys(updates).length > 0) {
-                    const success = updateUser(currentUser, selectedUser.id, updates);
-                    if (success) { refreshData(); setIsUserModalOpen(false); } else { setFormError('addUserErrorDuplicate'); }
-                } else { setIsUserModalOpen(false); }
+                    if (Object.keys(updates).length > 0) {
+                        await api.updateUser(selectedUser.id, updates);
+                    }
+                }
+                setIsUserModalOpen(false);
+                refreshData();
+            } catch(error: any) {
+                setFormError(error.message || 'genericErrorText');
             }
         };
         
-        const handleDeleteUser = (userId: string) => {
+        const handleDeleteUser = async (userId: string) => {
             if (window.confirm(t('confirmUserDeletion'))) {
-                if (deleteUser(currentUser, userId)) { refreshData(); } else { alert(t('deleteUserError')); }
+                try {
+                    await api.deleteUser(userId);
+                    refreshData();
+                } catch(error: any) {
+                    alert(error.message || t('deleteUserError'));
+                }
             }
         };
 
@@ -282,6 +315,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
             }
         }
         
+        if (isLoading) {
+            return <div className="flex justify-center items-center h-64"><Spinner /></div>;
+        }
+
         return (
             <div className="space-y-8">
                  <div>
@@ -359,7 +396,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
 
                  <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title={modalMode === 'add' ? t('addUserModalTitle') : t('editUserModalTitle')}>
                     <div className="space-y-4">
-                        {formError && <p className="text-red-500 text-sm text-center">{t(formError as any)}</p>}
+                        {formError && <p className="text-red-500 text-sm text-center">{formError}</p>}
                         <div>
                             <label htmlFor="user-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormEmailLabel')}</label>
                             <input type="email" id="user-email" value={userForm.username} onChange={(e) => setUserForm({...userForm, username: e.target.value})} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"/>
@@ -395,36 +432,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
     const LogsTab = () => (
          <div className="mt-4">
             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Logs de Atividades do Sistema</h3>
-            <div className="overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg max-h-[60vh]">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                    <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
-                        <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logDate')}</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logUser')}</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logAction')}</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logDetails')}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
-                        {logs.length > 0 ? logs.map((log) => (
-                            <tr key={log.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatLogTimestamp(log.timestamp)}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{log.username}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
-                                        {log.action}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-normal text-sm text-gray-700 dark:text-gray-300">{log.details}</td>
-                            </tr>
-                        )) : (
+            {isLoadingLogs ? <div className="flex justify-center items-center h-40"><Spinner /></div> : (
+                <div className="overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg max-h-[60vh]">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                        <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                             <tr>
-                                <td colSpan={4} className="text-center py-10 text-gray-500 dark:text-gray-400">Nenhum registro de atividade encontrado.</td>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logDate')}</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logUser')}</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logAction')}</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('logDetails')}</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                            {logs.length > 0 ? logs.map((log) => (
+                                <tr key={log.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatLogTimestamp(log.timestamp)}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{log.username}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                                            {log.action}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-700 dark:text-gray-300">{log.details}</td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan={4} className="text-center py-10 text-gray-500 dark:text-gray-400">Nenhum registro de atividade encontrado.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 

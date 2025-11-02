@@ -1,11 +1,13 @@
 
-// FIX: Use express types directly to avoid conflicts.
-import { Request, Response } from 'express';
+
+
+// FIX: Use express default import and qualified types to resolve conflicts.
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-export const getCompanies = async (req: Request, res: Response) => {
+export const getCompanies = async (req: express.Request, res: express.Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
     res.json(companies);
@@ -14,7 +16,7 @@ export const getCompanies = async (req: Request, res: Response) => {
   }
 };
 
-export const createCompany = async (req: Request, res: Response) => {
+export const createCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
   const newCompany = { id: uuidv4(), name, cnpj, address };
   try {
@@ -25,7 +27,7 @@ export const createCompany = async (req: Request, res: Response) => {
   }
 };
 
-export const updateCompany = async (req: Request, res: Response) => {
+export const updateCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
   try {
     await pool.query('UPDATE companies SET name = ?, cnpj = ?, address = ? WHERE id = ?', [name, cnpj, address, req.params.id]);
@@ -35,7 +37,7 @@ export const updateCompany = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteCompany = async (req: Request, res: Response) => {
+export const deleteCompany = async (req: express.Request, res: express.Response) => {
   try {
     // Note: The ON DELETE SET NULL constraint in the DB schema will handle un-assigning users.
     await pool.query('DELETE FROM companies WHERE id = ?', [req.params.id]);

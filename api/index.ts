@@ -1,7 +1,10 @@
 
 
 
-import express, { Request, Response } from 'express';
+
+
+import express from 'express';
+import type { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
@@ -46,7 +49,7 @@ app.use(express.static(staticPath));
 
 // For any request that doesn't match a static file or an API route,
 // send back the main index.html file. This is crucial for client-side routing.
-app.get('*', (req, res) => {
+app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 });
 
