@@ -1,5 +1,6 @@
 
 
+
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -40,7 +41,7 @@ app.use('/api/settings', settingsRoutes);
 // so we go up one level to get to the <project_root>/dist folder which contains the frontend build.
 // FIX: Use `__dirname` to construct a reliable path to static assets, which also resolves a TypeScript error on `process.cwd()`.
 // FIX: Cast `global` to `any` to access `__dirname` and resolve TypeScript's "Cannot find name '__dirname'" error.
-const staticPath = path.join((global as any).__dirname, '..');
+const staticPath = path.join(__dirname, '..');
 app.use(express.static(staticPath));
 
 // For any request that doesn't match a static file or an API route,
