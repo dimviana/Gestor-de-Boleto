@@ -1,11 +1,14 @@
-import { Request, Response } from 'express';
+
+// FIX: Use default import for express to resolve type conflicts.
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
-export const getUsers = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const getUsers = async (req: AuthRequest, res: express.Response) => {
   try {
     const [users] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     res.json(users);
@@ -14,7 +17,8 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const createUser = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const createUser = async (req: AuthRequest, res: express.Response) => {
   const { username, password, role, companyId } = req.body;
   try {
     const [existingUsers] = await pool.query<RowDataPacket[]>('SELECT id FROM users WHERE username = ?', [username]);
@@ -38,7 +42,8 @@ export const createUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const updateUser = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const updateUser = async (req: AuthRequest, res: express.Response) => {
   const { username, password, role, companyId } = req.body;
   try {
     let query = 'UPDATE users SET username = ?, role = ?, company_id = ?';
@@ -61,7 +66,8 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const deleteUser = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const deleteUser = async (req: AuthRequest, res: express.Response) => {
   try {
     await pool.query('DELETE FROM users WHERE id = ?', [req.params.id]);
     res.json({ message: 'User deleted' });

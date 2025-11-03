@@ -1,6 +1,6 @@
 
-
-import { Request, Response, NextFunction } from 'express';
+// FIX: Use default import for express to resolve type conflicts.
+import express from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
@@ -9,11 +9,14 @@ import { User } from '../../types';
 // FIX: Switched from a type intersection to an interface extending express.Request to ensure
 // that AuthRequest inherits all properties from the base express.Request type,
 // resolving type errors in controllers that use it.
-export interface AuthRequest extends Request {
+export interface AuthRequest extends express.Request {
   user?: User;
+  // FIX: Add file property from multer to avoid type errors in controllers
+  file?: Express.Multer.File;
 }
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
+// FIX: Use explicit express types for request, response, and next function.
+export const protect = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -31,7 +34,8 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+// FIX: Use explicit express types for request, response, and next function.
+export const admin = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {

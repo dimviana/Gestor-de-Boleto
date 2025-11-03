@@ -1,6 +1,6 @@
 
-
-import { Response } from 'express';
+// FIX: Use default import for express to resolve type conflicts.
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus, AiSettings } from '../../types';
@@ -8,7 +8,8 @@ import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { extractBoletoInfo } from '../services/geminiService';
 
-export const getBoletos = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const getBoletos = async (req: AuthRequest, res: express.Response) => {
   const user = req.user!;
   try {
     // If a non-admin user is not associated with a company, they cannot have any boletos.
@@ -38,7 +39,8 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const createBoleto = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const createBoleto = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
     const adminSelectedCompanyId = req.body.companyId;
 
@@ -74,6 +76,12 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
              }
         }
        
+        if (!targetCompanyId) {
+            // This case should not be reachable due to the initial validation,
+            // but it's added for robustness and to satisfy TypeScript's type checker.
+            return res.status(500).json({ message: 'Internal Server Error: Target company ID was not determined.' });
+        }
+
         const newBoleto: Boleto = {
             id: uuidv4(),
             ...extractedData,
@@ -98,7 +106,8 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const updateBoletoStatus = async (req: AuthRequest, res: express.Response) => {
     const { status } = req.body;
     try {
         await pool.query('UPDATE boletos SET status = ? WHERE id = ?', [status, req.params.id]);
@@ -108,7 +117,8 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const updateBoletoComments = async (req: AuthRequest, res: express.Response) => {
     const { comments } = req.body;
     try {
         await pool.query('UPDATE boletos SET comments = ? WHERE id = ?', [comments, req.params.id]);
@@ -118,7 +128,8 @@ export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const deleteBoleto = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const deleteBoleto = async (req: AuthRequest, res: express.Response) => {
     try {
         await pool.query('DELETE FROM boletos WHERE id = ?', [req.params.id]);
         res.json({ message: 'Boleto deleted' });

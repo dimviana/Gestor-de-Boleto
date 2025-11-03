@@ -1,4 +1,6 @@
-import { Response } from 'express';
+
+// FIX: Use default import for express to resolve type conflicts.
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -7,7 +9,8 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-export const getSslSettings = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const getSslSettings = async (req: AuthRequest, res: express.Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
         if (rows.length > 0) {
@@ -21,7 +24,8 @@ export const getSslSettings = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const saveSslSettings = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const saveSslSettings = async (req: AuthRequest, res: express.Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
         return res.status(400).json({ message: 'Invalid domain specified.' });
@@ -40,7 +44,8 @@ export const saveSslSettings = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const checkSslStatus = (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const checkSslStatus = (req: AuthRequest, res: express.Response) => {
     const { domain } = req.body;
     if (!domain) {
         return res.status(400).json({ message: 'Domain is required.' });

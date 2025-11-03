@@ -1,11 +1,12 @@
 
-
-import { Response } from 'express';
+// FIX: Use default import for express to resolve type conflicts.
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-export const getSettings = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const getSettings = async (req: AuthRequest, res: express.Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -24,7 +25,8 @@ export const getSettings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const updateSettings = async (req: AuthRequest, res: Response) => {
+// FIX: Use explicit express.Response type.
+export const updateSettings = async (req: AuthRequest, res: express.Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {
