@@ -1,6 +1,8 @@
 
 
-import { Request, Response, NextFunction } from 'express';
+
+// FIX: Alias express types to avoid conflict with global DOM types
+import { Request as ExpressRequest, Response as ExpressResponse, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 // Import 'multer' to make Express.Multer.File type augmentation available.
@@ -10,11 +12,11 @@ import { appConfig } from '../services/configService';
 // By extending express.Request, AuthRequest inherits standard properties
 // like `headers`, `body`, `file`, etc., resolving type errors in controllers.
 // The `multer` import augments the base `Request` type to include `file`.
-export interface AuthRequest extends Request {
+export interface AuthRequest extends ExpressRequest {
   user?: User;
 }
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const protect = (req: AuthRequest, res: ExpressResponse, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -35,7 +37,7 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const admin = (req: AuthRequest, res: ExpressResponse, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {

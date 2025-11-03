@@ -8,13 +8,13 @@ interface NotificationPopoverProps {
 }
 
 const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications }) => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
 
   const formatCurrency = (value: number | null) => {
     if (value === null) return t('notAvailable');
-    return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
+    return value.toLocaleString('pt-BR', {
       style: 'currency',
-      currency: language === 'pt' ? 'BRL' : 'USD',
+      currency: 'BRL',
     });
   };
 
