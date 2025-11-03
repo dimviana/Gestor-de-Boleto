@@ -3,7 +3,7 @@ import { LogoutIcon, BookOpenIcon, SettingsIcon, BellIcon, SearchIcon } from './
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
-import { User, AnyNotification } from '../types';
+import { User, Notification } from '../types';
 import NotificationPopover from './NotificationPopover';
 import ThemeSwitcher from './ThemeSwitcher';
 
@@ -12,12 +12,11 @@ interface HeaderProps {
   onOpenDocs: () => void;
   onOpenAdminPanel: () => void;
   user: User;
-  notifications: AnyNotification[];
-  onSystemUpdateClick: () => void;
+  notifications: Notification[];
   onSearch: (term: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, user, notifications, onSystemUpdateClick, onSearch }) => {
+const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, user, notifications, onSearch }) => {
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -101,12 +100,12 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
                 >
                     <BellIcon className="w-5 h-5" />
                     {notificationCount > 0 && (
-                        <span className={`absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-white ${notifications.some(n => n.type === 'system') ? 'bg-blue-500' : 'bg-red-500'}`}>
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
                            {notificationCount}
                         </span>
                     )}
                 </button>
-                {isPopoverOpen && <NotificationPopover notifications={notifications} onSystemUpdateClick={onSystemUpdateClick}/>}
+                {isPopoverOpen && <NotificationPopover notifications={notifications} />}
             </div>
             <button
               onClick={onLogout}

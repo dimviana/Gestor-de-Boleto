@@ -1,14 +1,13 @@
 import React from 'react';
-import { AnyNotification, Notification, SystemNotification } from '../types';
+import { Notification } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CalendarIcon, DollarSignIcon } from './icons/Icons';
 
 interface NotificationPopoverProps {
-  notifications: AnyNotification[];
-  onSystemUpdateClick: () => void;
+  notifications: Notification[];
 }
 
-const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications, onSystemUpdateClick }) => {
+const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications }) => {
   const { t, language } = useLanguage();
 
   const formatCurrency = (value: number | null) => {
@@ -45,21 +44,6 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
       );
   };
 
-  const renderSystemNotification = (notification: SystemNotification) => {
-      return (
-        <li key={notification.sha} className="p-3 border-b border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 cursor-pointer" onClick={onSystemUpdateClick}>
-            <div className="flex justify-between items-center mb-2">
-                <p className="font-bold text-sm text-blue-800 dark:text-blue-200">Atualização do Sistema</p>
-                <span className="px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-full">{notification.version}</span>
-            </div>
-            <p className="text-xs text-gray-700 dark:text-gray-300 mb-2 italic">"{notification.message}"</p>
-            <div className="flex items-center justify-end text-xs mt-2">
-                 <span className="font-semibold text-blue-600">Clique para atualizar</span>
-            </div>
-        </li>
-      );
-  };
-
   return (
     <div className="absolute top-12 right-0 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-30 animate-fade-in-up">
       <div className="p-3 font-bold text-gray-800 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700">
@@ -68,12 +52,7 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
       <div className="max-h-80 overflow-y-auto">
         {notifications.length > 0 ? (
           <ul>
-            {notifications.map((notification) => {
-                if (notification.type === 'system') {
-                    return renderSystemNotification(notification as SystemNotification);
-                }
-                return renderBoletoNotification(notification as Notification);
-            })}
+            {notifications.map((notification) => renderBoletoNotification(notification))}
           </ul>
         ) : (
           <div className="p-6 text-center text-gray-500 dark:text-gray-400">

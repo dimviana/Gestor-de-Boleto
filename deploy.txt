@@ -1,12 +1,13 @@
 #!/bin/bash
+# Exit immediately if a command exits with a non-zero status.
+set -e
 
 # --- Configuration ---
-# These variables are now hardcoded for the specific deployment target.
-DOMAIN="boletomanager.abildeveloper.com.br"
-ADMIN_EMAIL="admin@abildeveloper.com.br" # Used for Let's Encrypt registration and recovery.
+DOMAIN="gerenciaboleto.abildeveloper.com.br"
+ADMIN_EMAIL="admin@abildeveloper.com.br" # Used for Let's Encrypt registration.
 GIT_REPO="https://github.com/dimviana/Gestor-de-Boleto.git"
 PROJECT_PATH="$HOME/boleto-manager-ai"
-NGINX_CONF_NAME="boletomanager"
+NGINX_CONF_NAME="gerenciaboleto"
 DB_HOST="localhost"
 DB_USER="root"
 DB_PASSWORD="your_strong_password_here" # CHANGE THIS IN YOUR SERVER
@@ -28,21 +29,17 @@ command_exists() {
 }
 
 # --- Core Functions ---
-
 install_dependencies() {
     echo -e "${YELLOW}Updating system package list...${NC}"
     sudo apt-get update -y
 
     echo -e "${YELLOW}Installing essential packages (git, nginx, mysql, certbot...)${NC}"
-    # Added certbot and its nginx plugin to the installation list
     sudo apt-get install -y git curl build-essential python3 nginx mysql-server certbot python3-certbot-nginx
-    if [ $? -ne 0 ]; then echo -e "${RED}Failed to install base packages.${NC}"; exit 1; fi
 
     if ! command_exists node; then
         echo "Node.js not found. Installing Node.js LTS (20.x)..."
         curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         sudo apt-get install -y nodejs
-        if [ $? -ne 0 ]; then echo -e "${RED}Failed to install Node.js.${NC}"; exit 1; fi
     else
         echo -e "${GREEN}Node.js is already installed.${NC}"
     fi
@@ -50,7 +47,6 @@ install_dependencies() {
     if ! command_exists pm2; then
         echo "PM2 not found. Installing globally..."
         sudo npm install -g pm2
-        if [ $? -ne 0 ]; then echo -e "${RED}Failed to install PM2.${NC}"; exit 1; fi
     else
         echo -e "${GREEN}PM2 is already installed.${NC}"
     fi
@@ -60,88 +56,26 @@ install_dependencies() {
 
 configure_mysql() {
     echo -e "${YELLOW}Configuring MySQL...${NC}"
-    sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASSWORD}';"
-    if [ $? -ne 0 ]; then
-        echo -e "${YELLOW}Could not set MySQL password. It might be already set. Continuing...${NC}"
-    else
-        echo -e "${GREEN}MySQL root password configured successfully.${NC}"
-    fi
-    sudo mysql -e "FLUSH PRIVILEGES;"
+    # Use a heredoc to pass commands to mysql securely
+    sudo mysql <<MYSQL_SCRIPT
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASSWORD}';
+FLUSH PRIVILEGES;
+CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`;
+MYSQL_SCRIPT
+    echo -e "${GREEN}MySQL configured and database created (if not exists).${NC}"
 }
 
-configure_nginx() {
-    echo -e "${YELLOW}Configuring NGINX for ${DOMAIN}...${NC}"
-    NGINX_CONFIG_PATH="/etc/nginx/sites-available/${NGINX_CONF_NAME}"
-    
-    # Create the Nginx config file for HTTP (Certbot will upgrade it to HTTPS)
-    sudo tee "$NGINX_CONFIG_PATH" > /dev/null <<EOL
-server {
-    listen 80;
-    server_name ${DOMAIN};
-
-    location / {
-        proxy_pass http://localhost:${NODE_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOL
-
-    # Enable the site by creating a symbolic link
-    if [ ! -L "/etc/nginx/sites-enabled/${NGINX_CONF_NAME}" ]; then
-        sudo ln -s "$NGINX_CONFIG_PATH" "/etc/nginx/sites-enabled/"
+setup_repo() {
+    if [ -d "$PROJECT_PATH" ]; then
+        echo -e "${YELLOW}Project folder '$PROJECT_PATH' already exists. Removing for a fresh clone.${NC}"
+        rm -rf "$PROJECT_PATH"
     fi
-    
-    if [ -L "/etc/nginx/sites-enabled/default" ]; then
-        sudo rm "/etc/nginx/sites-enabled/default"
-    fi
+    echo -e "${YELLOW}Cloning repository...${NC}"
+    git clone "$GIT_REPO" "$PROJECT_PATH"
+    cd "$PROJECT_PATH"
 
-    sudo nginx -t
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}NGINX configuration test failed.${NC}"
-        exit 1
-    fi
-    
-    sudo systemctl restart nginx
-    echo -e "${GREEN}NGINX configured for HTTP validation.${NC}"
-}
-
-# --- Main Logic ---
-
-echo -e "${GREEN}====================================================${NC}"
-echo -e "${GREEN}  Automated Deployment - Boleto Manager AI          ${NC}"
-echo -e "${GREEN}  Target Domain: ${DOMAIN}                    ${NC}"
-echo -e "${GREEN}====================================================${NC}"
-
-read -p "This script will perform a full installation. Are you sure? [y/N] " confirm
-if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-    echo "Installation cancelled."
-    exit 0
-fi
-
-install_dependencies
-configure_mysql
-
-mkdir -p "$(dirname "$PROJECT_PATH")"
-
-if [ -d "$PROJECT_PATH" ]; then
-    echo -e "${YELLOW}Project folder '$PROJECT_PATH' already exists. Removing for a fresh clone.${NC}"
-    rm -rf "$PROJECT_PATH"
-fi
-
-echo -e "${YELLOW}Cloning repository...${NC}"
-git clone "$GIT_REPO" "$PROJECT_PATH"
-if [ $? -ne 0 ]; then echo -e "${RED}Failed to clone repository.${NC}"; exit 1; fi
-cd "$PROJECT_PATH"
-
-echo -e "${YELLOW}Creating .env configuration file...${NC}"
-cat > .env << EOL
+    echo -e "${YELLOW}Creating .env configuration file...${NC}"
+    cat > .env << EOL
 DB_HOST=${DB_HOST}
 DB_USER=${DB_USER}
 DB_PASSWORD=${DB_PASSWORD}
@@ -151,41 +85,151 @@ PORT=${NODE_PORT}
 JWT_SECRET=${JWT_SECRET}
 EOL
 
-echo -e "${YELLOW}Installing project dependencies (npm install)...${NC}"
-npm install
-if [ $? -ne 0 ]; then echo -e "${RED}Failed to install npm dependencies.${NC}"; exit 1; fi
+    echo -e "${YELLOW}Installing project dependencies (npm install)...${NC}"
+    npm install
+    
+    echo -e "${YELLOW}Compiling TypeScript project (npm run build)...${NC}"
+    npm run build
+    
+    echo -e "${YELLOW}Setting up database schema...${NC}"
+    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" < database/schema.txt
+}
 
-echo -e "${YELLOW}Compiling TypeScript project (npm run build)...${NC}"
-npm run build
-if [ $? -ne 0 ]; then echo -e "${RED}Failed to compile TypeScript project.${NC}"; exit 1; fi
+configure_nginx_http() {
+    echo -e "${YELLOW}Configuring NGINX for ${DOMAIN}...${NC}"
+    NGINX_CONFIG_PATH="/etc/nginx/sites-available/${NGINX_CONF_NAME}"
+    
+    sudo tee "$NGINX_CONFIG_PATH" > /dev/null <<EOL
+server {
+    listen 80;
+    server_name ${DOMAIN};
+    location / {
+        proxy_pass http://localhost:${NODE_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOL
 
-echo -e "${YELLOW}Setting up database schema...${NC}"
-echo "CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`;" | mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD"
-mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" < database/schema.txt
-if [ $? -ne 0 ]; then echo -e "${RED}Failed to set up database schema.${NC}"; exit 1; fi
+    if [ ! -L "/etc/nginx/sites-enabled/${NGINX_CONF_NAME}" ]; then
+        sudo ln -s "$NGINX_CONFIG_PATH" "/etc/nginx/sites-enabled/"
+    fi
+    
+    if [ -L "/etc/nginx/sites-enabled/default" ]; then
+        sudo rm "/etc/nginx/sites-enabled/default"
+    fi
 
-echo -e "${YELLOW}Starting application with PM2...${NC}"
-pm2 stop "$APP_NAME" &> /dev/null
-pm2 delete "$APP_NAME" &> /dev/null
-pm2 start dist/api/index.js --name "$APP_NAME"
-pm2 startup
-sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
-pm2 save
+    sudo nginx -t
+    sudo systemctl restart nginx
+    echo -e "${GREEN}NGINX configured for HTTP.${NC}"
+}
 
-configure_nginx
+start_pm2() {
+    cd "$PROJECT_PATH"
+    echo -e "${YELLOW}Starting application with PM2...${NC}"
+    pm2 stop "$APP_NAME" &> /dev/null || true
+    pm2 delete "$APP_NAME" &> /dev/null || true
+    pm2 start dist/api/index.js --name "$APP_NAME"
+    pm2 startup
+    sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
+    pm2 save
+}
 
-echo -e "${YELLOW}Requesting SSL Certificate from Let's Encrypt via Certbot...${NC}"
-sudo certbot --nginx -d ${DOMAIN} --non-interactive --agree-tos -m ${ADMIN_EMAIL}
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Certbot failed to obtain an SSL certificate.${NC}"
-    echo -e "${YELLOW}Please check your DNS settings for ${DOMAIN} and Nginx logs.${NC}"
-    exit 1
-fi
-echo -e "${GREEN}SSL Certificate obtained and configured successfully!${NC}"
+request_ssl() {
+    echo -e "${YELLOW}Requesting SSL Certificate from Let's Encrypt...${NC}"
+    sudo certbot --nginx -d ${DOMAIN} --non-interactive --agree-tos -m ${ADMIN_EMAIL}
+    echo -e "${GREEN}SSL Certificate obtained and configured successfully!${NC}"
+    sudo systemctl restart nginx
+}
 
-sudo systemctl restart nginx
+# --- Task Functions ---
+install_full() {
+    echo -e "${GREEN}--- Starting Full System Installation ---${NC}"
+    install_dependencies
+    configure_mysql
+    setup_repo
+    configure_nginx_http
+    start_pm2
+    request_ssl
+    echo -e "${GREEN}--- Installation Complete! ---${NC}"
+    echo -e "Access it securely at: ${YELLOW}https://${DOMAIN}${NC}"
+}
 
-echo -e "${GREEN}--- Installation Complete! ---${NC}"
-echo -e "Application is running via PM2."
-echo -e "Access it securely at: ${YELLOW}https://${DOMAIN}${NC}"
-echo -e "To see logs, run: ${YELLOW}pm2 logs ${APP_NAME}${NC}"
+update_system() {
+    echo -e "${GREEN}--- Starting System Update ---${NC}"
+    cd "$PROJECT_PATH" || { echo -e "${RED}Project path '$PROJECT_PATH' not found! Cannot update.${NC}"; exit 1; }
+    echo -e "${YELLOW}Pulling latest changes from Git...${NC}"
+    git pull
+    echo -e "${YELLOW}Installing/updating dependencies...${NC}"
+    npm install
+    echo -e "${YELLOW}Rebuilding project...${NC}"
+    npm run build
+    echo -e "${YELLOW}Restarting application...${NC}"
+    pm2 restart "$APP_NAME"
+    echo -e "${GREEN}--- Update Complete! ---${NC}"
+}
+
+uninstall_system() {
+    echo -e "${RED}--- Starting System Uninstallation ---${NC}"
+    echo -e "${RED}WARNING: This will completely remove the application, Nginx config, and project files.${NC}"
+    read -p "Are you sure you want to continue? [y/N] " confirm
+    if [[ ! "$confirm" =~ ^[yY]$ ]]; then
+        echo "Uninstallation cancelled."
+        exit 0
+    fi
+
+    echo -e "${YELLOW}Stopping and removing PM2 process...${NC}"
+    pm2 stop "$APP_NAME" &> /dev/null || true
+    pm2 delete "$APP_NAME" &> /dev/null || true
+    pm2 save --force
+    
+    echo -e "${YELLOW}Removing Nginx configuration...${NC}"
+    sudo rm -f "/etc/nginx/sites-available/${NGINX_CONF_NAME}"
+    sudo rm -f "/etc/nginx/sites-enabled/${NGINX_CONF_NAME}"
+    sudo nginx -t && sudo systemctl restart nginx
+
+    echo -e "${YELLOW}Removing project directory...${NC}"
+    rm -rf "$PROJECT_PATH"
+
+    echo -e "${RED}WARNING: The next step will offer to delete the database.${NC}"
+    read -p "Do you want to PERMANENTLY DELETE the MySQL database '${DB_DATABASE}'? This CANNOT BE UNDONE. [y/N] " confirm_db
+    if [[ "$confirm_db" =~ ^[yY]$ ]]; then
+        echo -e "${YELLOW}Dropping database '${DB_DATABASE}'...${NC}"
+        mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS \`${DB_DATABASE}\`;"
+        echo -e "${GREEN}Database dropped.${NC}"
+    fi
+
+    echo -e "${GREEN}--- Uninstallation Complete! ---${NC}"
+}
+
+# --- Main Logic ---
+clear
+echo -e "${GREEN}====================================================${NC}"
+echo -e "${GREEN}      Boleto Manager AI - Deployment Script         ${NC}"
+echo -e "${GREEN}====================================================${NC}"
+echo
+echo "Please select an option:"
+echo "  1) Full Installation (for the first time)"
+echo "  2) Update System (pulls latest code)"
+echo "  3) Uninstall System (removes everything)"
+echo
+read -p "Enter option number [1-3]: " choice
+
+case "$choice" in
+    1)
+        install_full
+        ;;
+    2)
+        update_system
+        ;;
+    3)
+        uninstall_system
+        ;;
+    *)
+        echo -e "${RED}Invalid option. Exiting.${NC}"
+        exit 1
+        ;;
+esac

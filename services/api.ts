@@ -1,4 +1,4 @@
-import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, VpsSettings, SslSettings, SslStatus } from '../types';
+import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus, VpsSettings } from '../types';
 
 const API_BASE_URL = '/api'; // Use relative URL to proxy to the backend
 
@@ -84,9 +84,12 @@ export const register = (username?: string, password?: string): Promise<any> => 
 // --- Boletos API ---
 export const fetchBoletos = (): Promise<Boleto[]> => apiFetch('/boletos');
 
-export const createBoleto = (file: File): Promise<Boleto> => {
+export const createBoleto = (file: File, companyId?: string): Promise<Boleto> => {
     const formData = new FormData();
     formData.append('file', file);
+    if (companyId) {
+        formData.append('companyId', companyId);
+    }
     return apiFetch('/boletos', {
         method: 'POST',
         body: formData,
@@ -158,22 +161,23 @@ export const deleteCompany = (id: string): Promise<{ message: string }> => {
 // --- Logs API ---
 export const fetchLogs = (): Promise<LogEntry[]> => apiFetch('/logs');
 
-
-// --- VPS Settings API ---
+// FIX: Added missing VPS API functions
+// --- VPS Update API ---
 export const fetchVpsSettings = (): Promise<VpsSettings> => apiFetch('/vps');
 
-export const saveVpsSettings = (settings: VpsSettings): Promise<{ message: string }> => {
-  return apiFetch('/vps', {
-    method: 'POST',
-    body: JSON.stringify(settings),
-  });
+export const saveVpsSettings = (settings: Partial<VpsSettings>): Promise<{ message: string }> => {
+    return apiFetch('/vps', {
+        method: 'POST',
+        body: JSON.stringify(settings),
+    });
 };
 
-export const triggerVpsUpdate = (): Promise<{ message: string; output: string; }> => {
-  return apiFetch('/vps/update', {
-    method: 'POST',
-  });
+export const triggerVpsUpdate = (): Promise<{ output: string }> => {
+    return apiFetch('/vps/update', {
+        method: 'POST',
+    });
 };
+
 
 // --- SSL Settings API ---
 export const fetchSslSettings = (): Promise<SslSettings> => apiFetch('/ssl');

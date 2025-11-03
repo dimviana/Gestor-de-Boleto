@@ -1,4 +1,5 @@
 
+
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
@@ -39,9 +40,23 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
 
 export const createBoleto = async (req: AuthRequest, res: Response) => {
     const user = req.user!;
-    if (!user.companyId) {
-        return res.status(400).json({ message: 'User is not associated with a company' });
+    const adminSelectedCompanyId = req.body.companyId;
+
+    let targetCompanyId: string | null;
+
+    if (user.role === 'admin') {
+        if (!adminSelectedCompanyId) {
+            return res.status(400).json({ message: 'Admin must select a company to upload a boleto.' });
+        }
+        targetCompanyId = adminSelectedCompanyId;
+    } else {
+        if (!user.companyId) {
+            return res.status(400).json({ message: 'User is not associated with a company' });
+        }
+        targetCompanyId = user.companyId;
     }
+
+
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -53,7 +68,7 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
         const extractedData = await extractBoletoInfo(req.file.buffer, req.file.originalname, 'pt', aiSettings);
 
         if (extractedData.barcode) {
-             const [existing] = await pool.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [extractedData.barcode, user.companyId]);
+             const [existing] = await pool.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [extractedData.barcode, targetCompanyId]);
              if (existing.length > 0) {
                  return res.status(409).json({ message: `Duplicate barcode for document: ${extractedData.guideNumber || extractedData.recipient}`});
              }
@@ -65,7 +80,7 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
             status: BoletoStatus.TO_PAY,
             fileData: req.file.buffer.toString('base64'),
             comments: null,
-            companyId: user.companyId,
+            companyId: targetCompanyId,
         };
         
         const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments, companyId } = newBoleto;

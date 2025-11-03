@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 // FIX: Moved TranslationKey import to the correct file 'translations.ts' from 'types.ts'.
-import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, SystemNotification, AnyNotification } from '../types';
+import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification } from '../types';
 import { TranslationKey } from '../translations';
 import Header from './Header';
 import FileUpload from './FileUpload';
@@ -17,7 +17,6 @@ import { WalletIcon, HourglassIcon, CheckCircleIcon, TrashIcon } from './icons/I
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
 import { BoletoDetailsModal } from './BoletoDetailsModal';
-import VpsUpdateModal from './VpsUpdateModal';
 import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
 import UploadProgress, { UploadStatus } from './UploadProgress';
@@ -43,10 +42,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const [systemUpdate, setSystemUpdate] = useState<SystemNotification | null>(null);
-  const [isVpsModalOpen, setIsVpsModalOpen] = useState(false);
-
-
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
 
@@ -59,41 +54,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
       loadCompanies();
     }
   }, [user.role]);
-
-  useEffect(() => {
-    const checkForUpdates = async () => {
-      try {
-        const repoOwner = 'dimviana';
-        const repoName = 'Gestor-de-Boleto';
-        const commitsUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/commits?per_page=1`;
-        
-        const response = await fetch(commitsUrl);
-        if (!response.ok) return;
-
-        const commits = await response.json();
-        const latestCommit = commits[0];
-        const lastSeenSha = localStorage.getItem('lastSeenCommitSha');
-
-        if (latestCommit.sha !== lastSeenSha) {
-          const packageJsonUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/package.json`;
-          const pkgResponse = await fetch(packageJsonUrl);
-          if (!pkgResponse.ok) return;
-          const pkg = await pkgResponse.json();
-
-          setSystemUpdate({
-            type: 'system',
-            message: latestCommit.commit.message,
-            version: `v${pkg.version}`,
-            url: latestCommit.html_url,
-            sha: latestCommit.sha,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to check for system updates:", error);
-      }
-    };
-    checkForUpdates();
-  }, []);
 
   const handleFileUpload = async (file: File) => {
     const uploadId = crypto.randomUUID();
@@ -113,7 +73,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
          throw new Error('freeBoletoErrorText'); // Use key for consistent error handling
        }
 
-      await addBoleto(user, file, method); // This calls the backend via the hook
+      const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : undefined;
+      await addBoleto(user, file, method, targetCompanyId); // This calls the backend via the hook
 
       setUploadStatuses(prev => prev.map(up => 
             up.id === uploadId 
@@ -127,6 +88,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
       const errorMap: { [key: string]: TranslationKey } = {
           'Duplicate barcode': 'duplicateBarcodeErrorText',
           'User is not associated with a company': 'userHasNoCompanyErrorText',
+          'Admin must select a company': 'adminMustSelectCompanyErrorText',
           'freeBoletoErrorText': 'freeBoletoErrorText'
       };
       
@@ -265,18 +227,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   }, [filteredBoletos]);
 
   const allNotifications: AnyNotification[] = useMemo(() => {
-    const notifications: AnyNotification[] = [...boletoNotifications];
-    if (systemUpdate) {
-        notifications.unshift(systemUpdate);
-    }
-    return notifications;
-  }, [boletoNotifications, systemUpdate]);
-
-  const handleSystemUpdateClick = useCallback(() => {
-    if (user.role === 'admin' && systemUpdate) {
-        setIsVpsModalOpen(true);
-    }
-  }, [user.role, systemUpdate]);
+    return [...boletoNotifications];
+  }, [boletoNotifications]);
+  
+  const isUploadDisabled = (user.role !== 'admin' && !user.companyId) || (user.role === 'admin' && !selectedCompanyFilter);
 
   const formatCurrency = (value: number) => value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', { style: 'currency', currency: language === 'pt' ? 'BRL' : 'USD' });
 
@@ -298,16 +252,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         onOpenDocs={() => setIsDocsOpen(true)}
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
         notifications={allNotifications}
-        onSystemUpdateClick={handleSystemUpdateClick}
         onSearch={setSearchTerm}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">
-          <FileUpload onFileUpload={handleFileUpload} disabled={!user.companyId} />
+          <FileUpload onFileUpload={handleFileUpload} disabled={isUploadDisabled} />
            <UploadProgress statuses={uploadStatuses} onClear={() => setUploadStatuses([])} />
           {user.role !== 'admin' && !user.companyId && (
               <div className="text-center p-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 text-sm rounded-lg">
                   {t('uploadDisabledNoCompany')}
+              </div>
+          )}
+          {user.role === 'admin' && !selectedCompanyFilter && (
+             <div className="text-center p-2 bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 text-sm rounded-lg">
+                  {t('adminMustSelectCompanyErrorText')}
               </div>
           )}
          
@@ -325,7 +283,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
               </select>
             </div>
           )}
-           <FolderWatcher onFileUpload={handleFileUpload} disabled={!user.companyId} />
+           <FolderWatcher onFileUpload={handleFileUpload} disabled={isUploadDisabled} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -370,13 +328,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
           />
       </Modal>
       
-      {isVpsModalOpen && systemUpdate && (
-          <VpsUpdateModal
-            systemUpdateInfo={systemUpdate}
-            onClose={() => setIsVpsModalOpen(false)}
-          />
-      )}
-
       {viewingBoleto && (<BoletoDetailsModal boleto={viewingBoleto} onClose={() => setViewingBoleto(null)} />)}
     </>
   );

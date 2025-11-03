@@ -26,15 +26,6 @@ export const useAuth = () => {
   const login = useCallback(async (username: string, password?: string) => {
     setAuthError(null);
     try {
-      if (username.toLowerCase() === 'admin' && !password) {
-        // Handle frontend-only admin access for demo/fallback
-        // FIX: Added missing 'companyId' property to align with the User type.
-        const adminUser: User = { id: 'admin-user', username: 'admin', role: 'admin', companyId: null };
-        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(adminUser));
-        setUser(adminUser);
-        return;
-      }
-
       if (!password) {
         setAuthError('authErrorInvalidCredentials');
         return;

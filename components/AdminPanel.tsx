@@ -345,7 +345,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
     );
 
     const SslTab = () => {
-        const [domain, setDomain] = useState('boletomanager.abildeveloper.com.br');
+        const [domain, setDomain] = useState('gerenciaboleto.abildeveloper.com.br');
         const [status, setStatus] = useState<SslStatus | null>(null);
         const [isLoading, setIsLoading] = useState(false);
 

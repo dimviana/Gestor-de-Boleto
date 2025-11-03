@@ -30,13 +30,16 @@ export const useBoletos = (user: User | null) => {
     fetchAndSetBoletos();
   }, [fetchAndSetBoletos]);
 
-  const addBoleto = useCallback(async (user: User, file: File, method: ProcessingMethod) => {
-    if (!user.companyId) {
+  const addBoleto = useCallback(async (user: User, file: File, method: ProcessingMethod, companyId?: string) => {
+    if (user.role !== 'admin' && !user.companyId) {
         throw new Error('userHasNoCompanyError');
     }
+    if (user.role === 'admin' && !companyId) {
+        throw new Error('Admin must select a company');
+    }
     
-    // Barcode duplication is now checked on the backend.
-    await api.createBoleto(file);
+    // companyId for admins is passed to the API call
+    await api.createBoleto(file, companyId);
     await fetchAndSetBoletos(); // Re-fetch to get the latest list including the new one
   }, [fetchAndSetBoletos]);
 

@@ -82,16 +82,7 @@ export interface Notification {
   daysUntilDue: number;
 }
 
-// New type for System Update Notifications
-export interface SystemNotification {
-    type: 'system';
-    message: string;
-    version: string;
-    url: string;
-    sha: string;
-}
-
-export type AnyNotification = Notification | SystemNotification;
+export type AnyNotification = Notification;
 
 // New type for AI settings
 export interface AiSettings {
@@ -101,15 +92,16 @@ export interface AiSettings {
   topP: number;
 }
 
-// New type for VPS SSH settings
+// FIX: Added missing VpsSettings type
+// New types for VPS management
 export interface VpsSettings {
-  id: string;
-  company_id: string;
-  hostname: string;
-  username: string;
-  password?: string; // Should be handled securely
-  ssh_port: number;
-  project_path?: string; // Path to project on remote server
+    id: string;
+    company_id: string;
+    hostname: string;
+    username: string;
+    password: string;
+    ssh_port: number;
+    project_path: string;
 }
 
 // New types for SSL management

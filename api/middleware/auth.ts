@@ -1,16 +1,17 @@
 
+
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 
 // By extending Request from express, AuthRequest inherits standard properties
 // like `headers`, `body`, `file`, etc., resolving type errors in controllers.
-// FIX: Switched from an interface to a type intersection. This robustly ensures
+// FIX: Switched from a type intersection to an interface extending express.Request to ensure
 // that AuthRequest inherits all properties from the base express.Request type,
 // resolving type errors in controllers that use it.
-export type AuthRequest = Request & {
+export interface AuthRequest extends Request {
   user?: User;
-};
+}
 
 export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token;

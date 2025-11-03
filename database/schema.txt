@@ -92,26 +92,6 @@ CREATE TABLE IF NOT EXISTS `settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Table structure for table `vps_settings`
--- Stores SSH credentials for the remote update feature.
--- WARNING: Storing passwords directly is not recommended in production.
--- Consider using SSH keys or a secrets manager for enhanced security.
---
-CREATE TABLE IF NOT EXISTS `vps_settings` (
-  `id` VARCHAR(36) NOT NULL,
-  `company_id` VARCHAR(36) NOT NULL,
-  `hostname` VARCHAR(255) NOT NULL,
-  `username` VARCHAR(255) NOT NULL,
-  `password` VARCHAR(255) NOT NULL COMMENT 'Encrypted password is recommended',
-  `ssh_port` INT NOT NULL DEFAULT 22,
-  `project_path` VARCHAR(255) DEFAULT NULL COMMENT 'Absolute path to the project folder on the remote server',
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `company_id_UNIQUE` (`company_id`),
-  CONSTRAINT `vps_company_id_fk` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
 -- Initial data for `settings` table
 --
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
