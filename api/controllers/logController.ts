@@ -1,13 +1,15 @@
 
 
 
-// FIX: Alias express Response to avoid conflict with global DOM types
-import { Response as ExpressResponse } from 'express';
+
+
+// FIX: Use express namespace to avoid type conflicts with global DOM types
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-export const getLogs = async (req: AuthRequest, res: ExpressResponse) => {
+export const getLogs = async (req: AuthRequest, res: express.Response) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');
     res.json(logs);

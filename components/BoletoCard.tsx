@@ -240,7 +240,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         )}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600">
+      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600 space-y-2">
         <div className="flex items-center space-x-2">
             <div className="flex-1">
                 {getAction()}
@@ -254,13 +254,16 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             >
                 <ChatBubbleIcon className="w-5 h-5" />
             </button>
-             <button
+        </div>
+        <div>
+            <button
                 title={t('openPdf')}
                 onClick={handleOpenPdf}
                 disabled={!fileData}
-                className="flex-shrink-0 flex items-center justify-center p-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <FileTextIcon className="w-5 h-5" />
+                <FileTextIcon className="w-4 h-4 mr-2" />
+                <span>{t('openPdf')}</span>
             </button>
         </div>
       </div>

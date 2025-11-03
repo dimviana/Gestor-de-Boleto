@@ -1,8 +1,10 @@
 
 
 
-// FIX: Alias express types to avoid conflict with global DOM types
-import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+
+
+// FIX: Use express namespace to avoid type conflicts with global DOM types
+import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -17,7 +19,7 @@ const generateToken = (id: string, username: string, role: string, company_id: s
 };
 
 // FIX: Use aliased express types for request and response.
-export const registerUser = async (req: ExpressRequest, res: ExpressResponse) => {
+export const registerUser = async (req: express.Request, res: express.Response) => {
   const { username, password, role = 'user', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -44,7 +46,7 @@ export const registerUser = async (req: ExpressRequest, res: ExpressResponse) =>
 };
 
 // FIX: Use aliased express types for request and response.
-export const loginUser = async (req: ExpressRequest, res: ExpressResponse) => {
+export const loginUser = async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
