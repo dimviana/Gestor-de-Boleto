@@ -1,4 +1,5 @@
 
+
 // FIX: Import explicit Response type from express.
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
@@ -10,7 +11,14 @@ import { v4 as uuidv4 } from 'uuid';
 // FIX: Use explicit Response type for route handlers.
 export const getUsers = async (req: AuthRequest, res: Response) => {
   try {
-    const [users] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
+    const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
+    // Map snake_case from DB to camelCase for frontend consistency
+    const users = usersFromDb.map(user => ({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        companyId: user.company_id
+    }));
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -34,8 +42,10 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const newUser = { id: uuidv4(), username, password: hashedPassword, role, company_id: companyId || null };
-    await connection.query('INSERT INTO users SET ?', newUser);
+    
+    // Use snake_case for DB insertion
+    const newUserDb = { id: uuidv4(), username, password: hashedPassword, role, company_id: companyId || null };
+    await connection.query('INSERT INTO users SET ?', newUserDb);
     
     await connection.query(
       'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
@@ -50,8 +60,14 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
     await connection.commit();
     
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...userResponse } = newUser;
+    // Prepare camelCase response for frontend
+    const userResponse = {
+        id: newUserDb.id,
+        username: newUserDb.username,
+        role: newUserDb.role,
+        companyId: newUserDb.company_id
+    };
+    
     res.status(201).json(userResponse);
   } catch (error: any) {
     await connection.rollback();

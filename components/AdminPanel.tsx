@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company, SslStatus } from '../types';

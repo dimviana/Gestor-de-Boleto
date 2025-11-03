@@ -63,7 +63,7 @@ export const extractBoletoInfo = async (
     fileName: string, 
     lang: 'pt' | 'en', 
     aiSettings: AiSettings
-): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId' | 'userId'>> => {
+): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     if (!appConfig.API_KEY) {
         throw new Error("API key is missing.");
     }
