@@ -1,5 +1,4 @@
-
-// FIX: Use named import for Express Response type.
+// FIX: Import explicit Response type from express.
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
@@ -8,7 +7,7 @@ import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { extractBoletoInfo } from '../services/geminiService';
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const getBoletos = async (req: AuthRequest, res: Response) => {
   const user = req.user!;
   try {
@@ -39,7 +38,7 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const createBoleto = async (req: AuthRequest, res: Response) => {
     const user = req.user!;
     const adminSelectedCompanyId = req.body.companyId;
@@ -106,7 +105,7 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     const { status } = req.body;
     try {
@@ -117,7 +116,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     const { comments } = req.body;
     try {
@@ -128,7 +127,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const deleteBoleto = async (req: AuthRequest, res: Response) => {
     try {
         await pool.query('DELETE FROM boletos WHERE id = ?', [req.params.id]);

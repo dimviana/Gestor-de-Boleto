@@ -161,6 +161,16 @@ export const deleteCompany = (id: string): Promise<{ message: string }> => {
 // --- Logs API ---
 export const fetchLogs = (): Promise<LogEntry[]> => apiFetch('/logs');
 
+// --- Settings API ---
+export const fetchAllSettings = (): Promise<any> => apiFetch('/settings');
+
+export const updateAllSettings = (settings: Record<string, any>): Promise<{ message: string }> => {
+    return apiFetch('/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+    });
+};
+
 // FIX: Added missing VPS API functions
 // --- VPS Update API ---
 export const fetchVpsSettings = (): Promise<VpsSettings> => apiFetch('/vps');

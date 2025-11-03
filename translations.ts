@@ -158,6 +158,18 @@ const pt = {
     companyDeletedSuccess: 'Empresa excluída com sucesso.',
     companyDeleteError: 'Falha ao excluir a empresa.',
     searchPlaceholder: 'Pesquisar boletos...',
+    credentialsAndSecurityTitle: 'Credenciais & Segurança',
+    geminiApiKeyLabel: 'Chave da API Gemini',
+    geminiApiKeyPlaceholder: 'Cole sua chave de API aqui',
+    geminiApiKeyDescription: 'Esta chave é usada para as chamadas à API do Gemini. É armazenada de forma segura no banco de dados.',
+    jwtSecretLabel: 'Segredo do Token JWT',
+    jwtSecretPlaceholder: 'Segredo para assinar tokens de usuário',
+    jwtSecretDescription: 'Uma chave secreta longa e aleatória para a segurança da autenticação. Mudar isso irá invalidar todas as sessões de login atuais.',
+    generateButton: 'Gerar',
+    saveAllSettingsButton: 'Salvar Todas as Configurações',
+    settingsSavedSuccess: 'Configurações salvas com sucesso.',
+    settingsSaveError: 'Falha ao salvar configurações.',
+    settingsLoadError: 'Falha ao carregar as configurações.',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
         Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos a seguir.
@@ -337,6 +349,18 @@ const en: typeof pt = {
     companyDeletedSuccess: 'Company deleted successfully.',
     companyDeleteError: 'Failed to delete company.',
     searchPlaceholder: 'Search boletos...',
+    credentialsAndSecurityTitle: 'Credentials & Security',
+    geminiApiKeyLabel: 'Gemini API Key',
+    geminiApiKeyPlaceholder: 'Paste your API key here',
+    geminiApiKeyDescription: 'This key is used for Gemini API calls. It is stored securely in the database.',
+    jwtSecretLabel: 'JWT Token Secret',
+    jwtSecretPlaceholder: 'Secret for signing user tokens',
+    jwtSecretDescription: 'A long, random secret key for authentication security. Changing this will invalidate all current login sessions.',
+    generateButton: 'Generate',
+    saveAllSettingsButton: 'Save All Settings',
+    settingsSavedSuccess: 'Settings saved successfully.',
+    settingsSaveError: 'Failed to save settings.',
+    settingsLoadError: 'Failed to load settings.',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
         Your task is to analyze the OCR-EXTRACTED TEXT and the IMAGE provided below.

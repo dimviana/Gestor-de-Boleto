@@ -1,11 +1,11 @@
-
-// FIX: Use named import for Express Response type.
+// FIX: Import explicit Response type from express.
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
+import { updateInMemoryConfig } from '../services/configService';
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const getSettings = async (req: AuthRequest, res: Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
@@ -25,7 +25,7 @@ export const getSettings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const updateSettings = async (req: AuthRequest, res: Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
@@ -37,6 +37,8 @@ export const updateSettings = async (req: AuthRequest, res: Response) => {
                 'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
                 [key, value, value]
             );
+            // Update in-memory config immediately
+            updateInMemoryConfig(key, settings[key]);
         }
         await connection.commit();
         res.json({ message: 'Settings updated successfully' });

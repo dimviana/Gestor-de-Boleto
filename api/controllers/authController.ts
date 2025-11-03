@@ -1,19 +1,20 @@
-
-// FIX: Use named imports for Express types.
+// FIX: Import explicit Request and Response types from express.
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
+import { appConfig } from '../services/configService';
 
 const generateToken = (id: string, username: string, role: string, company_id: string | null) => {
-  return jwt.sign({ id, username, role, companyId: company_id }, process.env.JWT_SECRET!, {
+  return jwt.sign({ id, username, role, companyId: company_id }, appConfig.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
 
-// FIX: Use explicit express types for request and response.
+// Use explicit express types for request and response.
+// FIX: Use explicit Request and Response types for route handlers.
 export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'user', companyId = null } = req.body;
 
@@ -40,7 +41,8 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Use explicit express types for request and response.
+// Use explicit express types for request and response.
+// FIX: Use explicit Request and Response types for route handlers.
 export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 

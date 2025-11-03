@@ -1,5 +1,4 @@
-
-// FIX: Use named import for Express Response type.
+// FIX: Import explicit Response type from express.
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
@@ -8,7 +7,7 @@ import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { NodeSSH } from 'node-ssh';
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const getVpsSettings = async (req: AuthRequest, res: Response) => {
   const user = req.user!;
   if (!user.companyId) {
@@ -28,7 +27,7 @@ export const getVpsSettings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const saveVpsSettings = async (req: AuthRequest, res: Response) => {
   const user = req.user!;
   const { hostname, username, password, ssh_port, project_path } = req.body;
@@ -63,7 +62,7 @@ export const saveVpsSettings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// FIX: Use explicit express.Response type.
+// FIX: Use explicit Response type for route handlers.
 export const triggerUpdate = async (req: AuthRequest, res: Response) => {
     const user = req.user!;
     if (!user.companyId) {

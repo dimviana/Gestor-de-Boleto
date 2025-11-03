@@ -63,42 +63,106 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
     
     const SettingsTab = () => {
         const { appName, logoUrl, setAppName, setLogoUrl } = useWhitelabel();
-        const { method: currentMethod, setMethod } = useProcessingMethod();
+        const { method, setMethod } = useProcessingMethod();
         const { aiSettings, setAiSettings } = useAiSettings();
+        
+        // Local form states
         const [currentAppName, setCurrentAppName] = useState(appName);
         const [currentLogoUrl, setCurrentLogoUrl] = useState(logoUrl);
+        const [currentMethod, setCurrentMethod] = useState(method);
         const [currentAiSettings, setCurrentAiSettings] = useState<AiSettings>(aiSettings);
+        const [apiKey, setApiKey] = useState('');
+        const [jwtSecret, setJwtSecret] = useState('');
+        const [isLoading, setIsLoading] = useState(true);
 
-        const handleSaveWhitelabel = () => { setAppName(currentAppName); setLogoUrl(currentLogoUrl); };
-        const handleSaveAiSettings = () => setAiSettings(currentAiSettings, currentUser);
-        const handleMethodChange = (newMethod: ProcessingMethod) => setMethod(newMethod, currentUser);
+        useEffect(() => {
+            const loadSettings = async () => {
+                setIsLoading(true);
+                try {
+                    const settings = await api.fetchAllSettings();
+                    setCurrentAppName(settings.whitelabel_appName || appName);
+                    setCurrentLogoUrl(settings.whitelabel_logoUrl || logoUrl);
+                    setCurrentMethod(settings.processing_method || method);
+                    setCurrentAiSettings(settings.ai_settings || aiSettings);
+                    setApiKey(settings.API_KEY || '');
+                    setJwtSecret(settings.JWT_SECRET || '');
+                } catch (error) {
+                    console.error("Failed to load settings", error);
+                    showNotification(t('settingsLoadError' as TranslationKey), 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            loadSettings();
+        }, [appName, logoUrl, method, aiSettings]);
+        
+        const handleGenerateJwt = () => {
+            const array = new Uint8Array(32);
+            window.crypto.getRandomValues(array);
+            const secret = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+            setJwtSecret(secret);
+        };
+        
+        const handleSaveAllSettings = async () => {
+            const settingsToSave = {
+                whitelabel_appName: currentAppName,
+                whitelabel_logoUrl: currentLogoUrl,
+                processing_method: currentMethod,
+                ai_settings: currentAiSettings,
+                API_KEY: apiKey,
+                JWT_SECRET: jwtSecret
+            };
+
+            try {
+                await api.updateAllSettings(settingsToSave);
+                
+                // Update local contexts after successful save
+                setAppName(currentAppName);
+                setLogoUrl(currentLogoUrl);
+                setMethod(currentMethod, currentUser);
+                setAiSettings(currentAiSettings, currentUser);
+                
+                if (apiKey) {
+                    localStorage.setItem('gemini_api_key', apiKey);
+                } else {
+                    localStorage.removeItem('gemini_api_key');
+                }
+
+                showNotification(t('settingsSavedSuccess'), 'success');
+            } catch (error: any) {
+                showNotification(t('settingsSaveError' as TranslationKey) || error.message, 'error');
+            }
+        };
+
+        if (isLoading) {
+            return <div className="flex justify-center items-center h-64"><Spinner /></div>;
+        }
 
         return (
             <div className="space-y-6">
                  <div>
-                 <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Configurações de Aparência</h3>
-                <div className="space-y-4 mt-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Aplicação</label>
-                        <input type="text" value={currentAppName} onChange={(e) => setCurrentAppName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Configurações de Aparência</h3>
+                    <div className="space-y-4 mt-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Aplicação</label>
+                            <input type="text" value={currentAppName} onChange={(e) => setCurrentAppName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
+                         <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Logotipo (Opcional)</label>
+                            <input type="text" value={currentLogoUrl} onChange={(e) => setCurrentLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
                     </div>
-                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Logotipo (Opcional)</label>
-                        <input type="text" value={currentLogoUrl} onChange={(e) => setCurrentLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                    </div>
-                </div>
-                 <div className="flex justify-end pt-4 mt-4"><button onClick={handleSaveWhitelabel} className="px-6 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">Salvar Aparência</button></div>
                 </div>
                  <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
                  <div>
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('extractionMethodTitle')}</h3>
                     <fieldset className="mt-4"><div className="space-y-4">
                         <div className="flex items-start">
-                            <div className="flex items-center h-5"><input id="method-ai" type="radio" checked={currentMethod === 'ai'} onChange={() => handleMethodChange('ai')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/></div>
+                            <div className="flex items-center h-5"><input id="method-ai" type="radio" checked={currentMethod === 'ai'} onChange={() => setCurrentMethod('ai')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/></div>
                             <div className="ml-3 text-sm"><label htmlFor="method-ai" className="font-medium text-gray-800 dark:text-gray-200">{t('extractionMethodAI')}</label><p className="text-gray-500 dark:text-gray-400">{t('extractionMethodAIDescription')}</p></div>
                         </div>
                         <div className="flex items-start">
-                            <div className="flex items-center h-5"><input id="method-regex" type="radio" checked={currentMethod === 'regex'} onChange={() => handleMethodChange('regex')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/></div>
+                            <div className="flex items-center h-5"><input id="method-regex" type="radio" checked={currentMethod === 'regex'} onChange={() => setCurrentMethod('regex')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/></div>
                             <div className="ml-3 text-sm"><label htmlFor="method-regex" className="font-medium text-gray-800 dark:text-gray-200">{t('extractionMethodRegex')}</label><p className="text-gray-500 dark:text-gray-400">{t('extractionMethodRegexDescription')}</p></div>
                         </div>
                     </div></fieldset>
@@ -131,8 +195,33 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                             </div>
                         </div>
                     </div>
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-sm rounded-lg">{t('apiKeyNote')}</div>
-                    <div className="flex justify-end pt-4 mt-4"><button onClick={handleSaveAiSettings} className="px-6 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">{t('saveAiSettingsButton')}</button></div>
+                </div>
+
+                <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
+                
+                <div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('credentialsAndSecurityTitle')}</h3>
+                    <div className="mt-4 space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('geminiApiKeyLabel')}</label>
+                            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={t('geminiApiKeyPlaceholder')} className="mt-1 block w-full input-field" />
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('geminiApiKeyDescription')}</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('jwtSecretLabel')}</label>
+                            <div className="flex items-center space-x-2">
+                                <input type="password" value={jwtSecret} onChange={(e) => setJwtSecret(e.target.value)} placeholder={t('jwtSecretPlaceholder')} className="mt-1 block w-full input-field"/>
+                                <button onClick={handleGenerateJwt} className="mt-1 px-4 py-2 text-sm font-semibold text-white bg-gray-600 rounded-lg hover:bg-gray-700 whitespace-nowrap">{t('generateButton')}</button>
+                            </div>
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('jwtSecretDescription')}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-end pt-4 mt-4 border-t dark:border-gray-600">
+                    <button onClick={handleSaveAllSettings} className="px-6 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                        {t('saveAllSettingsButton')}
+                    </button>
                 </div>
                 <style>{`.input-field { background-color: #F3F4F6; color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>
             </div>

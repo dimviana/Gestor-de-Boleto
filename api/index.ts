@@ -1,11 +1,11 @@
-
-
-// FIX: Use default import for express to avoid type conflicts.
+// Use default import for express to avoid type conflicts.
+// FIX: Import Request and Response types from express for correct type inference.
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 import { testDbConnection } from '../config/db';
+import { loadConfigFromDB } from './services/configService';
 
 import authRoutes from './routes/auth';
 import boletoRoutes from './routes/boletos';
@@ -39,7 +39,8 @@ apiRouter.use('/ssl', sslRoutes);
 apiRouter.use('/vps', vpsRoutes);
 
 // Health check for the API router itself
-// FIX: Add explicit Request and Response types to handler
+// Add explicit Request and Response types to handler
+// FIX: Use explicit Request and Response types for route handlers.
 apiRouter.get('/', (req: Request, res: Response) => {
   res.send('Boleto Manager AI Backend is running!');
 });
@@ -58,7 +59,8 @@ app.use(express.static(staticPath));
 
 // 2. SPA Fallback: For any GET request that doesn't match an API route or a static file,
 // serve the main index.html file. This is crucial for client-side routing.
-// FIX: Add explicit Request and Response types to handler
+// Add explicit Request and Response types to handler
+// FIX: Use explicit Request and Response types for route handlers.
 app.get('/*', (req: Request, res: Response) => {
   // This guard prevents the fallback from ever serving index.html for an API-like route.
   if (req.path.startsWith('/api/')) {
@@ -69,11 +71,16 @@ app.get('/*', (req: Request, res: Response) => {
 
 
 // --- Server Startup ---
-testDbConnection().catch(err => {
-    console.error("Shutting down due to database connection failure.", err);
-    throw err;
-});
+const startServer = async () => {
+    await testDbConnection();
+    await loadConfigFromDB(); // Load config before starting to listen
 
-app.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
+    app.listen(port, () => {
+      console.log(`[server]: Server is running at http://localhost:${port}`);
+    });
+};
+
+startServer().catch(err => {
+    console.error("Server startup failed.", err);
+    throw err;
 });

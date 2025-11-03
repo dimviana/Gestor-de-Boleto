@@ -1,30 +1,27 @@
-
-// FIX: Use named imports for Express types to ensure consistency and resolve conflicts.
+// FIX: Import explicit types from Express to ensure correct type resolution.
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
-// FIX: Import 'multer' to make Express.Multer.File type augmentation available.
+// Import 'multer' to make Express.Multer.File type augmentation available.
 import 'multer';
 
-// By extending Request from express, AuthRequest inherits standard properties
+// By extending express.Request, AuthRequest inherits standard properties
 // like `headers`, `body`, `file`, etc., resolving type errors in controllers.
-// FIX: Switched from a type intersection to an interface extending express.Request to ensure
-// that AuthRequest inherits all properties from the base express.Request type,
-// resolving type errors in controllers that use it.
+// FIX: Extend `Request` from express and remove redundant `file` property.
+// The `multer` import augments the base `Request` type to include `file`.
 export interface AuthRequest extends Request {
   user?: User;
-  // FIX: Add file property from multer to avoid type errors in controllers
-  file?: Express.Multer.File;
 }
 
-// FIX: Use explicit express types for request, response, and next function.
-export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
+// Use explicit express types for request, response, and next function.
+// FIX: Use explicit types for middleware parameters.
+export const protect = (req: Request, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as User;
-      req.user = decoded;
+      (req as AuthRequest).user = decoded;
       next();
     } catch (error) {
       res.status(401).json({ message: 'Not authorized, token failed' });
@@ -36,9 +33,10 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-// FIX: Use explicit express types for request, response, and next function.
-export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (req.user && req.user.role === 'admin') {
+// Use explicit express types for request, response, and next function.
+// FIX: Use explicit types for middleware parameters.
+export const admin = (req: Request, res: Response, next: NextFunction) => {
+    if ((req as AuthRequest).user && (req as AuthRequest).user.role === 'admin') {
         next();
     } else {
         res.status(403).json({ message: 'Not authorized as an admin' });

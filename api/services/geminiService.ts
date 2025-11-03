@@ -1,13 +1,11 @@
-
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
 import * as pdfjs from 'pdfjs-dist';
 import { createCanvas, Canvas } from 'canvas';
-import type { CanvasRenderingContext2D } from 'canvas';
 import Tesseract from 'tesseract.js';
 import { Buffer } from 'buffer';
+import { appConfig } from './configService';
 
 // FIX: Update 'require' declaration to include the 'resolve' method for Node.js compatibility.
 declare const require: {
@@ -66,10 +64,10 @@ export const extractBoletoInfo = async (
     lang: 'pt' | 'en', 
     aiSettings: AiSettings
 ): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId' | 'userId'>> => {
-    if (!process.env.API_KEY) {
+    if (!appConfig.API_KEY) {
         throw new Error("API key is missing.");
     }
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: appConfig.API_KEY });
     
     const canvas = await renderPdfPageToCanvas(pdfBuffer);
     const ocrText = await performOcr(canvas);
