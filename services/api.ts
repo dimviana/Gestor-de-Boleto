@@ -28,10 +28,40 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
     const response = await fetch(`${API_BASE_URL}${url}`, { ...options, headers });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status} ${response.statusText}`;
+        try {
+            const errorText = await response.text();
+            if (errorText) {
+                // Try to parse as JSON first, as our API might return { message: '...' }
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.message || errorText;
+                } catch (e) {
+                    // If not JSON, the text itself is the error (e.g., "Internal Server Error" from a proxy)
+                    errorMessage = errorText;
+                }
+            }
+        } catch (e) {
+            console.error('Could not read error response body', e);
+        }
+        throw new Error(errorMessage);
     }
-    return response.json();
+    
+    // Handle successful responses, including those with no content (e.g., 204)
+    const responseText = await response.text();
+    // If the response is empty, return null. The caller must handle this.
+    if (!responseText) {
+        return null;
+    }
+    
+    // If we have a response, assume it's JSON as per original app design.
+    // A try-catch ensures we don't crash on invalid JSON.
+    try {
+        return JSON.parse(responseText);
+    } catch (e) {
+        console.error(`Failed to parse successful response as JSON from ${url}:`, responseText);
+        throw new Error('Invalid JSON response from server');
+    }
 };
 
 

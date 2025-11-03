@@ -1,11 +1,12 @@
 
+
 import React from 'react';
 import LoginScreen from './components/LoginScreen';
 import Dashboard from './components/Dashboard';
 import { useAuth } from './hooks/useAuth';
 
 const App: React.FC = () => {
-  const { user, login, logout, register, authError, setAuthError, getUsers, addUser, updateUser, deleteUser, getLogs } = useAuth();
+  const { user, login, logout, register, authError, setAuthError, getUsers, getLogs } = useAuth();
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-blue-200 dark:from-gray-900 dark:to-slate-800 min-h-screen text-gray-800 dark:text-gray-200 font-sans flex flex-col">
@@ -15,9 +16,6 @@ const App: React.FC = () => {
             onLogout={logout} 
             user={user} 
             getUsers={getUsers}
-            addUser={addUser}
-            updateUser={updateUser}
-            deleteUser={deleteUser}
             getLogs={getLogs}
           />
         ) : (

@@ -151,8 +151,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         const refreshData = async () => {
             try {
                 const [fetchedUsers, fetchedCompanies] = await Promise.all([getUsers(), api.fetchCompanies()]);
-                setUsers(fetchedUsers);
-                setCompanies(fetchedCompanies);
+                setUsers(fetchedUsers || []);
+                setCompanies(fetchedCompanies || []);
             } catch (error) {
                 console.error("Failed to refresh data:", error);
                 showNotification("Failed to load user and company data.", 'error');
@@ -240,9 +240,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         
         return (
             <div className="space-y-8">
-                 <div>
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl shadow-md">
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('adminCompaniesTitle')}</h3>
-                    <form onSubmit={handleAddCompany} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg space-y-4">
+                    <form onSubmit={handleAddCompany} className="p-4 bg-white dark:bg-gray-800 rounded-lg space-y-4 border dark:border-gray-700">
                         <h4 className="font-semibold">{t('adminAddCompanyTitle')}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <input value={companyForm.name} onChange={e => setCompanyForm({...companyForm, name: e.target.value})} placeholder={t('companyNameLabel')} required className="w-full input-field"/>
@@ -254,7 +254,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
 
                     <div className="mt-6 space-y-4">
                         {companies.map(company => (
-                            <div key={company.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <div key={company.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <h4 className="font-bold text-gray-900 dark:text-gray-100">{company.name}</h4>
@@ -275,14 +275,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                     </div>
                  </div>
 
-                 <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
-
-                 <div>
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl shadow-md">
                     <div className="flex justify-between items-center border-b dark:border-gray-600 pb-2 mb-4">
                         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Gerenciamento de Usuários</h3>
                         <button onClick={openAddUserModal} className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 text-sm">{t('addUserButton')}</button>
                     </div>
-                    <div className="overflow-x-auto border border-gray-200 dark:border-gray-600 rounded-lg">
+                    <div className="overflow-x-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
                              <thead className="bg-gray-50 dark:bg-gray-700"><tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Usuário</th>
@@ -292,10 +290,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                             </tr></thead>
                             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                                 {users.map((user) => (
-                                    <tr key={user.id}>
+                                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{user.username}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{companies.find(c => c.id === user.companyId)?.name || <span className="italic">{t('noCompany')}</span>}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>{user.role}</span></td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>{user.role}</span></td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
                                             <button onClick={() => openEditUserModal(user)} className="text-blue-600 hover:text-blue-900"><EditIcon className="w-5 h-5 inline-block"/></button>
                                             <button onClick={() => handleDeleteUser(user.id)} className={`text-red-600 hover:text-red-900 ${currentUser.id === user.id ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={currentUser.id === user.id}><TrashIcon className="w-5 h-5 inline-block" /></button>
@@ -315,7 +313,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                         <div className="flex justify-end pt-4 space-x-2"><button onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('cancelButton')}</button><button onClick={handleUserFormSubmit} className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">{t('saveButton')}</button></div>
                     </div>
                 </Modal>
-                <style>{`.input-field { background-color: #F3F4F6; color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>
+                <style>{`.input-field { background-color: #FFF; color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>
             </div>
         )
     };
@@ -347,35 +345,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
     );
 
     const SslTab = () => {
-        const [domain, setDomain] = useState('');
+        const [domain, setDomain] = useState('boletomanager.abildeveloper.com.br');
         const [status, setStatus] = useState<SslStatus | null>(null);
         const [isLoading, setIsLoading] = useState(false);
-        const [isSaving, setIsSaving] = useState(false);
 
         useEffect(() => {
-            const loadDomain = async () => {
-                try {
-                    const settings = await api.fetchSslSettings();
-                    if (settings.domain) {
-                        setDomain(settings.domain);
-                    }
-                } catch (e) {
-                    console.error("Could not load SSL domain settings");
-                }
-            };
-            loadDomain();
+            // Pre-check status on tab load
+            handleCheckStatus();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []);
-
-        const handleSave = async () => {
-            setIsSaving(true);
-            try {
-                await api.saveSslSettings({ domain });
-            } catch (e) {
-                console.error("Failed to save domain", e);
-            } finally {
-                setIsSaving(false);
-            }
-        };
 
         const handleCheckStatus = async () => {
             if (!domain) return;
@@ -401,7 +379,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 <div>
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Gerenciamento de Certificado SSL</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                        Configure o domínio do seu servidor para verificar o status do seu certificado SSL e obter instruções para instalação e renovação.
+                        Verifique o status do certificado SSL para o domínio configurado no servidor.
                     </p>
                 </div>
 
@@ -412,17 +390,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                             type="text"
                             id="ssl-domain"
                             value={domain}
-                            onChange={e => setDomain(e.target.value)}
-                            placeholder="exemplo.com.br"
-                            className="mt-1 block w-full input-field"
+                            readOnly
+                            className="mt-1 block w-full input-field bg-gray-200 dark:bg-gray-800 cursor-not-allowed"
                         />
                     </div>
                     <div className="flex justify-end space-x-2">
-                        <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm">
-                            {isSaving ? 'Salvando...' : 'Salvar Domínio'}
-                        </button>
                         <button onClick={handleCheckStatus} disabled={!domain || isLoading} className="px-4 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm">
-                            {isLoading ? 'Verificando...' : 'Verificar Status'}
+                            {isLoading ? 'Verificando...' : 'Verificar Status Novamente'}
                         </button>
                     </div>
                 </div>
@@ -445,23 +419,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 )}
                 
                 <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Como Instalar/Renovar o Certificado</h3>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Instalação do Certificado</h3>
                     <div className="prose prose-sm max-w-none dark:prose-invert">
                         <p>
-                            Recomendamos o uso do <strong>Certbot</strong> com Let's Encrypt para obter certificados SSL gratuitos e automatizar a renovação. Conecte-se ao seu servidor via SSH e siga os passos abaixo.
+                            O script de implantação (`deploy.txt`) foi aprimorado para instalar o <strong>Certbot</strong> e solicitar automaticamente um certificado SSL para o domínio <strong>{domain}</strong>.
                         </p>
-                        <h4>Passo 1: Instalar o Certbot</h4>
-                        <p>Execute o comando apropriado para o seu sistema operacional (exemplo para Ubuntu com Nginx):</p>
-                        <pre className="bg-gray-800 text-white p-3 rounded-md"><code>sudo apt update && sudo apt install certbot python3-certbot-nginx</code></pre>
-                        
-                        <h4>Passo 2: Gerar o Certificado</h4>
-                        <p>Execute o comando abaixo, substituindo `seu_dominio.com` pelo domínio que você salvou acima. O Certbot irá configurar o Nginx automaticamente.</p>
-                         <pre className="bg-gray-800 text-white p-3 rounded-md"><code>sudo certbot --nginx -d {domain || 'seu_dominio.com'}</code></pre>
-                         
-                         <h4>Passo 3: Renovação Automática</h4>
-                         <p>O Certbot configura uma renovação automática. Você pode testá-la com o comando:</p>
-                         <pre className="bg-gray-800 text-white p-3 rounded-md"><code>sudo certbot renew --dry-run</code></pre>
-                         <p>Se o teste for bem-sucedido, o certificado será renovado automaticamente antes de expirar.</p>
+                         <p>
+                            A renovação também é configurada para ser automática. Se o status acima indicar um problema, conecte-se ao seu servidor via SSH e verifique os logs do Nginx e do Certbot para diagnosticar o problema.
+                         </p>
+                         <pre className="bg-gray-800 text-white p-3 rounded-md"><code># Comando para testar a renovação no servidor
+sudo certbot renew --dry-run</code></pre>
                     </div>
                 </div>
                  <style>{`.input-field { background-color: #F3F4F6; color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>

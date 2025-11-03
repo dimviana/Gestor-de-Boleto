@@ -70,48 +70,14 @@ export const useAuth = () => {
     return api.fetchUsers();
   }, []);
   
-  const addUser = useCallback(async (actor: User, newUser: Omit<RegisteredUser, 'id'>): Promise<boolean> => {
-      try {
-          await api.createUser(newUser);
-          return true;
-      } catch (error: any) {
-          setAuthError(error.message || 'addUserErrorDuplicate');
-          return false;
-      }
-  }, []);
-
-  const updateUser = useCallback(async (actor: User, targetUserId: string, updates: Partial<Omit<RegisteredUser, 'id'>>): Promise<boolean> => {
-      try {
-          await api.updateUser(targetUserId, updates);
-          return true;
-      } catch (error: any) {
-          setAuthError(error.message || 'genericErrorText');
-          return false;
-      }
-  }, []);
-
-  const deleteUser = useCallback(async (actor: User, targetUserId: string): Promise<boolean> => {
-      if (actor.id === targetUserId) {
-          setAuthError('deleteSelfError');
-          return false;
-      }
-      try {
-          await api.deleteUser(targetUserId);
-          return true;
-      } catch (error: any) {
-          setAuthError(error.message || 'deleteUserError');
-          return false;
-      }
-  }, []);
-  
   const getLogs = useCallback((): Promise<LogEntry[]> => {
       return api.fetchLogs();
   }, []);
   
   // Return isLoading to prevent rendering the app before session is checked
   if (isLoading) {
-      return { user: null, login, logout, register, authError, setAuthError, getUsers, addUser, updateUser, deleteUser, getLogs };
+      return { user: null, login, logout, register, authError, setAuthError, getUsers, getLogs };
   }
 
-  return { user, login, logout, register, authError, setAuthError, getUsers, addUser, updateUser, deleteUser, getLogs };
+  return { user, login, logout, register, authError, setAuthError, getUsers, getLogs };
 };

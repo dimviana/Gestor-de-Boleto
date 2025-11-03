@@ -17,7 +17,7 @@ export const useBoletos = (user: User | null) => {
       setError(null);
       setIsLoading(true);
       const fetchedBoletos = await api.fetchBoletos();
-      setBoletos(fetchedBoletos);
+      setBoletos(fetchedBoletos || []);
     } catch (e: any) {
       console.error("Failed to load boletos:", e);
       setError(e.message || "Failed to load boletos from the server.");

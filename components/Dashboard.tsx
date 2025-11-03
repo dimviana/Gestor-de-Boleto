@@ -27,13 +27,10 @@ interface DashboardProps {
   onLogout: () => void;
   user: User;
   getUsers: () => Promise<RegisteredUser[]>;
-  addUser: (actor: User, newUser: Omit<RegisteredUser, 'id'>) => Promise<boolean>;
-  updateUser: (actor: User, userId: string, updates: Partial<Omit<RegisteredUser, 'id'>>) => Promise<boolean>;
-  deleteUser: (actor: User, userId: string) => Promise<boolean>;
   getLogs: () => Promise<LogEntry[]>;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser, updateUser, deleteUser, getLogs }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs }) => {
   const { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos(user);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
@@ -44,6 +41,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [systemUpdate, setSystemUpdate] = useState<SystemNotification | null>(null);
   const [isVpsModalOpen, setIsVpsModalOpen] = useState(false);
@@ -209,12 +207,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   }, []);
 
   const filteredBoletos = useMemo(() => {
+    let baseList: Boleto[] = [];
     if (user.role === 'admin') {
-      if (!selectedCompanyFilter) return [];
-      return boletos.filter(boleto => boleto.companyId === selectedCompanyFilter);
+      if (selectedCompanyFilter) {
+        baseList = boletos.filter(boleto => boleto.companyId === selectedCompanyFilter);
+      }
+    } else {
+      baseList = boletos;
     }
-    return boletos;
-  }, [boletos, user.role, selectedCompanyFilter]);
+
+    if (!searchTerm) {
+      return baseList;
+    }
+
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return baseList.filter(boleto => 
+      (boleto.recipient && boleto.recipient.toLowerCase().includes(lowercasedTerm)) ||
+      (boleto.drawee && boleto.drawee.toLowerCase().includes(lowercasedTerm)) ||
+      (boleto.barcode && boleto.barcode.includes(lowercasedTerm)) ||
+      (boleto.guideNumber && boleto.guideNumber.toLowerCase().includes(lowercasedTerm))
+    );
+  }, [boletos, user.role, selectedCompanyFilter, searchTerm]);
 
   const boletosToDo = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.TO_PAY), [filteredBoletos]);
   const boletosVerifying = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.VERIFYING), [filteredBoletos]);
@@ -286,6 +299,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
         notifications={allNotifications}
         onSystemUpdateClick={handleSystemUpdateClick}
+        onSearch={setSearchTerm}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LogoutIcon, BookOpenIcon, SettingsIcon, BellIcon } from './icons/Icons';
+import { LogoutIcon, BookOpenIcon, SettingsIcon, BellIcon, SearchIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
@@ -14,9 +14,10 @@ interface HeaderProps {
   user: User;
   notifications: AnyNotification[];
   onSystemUpdateClick: () => void;
+  onSearch: (term: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, user, notifications, onSystemUpdateClick }) => {
+const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, user, notifications, onSystemUpdateClick, onSearch }) => {
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -40,10 +41,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <ThemeSwitcher />
-            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-3"></div>
-            <LanguageSwitcher />
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg mr-3 ml-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg mr-3">
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="w-full h-full rounded-full object-cover" />
               ) : (
@@ -54,7 +52,31 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
             </div>
             <h1 className="text-2xl font-bold text-blue-600">{appName}</h1>
           </div>
+
+           <div className="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-end">
+                <div className="max-w-lg w-full lg:max-w-xs">
+                    <label htmlFor="search" className="sr-only">{t('searchPlaceholder')}</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <SearchIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                        </div>
+                        <input
+                            id="search"
+                            name="search"
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 dark:focus:placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            placeholder={t('searchPlaceholder')}
+                            type="search"
+                            onChange={(e) => onSearch(e.target.value)}
+                        />
+                    </div>
+                </div>
+            </div>
+
           <div className="flex items-center space-x-2">
+             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-3"></div>
+             <ThemeSwitcher />
+             <LanguageSwitcher />
+
              {user.role === 'admin' && (
                  <button
                   onClick={onOpenAdminPanel}

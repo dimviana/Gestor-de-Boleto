@@ -156,6 +156,7 @@ const pt = {
     companyUpdateError: 'Falha ao atualizar a empresa.',
     companyDeletedSuccess: 'Empresa excluída com sucesso.',
     companyDeleteError: 'Falha ao excluir a empresa.',
+    searchPlaceholder: 'Pesquisar boletos...',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
         Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos a seguir.
@@ -333,6 +334,7 @@ const en: typeof pt = {
     companyUpdateError: 'Failed to update company.',
     companyDeletedSuccess: 'Company deleted successfully.',
     companyDeleteError: 'Failed to delete company.',
+    searchPlaceholder: 'Search boletos...',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
         Your task is to analyze the OCR-EXTRACTED TEXT and the IMAGE provided below.
