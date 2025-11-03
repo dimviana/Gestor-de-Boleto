@@ -254,11 +254,11 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             </button>
         </div>
         <div>
-            <button
+             <button
                 title={t('openPdf')}
                 onClick={handleOpenPdf}
                 disabled={!fileData}
-                className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <FileTextIcon className="w-4 h-4 mr-2" />
                 <span>{t('openPdf')}</span>

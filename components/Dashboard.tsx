@@ -240,12 +240,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const SummaryCard: React.FC<{ icon: React.ReactNode, title: string, value: number, colorClass: string }> = ({ icon, title, value, colorClass }) => (
-    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 flex items-center space-x-4">
-        <div className={`p-3 rounded-full bg-gray-100 dark:bg-gray-700 ${colorClass}`}>{icon}</div>
-        <div>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-            <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(value)}</p>
+    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col items-start space-y-2">
+        <div className="flex items-center space-x-3">
+            <div className={`p-3 rounded-full bg-gray-100 dark:bg-gray-700 ${colorClass}`}>{icon}</div>
+            <p className="text-md font-semibold text-gray-600 dark:text-gray-300">{title}</p>
         </div>
+        <p className="text-3xl font-bold text-gray-800 dark:text-gray-100 self-end">{formatCurrency(value)}</p>
     </div>
   );
 

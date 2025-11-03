@@ -1,6 +1,6 @@
 
 // FIX: Use named imports for express types to avoid conflicts with global DOM types
-import express from 'express';
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -19,7 +19,7 @@ const generateToken = (id: string, username: string, role: string, company_id: s
 };
 
 // FIX: Use imported express types for request and response.
-export const registerUser = async (req: express.Request, res: express.Response) => {
+export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'user', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -46,7 +46,7 @@ export const registerUser = async (req: express.Request, res: express.Response) 
 };
 
 // FIX: Use imported express types for request and response.
-export const loginUser = async (req: express.Request, res: express.Response) => {
+export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
