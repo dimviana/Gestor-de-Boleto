@@ -1,6 +1,5 @@
 
 
-// FIX: Import explicit Request and Response types from express.
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -16,7 +15,6 @@ const generateToken = (id: string, username: string, role: string, company_id: s
 };
 
 // Use explicit express types for request and response.
-// FIX: Use explicit Request and Response types for route handlers.
 export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'user', companyId = null } = req.body;
 
@@ -44,7 +42,6 @@ export const registerUser = async (req: Request, res: Response) => {
 };
 
 // Use explicit express types for request and response.
-// FIX: Use explicit Request and Response types for route handlers.
 export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 

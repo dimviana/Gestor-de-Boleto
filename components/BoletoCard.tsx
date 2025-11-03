@@ -40,10 +40,10 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   };
 
   const formatCurrency = (value: number | null) => {
-    if (value === null) return t('notAvailable');
-    return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', { 
+    if (value === null || value === undefined) return t('notAvailable');
+    return value.toLocaleString('pt-BR', { 
         style: 'currency', 
-        currency: language === 'pt' ? 'BRL' : 'USD' // Note: Currency symbol will change
+        currency: 'BRL'
     });
   };
 
@@ -155,13 +155,13 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
                 onViewDetails(boleto);
               }}
             >
-              {recipient || t('recipientNotFound')}
+              {drawee || recipient || t('recipientNotFound')}
             </h3>
-            {drawee && (
+            {recipient && (
               <div className="flex items-center mt-1">
                 <UserIcon className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                <p className="text-sm text-gray-500 dark:text-gray-400 truncate" title={drawee}>
-                  <span className="font-normal">{t('drawee')}</span> {drawee}
+                <p className="text-sm text-gray-500 dark:text-gray-400 truncate" title={recipient}>
+                  <span className="font-normal">{t('recipient')}:</span> {recipient}
                 </p>
               </div>
             )}

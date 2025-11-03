@@ -1,6 +1,5 @@
 
 
-// FIX: Import explicit Response type from express.
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
@@ -10,7 +9,6 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-// FIX: Use explicit Response type for route handlers.
 export const getSslSettings = async (req: AuthRequest, res: Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
@@ -25,7 +23,6 @@ export const getSslSettings = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// FIX: Use explicit Response type for route handlers.
 export const saveSslSettings = async (req: AuthRequest, res: Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
@@ -45,7 +42,6 @@ export const saveSslSettings = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// FIX: Use explicit Response type for route handlers.
 export const checkSslStatus = (req: AuthRequest, res: Response) => {
     const { domain } = req.body;
     if (!domain) {

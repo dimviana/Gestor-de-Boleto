@@ -55,9 +55,9 @@ export const BoletoDetailsModal: React.FC<BoletoDetailsModalProps> = ({ boleto, 
   
   const formatCurrency = (value: number | null) => {
     if (value === null || value === undefined) return t('notAvailable');
-    return value.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', { 
+    return value.toLocaleString('pt-BR', { 
         style: 'currency', 
-        currency: language === 'pt' ? 'BRL' : 'USD'
+        currency: 'BRL'
     });
   };
 

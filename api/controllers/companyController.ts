@@ -1,13 +1,11 @@
 
 
-// FIX: Import explicit Response type from express.
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-// FIX: Use explicit Response type for route handlers.
 export const getCompanies = async (req: AuthRequest, res: Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
@@ -18,7 +16,6 @@ export const getCompanies = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// FIX: Use explicit Response type for route handlers.
 export const createCompany = async (req: AuthRequest, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
@@ -52,7 +49,6 @@ export const createCompany = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// FIX: Use explicit Response type for route handlers.
 export const updateCompany = async (req: AuthRequest, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
@@ -89,7 +85,6 @@ export const updateCompany = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// FIX: Use explicit Response type for route handlers.
 export const deleteCompany = async (req: AuthRequest, res: Response) => {
   const user = req.user!;
   const companyId = req.params.id;
