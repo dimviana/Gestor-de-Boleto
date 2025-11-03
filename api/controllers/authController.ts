@@ -1,10 +1,5 @@
-
-
-
-
-
-// FIX: Use express namespace to avoid type conflicts with global DOM types
-import express from 'express';
+// FIX: Use named imports for express types to avoid conflicts with global DOM types
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -13,13 +8,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { appConfig } from '../services/configService';
 
 const generateToken = (id: string, username: string, role: string, company_id: string | null) => {
+  if (!appConfig.JWT_SECRET || appConfig.JWT_SECRET === 'default_jwt_secret_please_change') {
+    console.error('CRITICAL: JWT_SECRET is not configured. Cannot generate token. Please set it in the admin panel or .env file.');
+    throw new Error('Server authentication is not properly configured.');
+  }
   return jwt.sign({ id, username, role, companyId: company_id }, appConfig.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
 
-// FIX: Use aliased express types for request and response.
-export const registerUser = async (req: express.Request, res: express.Response) => {
+// FIX: Use imported express types for request and response.
+export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'user', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -45,8 +44,8 @@ export const registerUser = async (req: express.Request, res: express.Response) 
   }
 };
 
-// FIX: Use aliased express types for request and response.
-export const loginUser = async (req: express.Request, res: express.Response) => {
+// FIX: Use imported express types for request and response.
+export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
