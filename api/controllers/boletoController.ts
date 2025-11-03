@@ -17,10 +17,10 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
     }
 
     let query = 'SELECT * FROM boletos';
-    const params: (string | undefined)[] = [];
+    const params: (string | null)[] = [];
     if (user.role !== 'admin') {
-      query += ' WHERE company_id = ?';
       // This is now safe because we've already checked for user.companyId existence.
+      query += ' WHERE company_id = ?';
       params.push(user.companyId);
     } else if (req.query.companyId) {
       // Admin can filter by company

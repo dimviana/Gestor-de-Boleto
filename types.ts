@@ -36,7 +36,7 @@ export interface User {
   id: string;
   username: string;
   role: Role;
-  companyId?: string; // Added for multi-tenancy
+  companyId: string | null;
   token?: string;
 }
 
@@ -55,14 +55,17 @@ export type LogAction =
   | 'LOGIN'
   | 'LOGOUT'
   | 'REGISTER_USER'
-  | 'CREATE_BOLETO'
+  | 'CREATE_BOLEto'
   | 'UPDATE_BOLETO_STATUS'
   | 'UPDATE_BOLETO_COMMENT'
   | 'DELETE_BOLETO'
   | 'DELETE_USER'
   | 'ADMIN_CREATE_USER'
   | 'ADMIN_UPDATE_USER'
-  | 'ADMIN_CHANGE_SETTINGS';
+  | 'ADMIN_CHANGE_SETTINGS'
+  | 'ADMIN_CREATE_COMPANY'
+  | 'ADMIN_UPDATE_COMPANY'
+  | 'ADMIN_DELETE_COMPANY';
 
 export interface LogEntry {
   id: string;
