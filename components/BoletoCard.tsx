@@ -257,7 +257,8 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
              <button
                 title={t('openPdf')}
                 onClick={handleOpenPdf}
-                enabled={!fileData}
+                // FIX: The 'enabled' prop does not exist on HTMLButtonElement. Use 'disabled' instead.
+                disabled={!fileData}
                 className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <FileTextIcon className="w-4 h-4 mr-2" />
