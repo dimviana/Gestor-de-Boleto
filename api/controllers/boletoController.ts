@@ -1,11 +1,11 @@
+
 // FIX: Import explicit Response type from express.
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
-import { Boleto, BoletoStatus, AiSettings } from '../../types';
+import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
-import { extractBoletoInfo } from '../services/geminiService';
 
 // FIX: Use explicit Response type for route handlers.
 export const getBoletos = async (req: AuthRequest, res: Response) => {
@@ -42,6 +42,13 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
 export const createBoleto = async (req: AuthRequest, res: Response) => {
     const user = req.user!;
     const adminSelectedCompanyId = req.body.companyId;
+    const extractedDataJSON = req.body.extractedData;
+
+    if (!extractedDataJSON || typeof extractedDataJSON !== 'string') {
+        return res.status(400).json({ message: 'Missing or invalid extractedData in request body.' });
+    }
+    
+    const extractedData = JSON.parse(extractedDataJSON);
 
     let targetCompanyId: string | null;
 
@@ -62,18 +69,11 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
         return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // This check is moved before the try...catch block to satisfy TypeScript's control flow analysis.
-    // After this check, TypeScript knows `targetCompanyId` can no longer be null.
     if (!targetCompanyId) {
         return res.status(500).json({ message: 'Internal Server Error: Target company ID was not determined.' });
     }
 
     try {
-        const [settingsRows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = 'ai_settings'");
-        const aiSettings: AiSettings = settingsRows.length > 0 ? JSON.parse(settingsRows[0].setting_value) : {};
-
-        const extractedData = await extractBoletoInfo(req.file.buffer, req.file.originalname, 'pt', aiSettings);
-
         if (extractedData.barcode) {
              const [existing] = await pool.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [extractedData.barcode, targetCompanyId]);
              if (existing.length > 0) {
@@ -87,7 +87,8 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
             status: BoletoStatus.TO_PAY,
             fileData: req.file.buffer.toString('base64'),
             comments: null,
-            companyId: targetCompanyId, // This assignment is now type-safe
+            companyId: targetCompanyId,
+            fileName: req.file.originalname,
         };
         
         const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments, companyId } = newBoleto;

@@ -1,3 +1,4 @@
+
 // FIX: Import explicit Response type from express.
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';

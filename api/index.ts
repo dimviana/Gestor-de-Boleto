@@ -1,3 +1,4 @@
+
 // Use default import for express to avoid type conflicts.
 // FIX: Import Request and Response types from express for correct type inference.
 import express, { Request, Response } from 'express';

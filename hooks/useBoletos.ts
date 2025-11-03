@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Boleto, BoletoStatus, User, ProcessingMethod } from '../types';
+import { Boleto, BoletoStatus, User } from '../types';
 import * as api from '../services/api';
 
 export const useBoletos = (user: User | null) => {
@@ -30,7 +30,7 @@ export const useBoletos = (user: User | null) => {
     fetchAndSetBoletos();
   }, [fetchAndSetBoletos]);
 
-  const addBoleto = useCallback(async (user: User, file: File, method: ProcessingMethod, companyId?: string) => {
+  const addBoleto = useCallback(async (user: User, boletoData: Partial<Boleto>, file: File, companyId?: string) => {
     if (user.role !== 'admin' && !user.companyId) {
         throw new Error('userHasNoCompanyError');
     }
@@ -38,8 +38,7 @@ export const useBoletos = (user: User | null) => {
         throw new Error('Admin must select a company');
     }
     
-    // companyId for admins is passed to the API call
-    await api.createBoleto(file, companyId);
+    await api.createBoleto(boletoData, file, companyId);
     await fetchAndSetBoletos(); // Re-fetch to get the latest list including the new one
   }, [fetchAndSetBoletos]);
 

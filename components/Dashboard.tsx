@@ -61,9 +61,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: t('processingStatus') }, ...prev]);
 
     try {
-      // This front-end validation step is kept from the original logic.
-      // The AI/Regex processing is done client-side first to check the amount.
-      let processedBoletoData: Omit<Boleto, 'companyId' | 'id'> & { id?: string };
+      let processedBoletoData: Omit<Boleto, 'companyId'>;
        if (method === 'ai') {
            processedBoletoData = await processBoletoWithAI(file, language, aiSettings);
        } else {
@@ -73,8 +71,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
          throw new Error('freeBoletoErrorText'); // Use key for consistent error handling
        }
 
-      const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : undefined;
-      await addBoleto(user, file, method, targetCompanyId); // This calls the backend via the hook
+      const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
+
+      // The backend will be the source of truth for these fields.
+      // We send only the core data extracted from the PDF.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // FIX: property 'companyId' does not exist on type 'Omit<Boleto, "companyId">'.
+      const { id, status, comments, fileData, ...dataForApi } = processedBoletoData;
+
+      await addBoleto(user, dataForApi, file, targetCompanyId);
 
       setUploadStatuses(prev => prev.map(up => 
             up.id === uploadId 
