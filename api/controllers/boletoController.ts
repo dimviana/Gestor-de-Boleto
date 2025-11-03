@@ -1,14 +1,13 @@
 
-
 // FIX: Use named import for Response to avoid type conflicts with global DOM types
-import express from 'express';
+import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-export const getBoletos = async (req: AuthRequest, res: express.Response) => {
+export const getBoletos = async (req: AuthRequest, res: Response) => {
   const user = req.user!;
   try {
     // If a non-admin user is not associated with a company, they cannot have any boletos.
@@ -38,7 +37,7 @@ export const getBoletos = async (req: AuthRequest, res: express.Response) => {
   }
 };
 
-export const createBoleto = async (req: AuthRequest, res: express.Response) => {
+export const createBoleto = async (req: AuthRequest, res: Response) => {
     const user = req.user!;
     const adminSelectedCompanyId = req.body.companyId;
     const extractedDataJSON = req.body.extractedData;
@@ -105,7 +104,7 @@ export const createBoleto = async (req: AuthRequest, res: express.Response) => {
     }
 };
 
-export const updateBoletoStatus = async (req: AuthRequest, res: express.Response) => {
+export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     const { status } = req.body;
     try {
         await pool.query('UPDATE boletos SET status = ? WHERE id = ?', [status, req.params.id]);
@@ -115,7 +114,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: express.Response
     }
 };
 
-export const updateBoletoComments = async (req: AuthRequest, res: express.Response) => {
+export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     const { comments } = req.body;
     try {
         await pool.query('UPDATE boletos SET comments = ? WHERE id = ?', [comments, req.params.id]);
@@ -125,7 +124,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: express.Respon
     }
 };
 
-export const deleteBoleto = async (req: AuthRequest, res: express.Response) => {
+export const deleteBoleto = async (req: AuthRequest, res: Response) => {
     try {
         await pool.query('DELETE FROM boletos WHERE id = ?', [req.params.id]);
         res.json({ message: 'Boleto deleted' });

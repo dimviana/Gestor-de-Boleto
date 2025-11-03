@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 // FIX: Moved TranslationKey import to the correct file 'translations.ts' from 'types.ts'.
@@ -13,7 +14,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
-import { WalletIcon, HourglassIcon, CheckCircleIcon, TrashIcon } from './icons/Icons';
+import { HourglassIcon, CheckCircleIcon, TrashIcon, PaymentTerminalIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
 import { BoletoDetailsModal } from './BoletoDetailsModal';
@@ -240,12 +241,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const SummaryCard: React.FC<{ icon: React.ReactNode, title: string, value: number, colorClass: string }> = ({ icon, title, value, colorClass }) => (
-    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col items-start space-y-2">
-        <div className="flex items-center space-x-3">
-            <div className={`p-3 rounded-full bg-gray-100 dark:bg-gray-700 ${colorClass}`}>{icon}</div>
-            <p className="text-md font-semibold text-gray-600 dark:text-gray-300">{title}</p>
+    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-lg flex flex-col justify-between min-h-[140px] border border-gray-100 dark:border-slate-700">
+        <div className="flex items-center space-x-4">
+            <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-gray-50 dark:bg-slate-900/50 ${colorClass}`}>
+                {icon}
+            </div>
+            <p className="text-base font-semibold text-gray-500 dark:text-gray-400">{title}</p>
         </div>
-        <p className="text-3xl font-bold text-gray-800 dark:text-gray-100 self-end">{formatCurrency(value)}</p>
+        <p className="text-4xl font-bold text-gray-800 dark:text-white self-end tracking-tight">{formatCurrency(value)}</p>
     </div>
   );
 
@@ -292,7 +295,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <SummaryCard icon={<WalletIcon className="w-6 h-6" />} title={t('totalToPay')} value={totalToDo} colorClass="text-red-500" />
+            <SummaryCard icon={<PaymentTerminalIcon className="w-6 h-6" />} title={t('totalToPay')} value={totalToDo} colorClass="text-red-500" />
             <SummaryCard icon={<HourglassIcon className="w-6 h-6" />} title={t('totalVerifying')} value={totalVerifying} colorClass="text-yellow-500" />
             <SummaryCard icon={<CheckCircleIcon className="w-6 h-6" />} title={t('totalPaid')} value={totalPaid} colorClass="text-green-500" />
         </div>

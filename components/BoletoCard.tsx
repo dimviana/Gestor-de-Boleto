@@ -16,7 +16,7 @@ interface BoletoCardProps {
 const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewDetails }) => {
   const { t, language } = useLanguage();
   const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
-  const [copyButtonText, setCopyButtonText] = useState(t('copyPixCode'));
+  const [pixCopied, setPixCopied] = useState(false);
   const [barcodeCopied, setBarcodeCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
@@ -63,8 +63,8 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     e.stopPropagation();
     if (pixQrCodeText) {
         navigator.clipboard.writeText(pixQrCodeText).then(() => {
-            setCopyButtonText(t('pixCodeCopied'));
-            setTimeout(() => setCopyButtonText(t('copyPixCode')), 2000);
+            setPixCopied(true);
+            setTimeout(() => setPixCopied(false), 2000);
         });
     }
   };
@@ -257,7 +257,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
              <button
                 title={t('openPdf')}
                 onClick={handleOpenPdf}
-                // FIX: The 'enabled' prop does not exist on HTMLButtonElement. Use 'disabled' instead.
                 disabled={!fileData}
                 className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -298,18 +297,23 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       )}
 
       {pixQrCodeText && (
-        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600 text-center">
-            <div className="flex items-center justify-center font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                <QrCodeIcon className="w-5 h-5 mr-2" />
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600">
+            <div className="flex items-center font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                <QrCodeIcon className="w-5 h-5 mr-2 flex-shrink-0" />
                 <span>{t('pixQrCode')}</span>
             </div>
-            <button 
-                onClick={handleCopyPix}
-                className="mt-2 flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-all duration-200"
-            >
-                <CopyIcon className="w-4 h-4 mr-2" />
-                {copyButtonText}
-            </button>
+            <div className="relative p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+                <p className="text-xs text-gray-600 dark:text-gray-300 font-mono break-all pr-10 leading-relaxed">
+                    {pixQrCodeText}
+                </p>
+                <button
+                    onClick={handleCopyPix}
+                    title={t('copyPixCode')}
+                    className="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    {pixCopied ? <CheckIcon className="w-5 h-5 text-green-500" /> : <CopyIcon className="w-5 h-5" />}
+                </button>
+            </div>
         </div>
       )}
     </div>

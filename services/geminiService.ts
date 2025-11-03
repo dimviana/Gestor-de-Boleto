@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Boleto, BoletoStatus, AiSettings } from '../types';
 import { translations } from '../translations';
@@ -56,7 +55,7 @@ const renderPdfPageToCanvas = async (file: File): Promise<HTMLCanvasElement> => 
 
 /**
  * Pre-processes a canvas image to improve OCR accuracy.
- * Applies grayscale and binarization (thresholding) filters.
+ * Applies grayscale, contrast adjustment, and binarization (thresholding) filters.
  * @param canvas The canvas to process.
  * @returns The processed canvas.
  */
@@ -67,13 +66,25 @@ const preprocessCanvasForOcr = (canvas: HTMLCanvasElement): HTMLCanvasElement =>
     }
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
+    const contrast = 64; // Value between -255 and 255. Higher is more contrast.
+    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
 
-    // Grayscale and thresholding
+
     for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        
+        // 1. Grayscale
+        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+        // 2. Contrast Adjustment
+        gray = factor * (gray - 128) + 128;
+
+        // Clamp value to 0-255
+        gray = Math.max(0, Math.min(255, gray));
+
+        // 3. Binarization (Thresholding)
         const value = gray < 128 ? 0 : 255;
         data[i] = data[i + 1] = data[i + 2] = value;
     }

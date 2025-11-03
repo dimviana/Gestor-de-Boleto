@@ -179,3 +179,12 @@ export const SearchIcon: React.FC<IconProps> = (props) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
   </svg>
 );
+
+export const PaymentTerminalIcon: React.FC<IconProps> = (props) => (
+    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="20" height="13" rx="2" />
+      <path d="M2 7V5c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2v2" />
+      <path d="M7 14h.01" strokeWidth="2.5" />
+      <path d="M11 14h.01" strokeWidth="2.5" />
+    </svg>
+);
