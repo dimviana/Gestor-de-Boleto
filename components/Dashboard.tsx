@@ -348,7 +348,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       <Modal isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} title={t('documentationTitle')}><Documentation /></Modal>
       
       <Modal isOpen={isAdminPanelOpen} onClose={() => setIsAdminPanelOpen(false)} title="Painel Administrativo">
-          <AdminPanel onClose={() => setIsAdminPanelOpen(false)} getUsers={getUsers} addUser={addUser} updateUser={updateUser} deleteUser={deleteUser} currentUser={user} getLogs={getLogs} />
+          <AdminPanel 
+              onClose={() => setIsAdminPanelOpen(false)} 
+              getUsers={getUsers} 
+              currentUser={user} 
+              getLogs={getLogs} 
+          />
       </Modal>
       
       {isVpsModalOpen && systemUpdate && (

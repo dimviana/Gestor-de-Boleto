@@ -1,30 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company, SslStatus } from '../types';
-import { TrashIcon, EditIcon } from './icons/Icons';
+import { TrashIcon, EditIcon, CheckCircleIcon, XCircleIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
 import Spinner from './Spinner';
+import { TranslationKey } from '../translations';
 
 
 interface AdminPanelProps {
     onClose: () => void;
     getUsers: () => Promise<RegisteredUser[]>;
-    addUser: (actor: User, newUser: Omit<RegisteredUser, 'id'>) => Promise<boolean>;
-    updateUser: (actor: User, userId: string, updates: Partial<Omit<RegisteredUser, 'id'>>) => Promise<boolean>;
-    deleteUser: (actor: User, userId: string) => Promise<boolean>;
     currentUser: User;
     getLogs: () => Promise<LogEntry[]>;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, updateUser, deleteUser, currentUser, getLogs }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser, getLogs }) => {
     const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl'>('settings');
-    
+    const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [logs, setLogs] = useState<LogEntry[]>([]);
+    
+    const showNotification = (message: string, type: 'success' | 'error') => {
+        setNotification({ message, type });
+        const timer = setTimeout(() => {
+            setNotification(null);
+        }, 5000);
+        return () => clearTimeout(timer);
+    };
 
     useEffect(() => {
         const loadLogs = async () => {
@@ -140,12 +146,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
         const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
         const [selectedUser, setSelectedUser] = useState<RegisteredUser | null>(null);
         const [userForm, setUserForm] = useState({ username: '', password: '', role: 'user' as Role, companyId: '' });
-        const [formError, setFormError] = useState<string | null>(null);
         const [companyForm, setCompanyForm] = useState({ name: '', cnpj: '', address: ''});
 
         const refreshData = async () => {
-            setUsers(await getUsers());
-            setCompanies(await api.fetchCompanies());
+            try {
+                const [fetchedUsers, fetchedCompanies] = await Promise.all([getUsers(), api.fetchCompanies()]);
+                setUsers(fetchedUsers);
+                setCompanies(fetchedCompanies);
+            } catch (error) {
+                console.error("Failed to refresh data:", error);
+                showNotification("Failed to load user and company data.", 'error');
+            }
         };
 
         useEffect(() => { refreshData(); }, []);
@@ -153,51 +164,77 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
         const openAddUserModal = () => {
             setModalMode('add'); setSelectedUser(null);
             setUserForm({ username: '', password: '', role: 'user', companyId: '' });
-            setFormError(null); setIsUserModalOpen(true);
+            setIsUserModalOpen(true);
         };
 
         const openEditUserModal = (user: RegisteredUser) => {
             setModalMode('edit'); setSelectedUser(user);
             setUserForm({ username: user.username, password: '', role: user.role, companyId: user.companyId || '' });
-            setFormError(null); setIsUserModalOpen(true);
+            setIsUserModalOpen(true);
         };
         
         const handleUserFormSubmit = async () => {
-            setFormError(null);
-            if (modalMode === 'add') {
-                const success = await addUser(currentUser, { username: userForm.username, password: userForm.password, role: userForm.role, companyId: userForm.companyId || undefined });
-                if (success) { await refreshData(); setIsUserModalOpen(false); } else { setFormError('addUserErrorDuplicate'); }
-            } else if (modalMode === 'edit' && selectedUser) {
-                const updates: Partial<Omit<RegisteredUser, 'id'>> = {};
-                if (userForm.username !== selectedUser.username) updates.username = userForm.username;
-                if (userForm.password) updates.password = userForm.password;
-                if (userForm.role !== selectedUser.role) updates.role = userForm.role;
-                if (userForm.companyId !== (selectedUser.companyId || '')) updates.companyId = userForm.companyId;
+            try {
+                if (modalMode === 'add') {
+                    await api.createUser({ username: userForm.username, password: userForm.password, role: userForm.role, companyId: userForm.companyId || undefined });
+                    showNotification(t('userAddedSuccess'), 'success');
+                } else if (modalMode === 'edit' && selectedUser) {
+                    const updates: Partial<Omit<RegisteredUser, 'id'>> = {};
+                    if (userForm.username !== selectedUser.username) updates.username = userForm.username;
+                    if (userForm.password) updates.password = userForm.password;
+                    if (userForm.role !== selectedUser.role) updates.role = userForm.role;
+                    if (userForm.companyId !== (selectedUser.companyId || '')) updates.companyId = userForm.companyId;
 
-                const success = await updateUser(currentUser, selectedUser.id, updates);
-                if (success) { await refreshData(); setIsUserModalOpen(false); } else { setFormError('genericErrorText'); }
+                    if (Object.keys(updates).length > 0) {
+                        await api.updateUser(selectedUser.id, updates);
+                        showNotification(t('userUpdatedSuccess'), 'success');
+                    }
+                }
+                await refreshData();
+                setIsUserModalOpen(false);
+            } catch (error: any) {
+                showNotification(t(error.message as TranslationKey) || error.message, 'error');
             }
         };
         
         const handleDeleteUser = async (userId: string) => {
+            if (currentUser.id === userId) {
+                showNotification(t('deleteSelfError'), 'error');
+                return;
+            }
             if (window.confirm(t('confirmUserDeletion'))) {
-                const success = await deleteUser(currentUser, userId);
-                if (success) { await refreshData(); } else { alert(t('deleteUserError')); }
+                try {
+                    await api.deleteUser(userId);
+                    await refreshData();
+                    showNotification(t('userDeletedSuccess'), 'success');
+                } catch (error: any) {
+                    showNotification(t((error.message as TranslationKey) || 'deleteUserError'), 'error');
+                }
             }
         };
 
         const handleAddCompany = async (e: React.FormEvent) => {
             e.preventDefault();
-            if(!companyForm.name || !companyForm.cnpj) return;
-            await api.createCompany(companyForm);
-            setCompanyForm({ name: '', cnpj: '', address: ''});
-            await refreshData();
+            if (!companyForm.name || !companyForm.cnpj) return;
+            try {
+                await api.createCompany(companyForm);
+                setCompanyForm({ name: '', cnpj: '', address: '' });
+                await refreshData();
+                showNotification(t('companyAddedSuccess'), 'success');
+            } catch (error: any) {
+                showNotification(t((error.message as TranslationKey) || 'companyAddError'), 'error');
+            }
         };
 
         const handleDeleteCompany = async (id: string) => {
             if (window.confirm('Tem certeza que deseja excluir esta empresa?')) {
-                await api.deleteCompany(id);
-                await refreshData();
+                try {
+                    await api.deleteCompany(id);
+                    await refreshData();
+                    showNotification(t('companyDeletedSuccess'), 'success');
+                } catch (error: any) {
+                    showNotification(t((error.message as TranslationKey) || 'companyDeleteError'), 'error');
+                }
             }
         }
         
@@ -271,7 +308,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
                  </div>
                  <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title={modalMode === 'add' ? t('addUserModalTitle') : t('editUserModalTitle')}>
                     <div className="space-y-4">
-                        {formError && <p className="text-red-500 text-sm text-center">{t(formError as any)}</p>}
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormEmailLabel')}</label><input type="email" value={userForm.username} onChange={(e) => setUserForm({...userForm, username: e.target.value})} className="mt-1 block w-full input-field"/></div>
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormPasswordLabel')}</label><input type="password" value={userForm.password} onChange={(e) => setUserForm({...userForm, password: e.target.value})} placeholder={modalMode === 'edit' ? t('userFormPasswordPlaceholder') : ''} className="mt-1 block w-full input-field"/></div>
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('companyLabel')}</label><select value={userForm.companyId} onChange={(e) => setUserForm({...userForm, companyId: e.target.value})} className="mt-1 block w-full input-field"><option value="">{t('noCompany')}</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
@@ -436,6 +472,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
 
     return (
         <>
+             {notification && (
+                <div
+                    className={`fixed top-24 right-5 z-50 flex items-center p-4 w-full max-w-xs rounded-lg shadow-lg text-white ${
+                    notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+                    } animate-fade-in-up`}
+                    role="alert"
+                >
+                    <div className="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg bg-black bg-opacity-20">
+                        {notification.type === 'success' ? <CheckCircleIcon className="w-5 h-5"/> : <XCircleIcon className="w-5 h-5"/>}
+                    </div>
+                    <div className="ml-3 text-sm font-normal">{notification.message}</div>
+                    <button type="button" onClick={() => setNotification(null)} className="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 inline-flex h-8 w-8 hover:bg-black hover:bg-opacity-20 focus:ring-2 focus:ring-gray-300" aria-label="Close">
+                        <span className="sr-only">Close</span>
+                        <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                        </svg>
+                    </button>
+                </div>
+            )}
             <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
                 <nav className="flex space-x-2">
                     <TabButton tabId="settings" label={t('adminPanelSettingsTab')} />

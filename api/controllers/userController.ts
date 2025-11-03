@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -17,14 +16,23 @@ export const getUsers = async (req: Request, res: Response) => {
 export const createUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   try {
-     const salt = await bcrypt.genSalt(10);
+    const [existingUsers] = await pool.query<RowDataPacket[]>('SELECT id FROM users WHERE username = ?', [username]);
+    if (existingUsers.length > 0) {
+      return res.status(409).json({ message: 'addUserErrorDuplicate' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const newUser = { id: uuidv4(), username, password: hashedPassword, role, company_id: companyId || null };
     await pool.query('INSERT INTO users SET ?', newUser);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userResponse } = newUser;
     res.status(201).json(userResponse);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ message: 'addUserErrorDuplicate' });
+    }
+    console.error("Error creating user:", error);
     res.status(500).json({ message: 'Server error' });
   }
 };

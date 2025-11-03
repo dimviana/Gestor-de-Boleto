@@ -91,6 +91,7 @@ const pt = {
     cancelButton: 'Cancelar',
     userAddedSuccess: 'Usuário adicionado com sucesso.',
     userUpdatedSuccess: 'Usuário atualizado com sucesso.',
+    userDeletedSuccess: 'Usuário excluído com sucesso.',
     addUserErrorDuplicate: 'Já existe um usuário com este email.',
     extractionMethodTitle: 'Método de Extração de Dados',
     extractionMethodAI: 'IA (Gemini)',
@@ -149,6 +150,12 @@ const pt = {
     addCompanyButton: 'Adicionar Empresa',
     usersInThisCompany: 'Usuários nesta empresa',
     noUsersInCompany: 'Nenhum usuário nesta empresa.',
+    companyAddedSuccess: 'Empresa adicionada com sucesso.',
+    companyAddError: 'Falha ao adicionar a empresa. Verifique os dados e tente novamente.',
+    companyUpdatedSuccess: 'Empresa atualizada com sucesso.',
+    companyUpdateError: 'Falha ao atualizar a empresa.',
+    companyDeletedSuccess: 'Empresa excluída com sucesso.',
+    companyDeleteError: 'Falha ao excluir a empresa.',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
         Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos a seguir.
@@ -261,6 +268,7 @@ const en: typeof pt = {
     cancelButton: 'Cancel',
     userAddedSuccess: 'User added successfully.',
     userUpdatedSuccess: 'User updated successfully.',
+    userDeletedSuccess: 'User deleted successfully.',
     addUserErrorDuplicate: 'A user with this email already exists.',
     extractionMethodTitle: 'Data Extraction Method',
     extractionMethodAI: 'AI (Gemini)',
@@ -319,6 +327,12 @@ const en: typeof pt = {
     addCompanyButton: 'Add Company',
     usersInThisCompany: 'Users in this company',
     noUsersInCompany: 'No users in this company.',
+    companyAddedSuccess: 'Company added successfully.',
+    companyAddError: 'Failed to add company. Please check the data and try again.',
+    companyUpdatedSuccess: 'Company updated successfully.',
+    companyUpdateError: 'Failed to update company.',
+    companyDeletedSuccess: 'Company deleted successfully.',
+    companyDeleteError: 'Failed to delete company.',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
         Your task is to analyze the OCR-EXTRACTED TEXT and the IMAGE provided below.
