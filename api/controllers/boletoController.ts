@@ -10,11 +10,18 @@ import { extractBoletoInfo } from '../services/geminiService';
 export const getBoletos = async (req: AuthRequest, res: Response) => {
   const user = req.user!;
   try {
+    // If a non-admin user is not associated with a company, they cannot have any boletos.
+    // Return an empty array to prevent errors and unnecessary database queries.
+    if (user.role !== 'admin' && !user.companyId) {
+      return res.json([]);
+    }
+
     let query = 'SELECT * FROM boletos';
-    const params: string[] = [];
+    const params: (string | undefined)[] = [];
     if (user.role !== 'admin') {
       query += ' WHERE company_id = ?';
-      params.push(user.companyId!);
+      // This is now safe because we've already checked for user.companyId existence.
+      params.push(user.companyId);
     } else if (req.query.companyId) {
       // Admin can filter by company
       query += ' WHERE company_id = ?';

@@ -5,9 +5,12 @@ import { User } from '../../types';
 
 // By extending Request from express, AuthRequest inherits standard properties
 // like `headers`, `body`, `file`, etc., resolving type errors in controllers.
-export interface AuthRequest extends Request {
+// FIX: Switched from an interface to a type intersection. This robustly ensures
+// that AuthRequest inherits all properties from the base express.Request type,
+// resolving type errors in controllers that use it.
+export type AuthRequest = Request & {
   user?: User;
-}
+};
 
 export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token;

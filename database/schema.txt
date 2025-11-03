@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS `vps_settings` (
   `username` VARCHAR(255) NOT NULL,
   `password` VARCHAR(255) NOT NULL COMMENT 'Encrypted password is recommended',
   `ssh_port` INT NOT NULL DEFAULT 22,
+  `project_path` VARCHAR(255) DEFAULT NULL COMMENT 'Absolute path to the project folder on the remote server',
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `company_id_UNIQUE` (`company_id`),

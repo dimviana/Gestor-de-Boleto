@@ -1,4 +1,4 @@
-import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, VpsSettings } from '../types';
+import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, VpsSettings, SslSettings, SslStatus } from '../types';
 
 const API_BASE_URL = '/api'; // Use relative URL to proxy to the backend
 
@@ -143,4 +143,21 @@ export const triggerVpsUpdate = (): Promise<{ message: string; output: string; }
   return apiFetch('/vps/update', {
     method: 'POST',
   });
+};
+
+// --- SSL Settings API ---
+export const fetchSslSettings = (): Promise<SslSettings> => apiFetch('/ssl');
+
+export const saveSslSettings = (settings: SslSettings): Promise<{ message: string }> => {
+    return apiFetch('/ssl', {
+        method: 'POST',
+        body: JSON.stringify(settings),
+    });
+};
+
+export const checkSslStatus = (domain: string): Promise<SslStatus> => {
+    return apiFetch('/ssl/check', {
+        method: 'POST',
+        body: JSON.stringify({ domain }),
+    });
 };

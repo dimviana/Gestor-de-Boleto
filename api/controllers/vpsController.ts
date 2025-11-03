@@ -28,12 +28,12 @@ export const getVpsSettings = async (req: AuthRequest, res: Response) => {
 
 export const saveVpsSettings = async (req: AuthRequest, res: Response) => {
   const user = req.user!;
-  const { hostname, username, password, ssh_port } = req.body;
+  const { hostname, username, password, ssh_port, project_path } = req.body;
 
   if (!user.companyId) {
     return res.status(400).json({ message: 'Admin user must be associated with a company.' });
   }
-  if (!hostname || !username || !password || !ssh_port) {
+  if (!hostname || !username || !password || !ssh_port || !project_path) {
     return res.status(400).json({ message: 'Missing required fields.' });
   }
 
@@ -45,11 +45,12 @@ export const saveVpsSettings = async (req: AuthRequest, res: Response) => {
       username,
       password, // In a real app, this should be encrypted
       ssh_port,
+      project_path,
     };
 
     await pool.query(
-      'INSERT INTO vps_settings (id, company_id, hostname, username, password, ssh_port) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE hostname = VALUES(hostname), username = VALUES(username), password = VALUES(password), ssh_port = VALUES(ssh_port)',
-      [settings.id, settings.company_id, settings.hostname, settings.username, settings.password, settings.ssh_port]
+      'INSERT INTO vps_settings (id, company_id, hostname, username, password, ssh_port, project_path) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE hostname = VALUES(hostname), username = VALUES(username), password = VALUES(password), ssh_port = VALUES(ssh_port), project_path = VALUES(project_path)',
+      [settings.id, settings.company_id, settings.hostname, settings.username, settings.password, settings.ssh_port, settings.project_path]
     );
 
     res.status(200).json({ message: 'VPS settings saved successfully.' });
@@ -72,6 +73,10 @@ export const triggerUpdate = async (req: AuthRequest, res: Response) => {
         }
         
         const settings = rows[0] as VpsSettings;
+        if (!settings.project_path) {
+            return res.status(404).json({ message: 'Project path not found in VPS settings. Please configure it first.' });
+        }
+
         const ssh = new NodeSSH();
 
         await ssh.connect({
@@ -82,7 +87,7 @@ export const triggerUpdate = async (req: AuthRequest, res: Response) => {
         });
 
         // The command needs to provide '2' as input to the script for the update option.
-        const command = 'cd /home/abildeveloper-boletomanager/htdocs && echo "2" | bash deploy.txt';
+        const command = `cd ${settings.project_path} && echo "2" | bash deploy.txt`;
         const result = await ssh.execCommand(command);
 
         ssh.dispose();

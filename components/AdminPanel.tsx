@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
-import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company } from '../types';
+import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company, SslStatus } from '../types';
 import { TrashIcon, EditIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
+import Spinner from './Spinner';
 
 
 interface AdminPanelProps {
@@ -309,7 +310,128 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, addUser, upd
         </div>
     );
 
-    const SslTab = () => { /* ... No changes needed here for now ... */ return <div>SSL Tab Content</div> };
+    const SslTab = () => {
+        const [domain, setDomain] = useState('');
+        const [status, setStatus] = useState<SslStatus | null>(null);
+        const [isLoading, setIsLoading] = useState(false);
+        const [isSaving, setIsSaving] = useState(false);
+
+        useEffect(() => {
+            const loadDomain = async () => {
+                try {
+                    const settings = await api.fetchSslSettings();
+                    if (settings.domain) {
+                        setDomain(settings.domain);
+                    }
+                } catch (e) {
+                    console.error("Could not load SSL domain settings");
+                }
+            };
+            loadDomain();
+        }, []);
+
+        const handleSave = async () => {
+            setIsSaving(true);
+            try {
+                await api.saveSslSettings({ domain });
+            } catch (e) {
+                console.error("Failed to save domain", e);
+            } finally {
+                setIsSaving(false);
+            }
+        };
+
+        const handleCheckStatus = async () => {
+            if (!domain) return;
+            setIsLoading(true);
+            setStatus(null);
+            try {
+                const result = await api.checkSslStatus(domain);
+                setStatus(result);
+            } catch (e: any) {
+                setStatus({ isValid: false, expiresAt: null, issuedAt: null, error: e.message });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        const formatDate = (dateString: string | null) => {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US');
+        };
+
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Gerenciamento de Certificado SSL</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        Configure o domínio do seu servidor para verificar o status do seu certificado SSL e obter instruções para instalação e renovação.
+                    </p>
+                </div>
+
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg space-y-4">
+                    <div>
+                        <label htmlFor="ssl-domain" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Domínio do Servidor</label>
+                        <input
+                            type="text"
+                            id="ssl-domain"
+                            value={domain}
+                            onChange={e => setDomain(e.target.value)}
+                            placeholder="exemplo.com.br"
+                            className="mt-1 block w-full input-field"
+                        />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                        <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm">
+                            {isSaving ? 'Salvando...' : 'Salvar Domínio'}
+                        </button>
+                        <button onClick={handleCheckStatus} disabled={!domain || isLoading} className="px-4 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm">
+                            {isLoading ? 'Verificando...' : 'Verificar Status'}
+                        </button>
+                    </div>
+                </div>
+
+                {isLoading && <div className="flex justify-center"><Spinner /></div>}
+                
+                {status && (
+                    <div className={`p-4 rounded-lg ${status.isValid ? 'bg-green-100 dark:bg-green-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
+                        <h4 className={`text-lg font-bold ${status.isValid ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                            {status.isValid ? 'Certificado Válido' : 'Falha na Verificação'}
+                        </h4>
+                        {status.error && <p className="text-sm text-red-700 dark:text-red-300 mt-1">{status.error}</p>}
+                        {status.isValid && (
+                            <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                                <p><strong>Emitido em:</strong> {formatDate(status.issuedAt)}</p>
+                                <p><strong>Expira em:</strong> {formatDate(status.expiresAt)}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+                
+                <div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Como Instalar/Renovar o Certificado</h3>
+                    <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <p>
+                            Recomendamos o uso do <strong>Certbot</strong> com Let's Encrypt para obter certificados SSL gratuitos e automatizar a renovação. Conecte-se ao seu servidor via SSH e siga os passos abaixo.
+                        </p>
+                        <h4>Passo 1: Instalar o Certbot</h4>
+                        <p>Execute o comando apropriado para o seu sistema operacional (exemplo para Ubuntu com Nginx):</p>
+                        <pre className="bg-gray-800 text-white p-3 rounded-md"><code>sudo apt update && sudo apt install certbot python3-certbot-nginx</code></pre>
+                        
+                        <h4>Passo 2: Gerar o Certificado</h4>
+                        <p>Execute o comando abaixo, substituindo `seu_dominio.com` pelo domínio que você salvou acima. O Certbot irá configurar o Nginx automaticamente.</p>
+                         <pre className="bg-gray-800 text-white p-3 rounded-md"><code>sudo certbot --nginx -d {domain || 'seu_dominio.com'}</code></pre>
+                         
+                         <h4>Passo 3: Renovação Automática</h4>
+                         <p>O Certbot configura uma renovação automática. Você pode testá-la com o comando:</p>
+                         <pre className="bg-gray-800 text-white p-3 rounded-md"><code>sudo certbot renew --dry-run</code></pre>
+                         <p>Se o teste for bem-sucedido, o certificado será renovado automaticamente antes de expirar.</p>
+                    </div>
+                </div>
+                 <style>{`.input-field { background-color: #F3F4F6; color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>
+            </div>
+        );
+    };
 
 
     return (

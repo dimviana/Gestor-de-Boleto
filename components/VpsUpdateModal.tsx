@@ -10,7 +10,7 @@ interface VpsUpdateModalProps {
 }
 
 const VpsUpdateModal: React.FC<VpsUpdateModalProps> = ({ systemUpdateInfo, onClose }) => {
-  const [settings, setSettings] = useState<Partial<VpsSettings>>({ ssh_port: 22 });
+  const [settings, setSettings] = useState<Partial<VpsSettings>>({ ssh_port: 22, project_path: '$HOME/boleto-manager-ai' });
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateLog, setUpdateLog] = useState<string>('');
@@ -101,6 +101,16 @@ const VpsUpdateModal: React.FC<VpsUpdateModalProps> = ({ systemUpdateInfo, onClo
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
                 <input type="password" value={settings.password || ''} onChange={e => setSettings({...settings, password: e.target.value})} className="mt-1 w-full input-field"/>
               </div>
+               <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Caminho do Projeto na VPS</label>
+                <input 
+                    type="text" 
+                    value={settings.project_path || ''} 
+                    onChange={e => setSettings({...settings, project_path: e.target.value})} 
+                    className="mt-1 w-full input-field"
+                    placeholder="$HOME/boleto-manager-ai"
+                />
+              </div>
             </div>
           )}
           <div className="mt-4 flex justify-end">
@@ -121,7 +131,7 @@ const VpsUpdateModal: React.FC<VpsUpdateModalProps> = ({ systemUpdateInfo, onClo
         <div>
           <button
             onClick={handleUpdate}
-            disabled={isUpdating || !settings.hostname || !settings.username || !settings.password}
+            disabled={isUpdating || !settings.hostname || !settings.username || !settings.password || !settings.project_path}
             className="w-full px-6 py-3 font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isUpdating && <Spinner />}

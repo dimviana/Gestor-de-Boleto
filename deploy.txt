@@ -3,9 +3,8 @@
 # --- Configuration ---
 # These variables can be customized.
 GIT_REPO="https://github.com/dimviana/Gestor-de-Boleto.git"
-PROJECT_PARENT_DIR="/home/abildeveloper-boletomanager"
-PROJECT_FOLDER_NAME="htdocs"
-PROJECT_PATH="${PROJECT_PARENT_DIR}/${PROJECT_FOLDER_NAME}"
+# The project will be installed in this path. $HOME resolves to the current user's home directory.
+PROJECT_PATH="$HOME/boleto-manager-ai"
 NGINX_CONF_NAME="boletomanager" # Name for nginx config file
 DB_HOST="localhost"
 DB_USER="root"
@@ -123,8 +122,8 @@ do_install() {
     install_dependencies
     configure_mysql
     
-    sudo mkdir -p "$PROJECT_PARENT_DIR"
-    sudo chown -R $USER:$USER "$PROJECT_PARENT_DIR"
+    # Create the parent directory. No sudo is needed for the home directory.
+    mkdir -p "$(dirname "$PROJECT_PATH")"
 
     if [ -d "$PROJECT_PATH" ]; then
         echo -e "${YELLOW}Project folder '$PROJECT_PATH' already exists. Removing for a fresh clone.${NC}"

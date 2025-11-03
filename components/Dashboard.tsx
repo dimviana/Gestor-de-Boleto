@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
+// FIX: Moved TranslationKey import to the correct file 'translations.ts' from 'types.ts'.
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, SystemNotification, AnyNotification } from '../types';
+import { TranslationKey } from '../translations';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
@@ -18,6 +20,7 @@ import { BoletoDetailsModal } from './BoletoDetailsModal';
 import VpsUpdateModal from './VpsUpdateModal';
 import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
+import UploadProgress, { UploadStatus } from './UploadProgress';
 
 
 interface DashboardProps {
@@ -32,16 +35,13 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser, updateUser, deleteUser, getLogs }) => {
   const { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos(user);
-  const [isLoadingUpload, setIsLoadingUpload] = useState(false);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const { t, language } = useLanguage();
   const { method } = useProcessingMethod();
   const { aiSettings } = useAiSettings();
   
-  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
-  const [errorModalContent, setErrorModalContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
-
+  const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
 
@@ -98,39 +98,60 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
   }, []);
 
   const handleFileUpload = async (file: File) => {
-    setIsLoadingUpload(true);
+    const uploadId = crypto.randomUUID();
+    // Prepend to show the latest upload at the top
+    setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: t('processingStatus') }, ...prev]);
+
     try {
-      // The backend now handles the processing method, but we can keep this for UI feedback
-      let newBoleto: Omit<Boleto, 'companyId' | 'id'> & { id?: string }; // id can be optional as backend assigns it
+      // This front-end validation step is kept from the original logic.
+      // The AI/Regex processing is done client-side first to check the amount.
+      let processedBoletoData: Omit<Boleto, 'companyId' | 'id'> & { id?: string };
        if (method === 'ai') {
-           newBoleto = await processBoletoWithAI(file, language, aiSettings);
+           processedBoletoData = await processBoletoWithAI(file, language, aiSettings);
        } else {
-           newBoleto = await processBoletoPDFWithRegex(file);
+           processedBoletoData = await processBoletoPDFWithRegex(file);
        }
-       if (newBoleto.amount === null || newBoleto.amount === undefined || newBoleto.amount === 0) {
-         setErrorModalContent({ title: t('freeBoletoErrorTitle'), message: t('freeBoletoErrorText') });
-         setIsErrorModalOpen(true);
-         return;
+       if (processedBoletoData.amount === null || processedBoletoData.amount === undefined || processedBoletoData.amount === 0) {
+         throw new Error('freeBoletoErrorText'); // Use key for consistent error handling
        }
-      await addBoleto(user, file, method);
+
+      await addBoleto(user, file, method); // This calls the backend via the hook
+
+      setUploadStatuses(prev => prev.map(up => 
+            up.id === uploadId 
+            ? { ...up, status: 'success', message: t('uploadSuccess') } 
+            : up
+      ));
+
     } catch (error: any) {
       console.error("Upload failed:", error);
-      let errorMessage = t('genericErrorText');
-      let errorTitle = t('genericErrorTitle');
-      
-      if (error.message.includes('Duplicate barcode')) {
-          const identifier = error.message.split(': ')[1] || 'N/A';
-          errorMessage = t('duplicateBarcodeErrorText', { identifier });
-          errorTitle = t('duplicateBarcodeErrorTitle');
-      } else if (error.message.includes('User is not associated with a company')) {
-          errorMessage = t('userHasNoCompanyErrorText');
-          errorTitle = t('userHasNoCompanyErrorTitle');
-      }
 
-      setErrorModalContent({ title: errorTitle, message: errorMessage });
-      setIsErrorModalOpen(true);
-    } finally {
-      setIsLoadingUpload(false);
+      const errorMap: { [key: string]: TranslationKey } = {
+          'Duplicate barcode': 'duplicateBarcodeErrorText',
+          'User is not associated with a company': 'userHasNoCompanyErrorText',
+          'freeBoletoErrorText': 'freeBoletoErrorText'
+      };
+      
+      let errorKey: TranslationKey = 'genericErrorText';
+      let substitutions: Record<string, string> = {};
+
+      for (const key in errorMap) {
+          if (error.message.includes(key)) {
+              errorKey = errorMap[key];
+              if (key === 'Duplicate barcode') {
+                  substitutions.identifier = error.message.split(': ')[1] || 'N/A';
+              }
+              break;
+          }
+      }
+      
+      const errorMessage = t(errorKey, substitutions);
+
+      setUploadStatuses(prev => prev.map(up => 
+            up.id === uploadId 
+            ? { ...up, status: 'error', message: errorMessage } 
+            : up
+      ));
     }
   };
 
@@ -268,19 +289,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">
-          <FileUpload onFileUpload={handleFileUpload} disabled={isLoadingUpload || !user.companyId} />
+          <FileUpload onFileUpload={handleFileUpload} disabled={!user.companyId} />
+           <UploadProgress statuses={uploadStatuses} onClear={() => setUploadStatuses([])} />
           {user.role !== 'admin' && !user.companyId && (
               <div className="text-center p-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 text-sm rounded-lg">
                   {t('uploadDisabledNoCompany')}
               </div>
           )}
-          {isLoadingUpload && (
-            <div className="flex items-center justify-center mt-4">
-              <Spinner />
-              <p className="ml-4 text-blue-600 dark:text-blue-400 font-semibold">{t('processingStatus')}</p>
-            </div>
-          )}
-
+         
           {user.role === 'admin' && (
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
               <label htmlFor="company-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('filterByCompany')}</label>
@@ -295,7 +311,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
               </select>
             </div>
           )}
-           <FolderWatcher onFileUpload={handleFileUpload} disabled={isLoadingUpload || !user.companyId} />
+           <FolderWatcher onFileUpload={handleFileUpload} disabled={!user.companyId} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -328,13 +344,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, addUser
             </div>
         </div>
       )}
-
-      <Modal isOpen={isErrorModalOpen} onClose={() => setIsErrorModalOpen(false)} title={errorModalContent.title}>
-          <div className="text-center p-4">
-              <p className="text-gray-600 dark:text-gray-300 mb-6">{errorModalContent.message}</p>
-              <button onClick={() => setIsErrorModalOpen(false)} className="px-8 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300">OK</button>
-          </div>
-      </Modal>
 
       <Modal isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} title={t('documentationTitle')}><Documentation /></Modal>
       

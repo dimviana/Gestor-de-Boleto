@@ -106,4 +106,17 @@ export interface VpsSettings {
   username: string;
   password?: string; // Should be handled securely
   ssh_port: number;
+  project_path?: string; // Path to project on remote server
+}
+
+// New types for SSL management
+export interface SslSettings {
+    domain: string;
+}
+
+export interface SslStatus {
+    isValid: boolean;
+    expiresAt: string | null;
+    issuedAt: string | null;
+    error?: string;
 }

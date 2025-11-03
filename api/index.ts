@@ -11,9 +11,13 @@ import companyRoutes from './routes/companies';
 import userRoutes from './routes/users';
 import logRoutes from './routes/logs';
 import settingsRoutes from './routes/settings';
-import vpsRoutes from './routes/vps'; // Import new VPS routes
+import vpsRoutes from './routes/vps';
+import sslRoutes from './routes/ssl'; // Import new SSL routes
 
 dotenv.config();
+
+// FIX: Declare __dirname to resolve TypeScript error due to missing Node.js types.
+declare const __dirname: string;
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -33,7 +37,8 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/settings', settingsRoutes);
-app.use('/api/vps', vpsRoutes); // Add new VPS routes
+app.use('/api/vps', vpsRoutes);
+app.use('/api/ssl', sslRoutes); // Add new SSL routes
 
 // --- Frontend Serving ---
 const staticPath = path.join(__dirname, '..');
