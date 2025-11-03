@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus } from '../types';
 import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon } from './icons/Icons';

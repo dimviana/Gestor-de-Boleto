@@ -1,5 +1,7 @@
+
 // Use default import for express and named imports for types to avoid conflicts.
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
