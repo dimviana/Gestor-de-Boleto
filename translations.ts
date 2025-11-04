@@ -1,4 +1,5 @@
 
+
 export type Language = 'pt' | 'en';
 
 const pt = {
@@ -76,6 +77,7 @@ const pt = {
     geminiNoApiKeyServer: 'A chave da API do Gemini não está configurada no servidor.',
     freeBoletoErrorTitle: 'Boleto de Ato Gratuito',
     freeBoletoErrorText: 'Este boleto tem valor zerado (ato gratuito) e não pode ser adicionado ao sistema.',
+    amountNotFoundErrorText: 'Não foi possível determinar o valor do boleto. Verifique o PDF e tente novamente.',
     confirmUserDeletion: 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.',
     confirmBulkDelete: 'Tem certeza que deseja excluir os {{count}} boletos selecionados?',
     deleteUserError: 'Não foi possível excluir o usuário.',
@@ -281,6 +283,7 @@ const en: typeof pt = {
     geminiNoApiKeyServer: 'The Gemini API key is not configured on the server.',
     freeBoletoErrorTitle: 'Free Act Boleto',
     freeBoletoErrorText: 'This boleto has a zero amount (free act) and cannot be added to the system.',
+    amountNotFoundErrorText: 'Could not determine the boleto amount. Please check the PDF and try again.',
     confirmUserDeletion: 'Are you sure you want to delete this user? This action cannot be undone.',
     confirmBulkDelete: 'Are you sure you want to delete the {{count}} selected boletos?',
     deleteUserError: 'Could not delete the user.',
