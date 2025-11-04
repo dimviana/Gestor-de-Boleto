@@ -1,8 +1,7 @@
 
-
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
-import { HashtagIcon, CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon } from './icons/Icons';
+import { HashtagIcon, CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, ArrowDownIcon, ArrowUpIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface BoletoCardProps {
@@ -17,12 +16,14 @@ interface BoletoCardProps {
 
 const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, userRole }) => {
   const { t, language } = useLanguage();
-  const { id, recipient, drawee, documentDate, dueDate, amount, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
+  const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
   const [pixCopied, setPixCopied] = useState(false);
   const [barcodeCopied, setBarcodeCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(comments || '');
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t('notAvailable');
@@ -172,7 +173,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   };
 
   const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string | null; onCopy?: (e: React.MouseEvent) => void; copyState?: boolean; copyLabel?: string; }> = ({ icon, label, value, onCopy, copyState, copyLabel }) => {
-    if (!value) return null;
+    if (!value && value !== 0) return null;
     return (
       <div className="flex items-start">
         <div className="flex-shrink-0 w-5 h-5 text-gray-400 dark:text-gray-500">{icon}</div>
@@ -191,8 +192,17 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     );
   };
 
+  const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+    <div className="mt-4">
+        <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{title}</h4>
+        <div className="space-y-3 p-3 bg-gray-50 dark:bg-slate-900/50 rounded-md border border-gray-200 dark:border-slate-700/50">
+            {children}
+        </div>
+    </div>
+  );
 
   return (
+    <>
     <div 
       draggable={userRole !== 'viewer'}
       onDragStart={handleDragStart}
@@ -234,28 +244,81 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
 
       <div className="grid grid-cols-2 gap-x-6 my-4 border-t border-gray-100 dark:border-slate-700 pt-4">
           <div>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount')}</p>
               <p className="text-2xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(amount)}</p>
           </div>
           <div>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate')}</p>
               <p className="text-2xl font-extrabold text-blue-500 dark:text-blue-400">{formatDate(dueDate)}</p>
           </div>
       </div>
       
-      <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 pt-4">
-        <DetailItem icon={<UserIcon />} label={`${t('recipient')}:`} value={recipient} />
-        <DetailItem icon={<FileTextIcon />} label={`${t('documentDate')}`} value={formatDate(documentDate)} />
-        <DetailItem icon={<IdIcon />} label={`${t('guideNumber')}`} value={guideNumber} />
-        <DetailItem 
-          icon={<BarcodeIcon />} 
-          label={`${t('barcode')}`} 
-          value={barcode}
-          onCopy={handleCopyBarcode}
-          copyState={barcodeCopied}
-          copyLabel={t('copyBarcode')}
-        />
+      <div 
+        onClick={(e) => {
+            e.stopPropagation();
+            setIsDetailsOpen(!isDetailsOpen);
+        }}
+        className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 cursor-pointer"
+      >
+        <button className="w-full flex justify-center items-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+          {isDetailsOpen ? t('hideDetails') : t('showMoreDetails')}
+          {isDetailsOpen ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />}
+        </button>
       </div>
+
+      {isDetailsOpen && (
+        <div className="animate-fade-in-up-fast mt-2">
+            <Section title={t('parties')}>
+                <DetailItem icon={<UserIcon />} label={`${t('recipient')}:`} value={recipient} />
+                <DetailItem icon={<UserIcon />} label={`${t('drawee')}:`} value={drawee} />
+            </Section>
+
+            {(discount || interestAndFines) ? (
+                <Section title={t('detailedValues')}>
+                    <DetailItem icon={<DollarSignIcon />} label={`${t('discount')}:`} value={formatCurrency(discount)} />
+                    <DetailItem icon={<DollarSignIcon />} label={`${t('interestAndFines')}:`} value={formatCurrency(interestAndFines)} />
+                </Section>
+            ) : null}
+
+            <Section title={t('documentInfo')}>
+                <DetailItem icon={<CalendarIcon />} label={`${t('documentDate')}:`} value={formatDate(documentDate)} />
+                <DetailItem icon={<IdIcon />} label={`${t('guideNumber')}:`} value={guideNumber} />
+            </Section>
+
+            {(barcode || pixQrCodeText) && (
+                 <Section title={t('paymentCodes')}>
+                    <DetailItem 
+                        icon={<BarcodeIcon />} 
+                        label={`${t('barcode')}:`} 
+                        value={barcode}
+                        onCopy={handleCopyBarcode}
+                        copyState={barcodeCopied}
+                        copyLabel={t('copyBarcode')}
+                    />
+                    {pixQrCodeText && (
+                        <div className="flex items-start">
+                            <div className="flex-shrink-0 w-5 h-5 text-gray-400 dark:text-gray-500"><QrCodeIcon /></div>
+                            <div className="ml-3 flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('pixQrCode')}</p>
+                                <div className="relative mt-1 p-3 bg-gray-100 dark:bg-slate-900 rounded-md">
+                                    <p className="text-xs text-gray-600 dark:text-gray-300 font-mono break-all pr-10 leading-relaxed">
+                                        {pixQrCodeText}
+                                    </p>
+                                    <button
+                                        onClick={handleCopyPix}
+                                        title={t('copyPixCode')}
+                                        className="absolute top-2 right-2 p-1.5 text-gray-500 hover:text-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        {pixCopied ? <CheckIcon className="w-5 h-5 text-green-500" /> : <CopyIcon className="w-5 h-5" />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </Section>
+            )}
+        </div>
+      )}
 
       <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 space-y-3">
         <div className="flex items-center space-x-2">
@@ -323,28 +386,23 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             </div>
         </div>
       )}
-
-      {pixQrCodeText && (
-        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
-            <div className="flex items-center font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                <HashtagIcon className="w-5 h-5 mr-2 flex-shrink-0" />
-                <span>{t('pixQrCode')}</span>
-            </div>
-            <div className="relative p-3 bg-gray-100 dark:bg-slate-900 rounded-md">
-                <p className="text-xs text-gray-600 dark:text-gray-300 font-mono break-all pr-10 leading-relaxed">
-                    {pixQrCodeText}
-                </p>
-                <button
-                    onClick={handleCopyPix}
-                    title={t('copyPixCode')}
-                    className="absolute top-2 right-2 p-1.5 text-gray-500 hover:text-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    {pixCopied ? <CheckIcon className="w-5 h-5 text-green-500" /> : <CopyIcon className="w-5 h-5" />}
-                </button>
-            </div>
-        </div>
-      )}
     </div>
+    <style>{`
+      @keyframes fade-in-up-fast {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in-up-fast {
+        animation: fade-in-up-fast 0.3s ease-out forwards;
+      }
+    `}</style>
+    </>
   );
 };
 

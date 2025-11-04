@@ -1,3 +1,4 @@
+
 export type Language = 'pt' | 'en';
 
 const pt = {
@@ -36,14 +37,14 @@ const pt = {
     paymentCompleted: 'Pagamento Concluído',
     recipient: 'Beneficiário',
     recipientNotFound: 'Destinatário não encontrado',
-    dueDate: 'Vencimento:',
-    amount: 'Valor:',
-    discount: 'Desconto:',
-    interestAndFines: 'Juros/Multa:',
-    barcode: 'Código de Barras:',
-    guideNumber: 'Nº do Documento:',
-    documentDate: 'Data do Doc.:',
-    drawee: 'Sacado:',
+    dueDate: 'Vencimento',
+    amount: 'Valor',
+    discount: 'Desconto',
+    interestAndFines: 'Juros/Multa',
+    barcode: 'Código de Barras',
+    guideNumber: 'Nº do Documento',
+    documentDate: 'Data do Doc.',
+    drawee: 'Sacado',
     pixQrCode: 'QR Code PIX',
     copyPixCode: 'Copiar Código PIX',
     pixCodeCopied: 'Copiado!',
@@ -171,6 +172,12 @@ const pt = {
     settingsSavedSuccess: 'Configurações salvas com sucesso.',
     settingsSaveError: 'Falha ao salvar configurações.',
     settingsLoadError: 'Falha ao carregar as configurações.',
+    showMoreDetails: 'Ver Mais Detalhes',
+    hideDetails: 'Ocultar Detalhes',
+    parties: 'Partes Envolvidas',
+    detailedValues: 'Valores Detalhados',
+    documentInfo: 'Informações do Documento',
+    paymentCodes: 'Códigos de Pagamento',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
         Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos.
@@ -227,14 +234,14 @@ const en: typeof pt = {
     paymentCompleted: 'Payment Completed',
     recipient: 'Recipient',
     recipientNotFound: 'Recipient not found',
-    dueDate: 'Due Date:',
-    amount: 'Amount:',
-    discount: 'Discount:',
-    interestAndFines: 'Interest/Fines:',
-    barcode: 'Barcode:',
-    guideNumber: 'Document No:',
-    documentDate: 'Doc. Date:',
-    drawee: 'Drawee:',
+    dueDate: 'Due Date',
+    amount: 'Amount',
+    discount: 'Discount',
+    interestAndFines: 'Interest/Fines',
+    barcode: 'Barcode',
+    guideNumber: 'Document No',
+    documentDate: 'Doc. Date',
+    drawee: 'Drawee',
     pixQrCode: 'PIX QR Code',
     copyPixCode: 'Copy PIX Code',
     pixCodeCopied: 'Copied!',
@@ -362,6 +369,12 @@ const en: typeof pt = {
     settingsSavedSuccess: 'Settings saved successfully.',
     settingsSaveError: 'Failed to save settings.',
     settingsLoadError: 'Failed to load settings.',
+    showMoreDetails: 'Show More Details',
+    hideDetails: 'Hide Details',
+    parties: 'Involved Parties',
+    detailedValues: 'Detailed Values',
+    documentInfo: 'Document Information',
+    paymentCodes: 'Payment Codes',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
         Your task is to analyze the provided OCR-EXTRACTED TEXT and the IMAGE.
