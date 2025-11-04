@@ -1,5 +1,6 @@
 // FIX: Use named imports from express to avoid conflicts with global DOM types like `Request`.
-import express from 'express';
+// FIX: Changed to named imports to resolve type conflicts with global DOM types, ensuring AuthRequest inherits properties correctly.
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -8,11 +9,11 @@ import { appConfig } from '../services/configService';
 
 // Ao estender Request do Express, AuthRequest herda propriedades padrão
 // como `headers`, `body`, `file`, etc., resolvendo erros de tipo nos controllers.
-export interface AuthRequest extends express.Request {
+export interface AuthRequest extends Request {
   user?: User;
 }
 
-export const protect = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -36,7 +37,7 @@ export const protect = (req: AuthRequest, res: express.Response, next: express.N
   }
 };
 
-export const admin = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -44,7 +45,7 @@ export const admin = (req: AuthRequest, res: express.Response, next: express.Nex
     }
 };
 
-export const editor = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+export const editor = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {

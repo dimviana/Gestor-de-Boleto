@@ -121,11 +121,32 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     
     const parseCurrency = (match: RegExpMatchArray | null): number | null => {
         if (!match || !match[1]) return null;
-        let valueStr = match[1];
+        let valueStr = match[1].trim();
         valueStr = cleanOcrMistakes(valueStr);
-        valueStr = valueStr.replace(/\./g, '').replace(',', '.');
-        if (isNaN(parseFloat(valueStr))) return null;
-        return parseFloat(valueStr);
+
+        if (!/\d/.test(valueStr)) return null;
+
+        const hasComma = valueStr.includes(',');
+        const hasDot = valueStr.includes('.');
+
+        if (hasComma) {
+            // Assume comma is decimal separator (e.g., 1.234,56)
+            valueStr = valueStr.replace(/\./g, '').replace(',', '.');
+        } else if (hasDot) {
+            const lastDotIndex = valueStr.lastIndexOf('.');
+            const isDecimal = valueStr.length - lastDotIndex - 1 === 2;
+            const hasMultipleDots = (valueStr.match(/\./g) || []).length > 1;
+
+            if (hasMultipleDots || !isDecimal) {
+                // Treat all dots as thousands separators (e.g., 1.234.567 or 1.234)
+                valueStr = valueStr.replace(/\./g, '');
+            }
+            // Otherwise, it's likely a decimal dot (e.g., 123.45), so we leave it.
+        }
+        
+        // Final cleanup to ensure it's a valid number format
+        const num = parseFloat(valueStr.replace(/[^\d.]/g, ''));
+        return isNaN(num) ? null : num;
     };
 
     const amount = parseCurrency(amountMatch);

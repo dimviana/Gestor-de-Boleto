@@ -95,22 +95,27 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
 
         if (!/\d/.test(valueStr)) return null;
 
-        // Standardize format: remove thousands separators (dot), use dot for decimal (replacing comma).
         const hasComma = valueStr.includes(',');
-        
+        const hasDot = valueStr.includes('.');
+
         if (hasComma) {
-            // Assumes Brazilian format "1.234,56". Remove all dots, then replace the comma with a dot.
+            // Brazilian format (e.g., 1.234,56). Comma is decimal separator.
             valueStr = valueStr.replace(/\./g, '').replace(',', '.');
-        } else {
-            // Assumes format like "1234" or "1.234" (as integer). Just remove dots.
-            // This prevents "1.234" from becoming "1.23" incorrectly.
-             valueStr = valueStr.replace(/\./g, '');
+        } else if (hasDot) {
+            // No comma, only dot(s). Ambiguous (1.234 vs 123.45).
+            const lastDotIndex = valueStr.lastIndexOf('.');
+            const isDecimal = valueStr.length - lastDotIndex - 1 === 2;
+            const hasMultipleDots = (valueStr.match(/\./g) || []).length > 1;
+
+            if (hasMultipleDots || !isDecimal) {
+                // Treat all dots as thousands separators (e.g., 1.234.567 or 1.234)
+                valueStr = valueStr.replace(/\./g, '');
+            }
+            // Otherwise, it's likely a decimal dot (e.g., 123.45), so we leave it.
         }
         
-        // Remove any remaining non-numeric characters except the decimal point
-        valueStr = valueStr.replace(/[^\d.]/g, '');
-
-        const num = parseFloat(valueStr);
+        // Final cleanup to ensure it's a valid number format
+        const num = parseFloat(valueStr.replace(/[^\d.]/g, ''));
         return isNaN(num) ? null : num;
     };
 
