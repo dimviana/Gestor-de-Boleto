@@ -1,5 +1,7 @@
 
-// FIX: Use named imports for express types to avoid conflicts with global DOM types
+
+
+// FIX: Use explicit type imports from express to avoid conflicts with global DOM types
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';

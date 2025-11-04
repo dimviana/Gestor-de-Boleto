@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 // FIX: Moved TranslationKey import to the correct file 'translations.ts' from 'types.ts'.
@@ -238,7 +239,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   
   const isUploadDisabled = (user.role !== 'admin' && !user.companyId) || (user.role === 'admin' && !selectedCompanyFilter);
 
-  const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const formatCurrency = (value: number) => {
+    // Using Intl.NumberFormat for robust, locale-aware formatting.
+    // This is generally more reliable and explicit than toLocaleString.
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   const SummaryCard: React.FC<{ icon: React.ReactNode, title: string, value: number, colorClass: string }> = ({ icon, title, value, colorClass }) => (
     <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-lg flex flex-col justify-between min-h-[140px] border border-gray-100 dark:border-slate-700">

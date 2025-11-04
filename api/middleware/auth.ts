@@ -1,5 +1,7 @@
 
-// FIX: Use named imports for express types to avoid conflict with global DOM types
+
+
+// FIX: Use explicit type imports from express to avoid conflict with global DOM types
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';

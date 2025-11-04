@@ -155,14 +155,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             >
               {drawee || recipient || t('recipientNotFound')}
             </h3>
-            {recipient && (
-              <div className="flex items-center mt-1">
-                <UserIcon className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                <p className="text-sm text-gray-500 dark:text-gray-400 truncate" title={recipient}>
-                  <span className="font-normal">{t('recipient')}:</span> {recipient}
-                </p>
-              </div>
-            )}
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={fileName}>{fileName}</p>
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
           <button 
@@ -182,27 +175,33 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
           />
         </div>
       </div>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 mb-3 truncate">{fileName}</p>
+
+      <div className="grid grid-cols-2 gap-x-4 my-4 text-center border-t border-b border-gray-100 dark:border-gray-600 py-3">
+          <div>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('amount')}</p>
+              <p className="text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(amount)}</p>
+          </div>
+          <div>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dueDate')}</p>
+              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{formatDate(dueDate)}</p>
+          </div>
+      </div>
       
       <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+        {recipient && (
+          <div className="flex items-center">
+            <UserIcon className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 truncate" title={recipient}>
+              <span className="font-normal">{t('recipient')}:</span> {recipient}
+            </p>
+          </div>
+        )}
          {documentDate && (
             <div className="flex items-center">
                 <FileTextIcon className="w-4 h-4 mr-2 text-orange-500" />
                 <span>{t('documentDate')} <span className="font-semibold">{formatDate(documentDate)}</span></span>
             </div>
          )}
-        {dueDate && (
-            <div className="flex items-center">
-              <CalendarIcon className="w-4 h-4 mr-2 text-blue-500" />
-              <span>{t('dueDate')} <span className="font-semibold">{formatDate(dueDate)}</span></span>
-            </div>
-        )}
-        {(amount !== null && amount !== undefined) && (
-            <div className="flex items-center">
-              <DollarSignIcon className="w-4 h-4 mr-2 text-green-500" />
-              <span>{t('amount')} <span className="font-semibold">{formatCurrency(amount)}</span></span>
-            </div>
-        )}
         {(discount !== null && discount > 0) && (
             <div className="flex items-center">
                 <DollarSignIcon className="w-4 h-4 mr-2 text-red-500" />

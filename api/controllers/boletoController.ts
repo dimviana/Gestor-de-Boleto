@@ -1,5 +1,7 @@
 
-// FIX: Use named import for Response to avoid type conflicts with global DOM types
+
+
+// FIX: Use explicit type imports from express to avoid conflicts with global DOM types
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
