@@ -173,20 +173,19 @@ const pt = {
     settingsLoadError: 'Falha ao carregar as configurações.',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
-        Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos a seguir.
-        O texto OCR é a fonte primária de informação, pois pode conter texto que não é visível na imagem. No entanto, o OCR pode conter erros.
-        Use a imagem para verificar o layout, corrigir erros de reconhecimento de caracteres do OCR e extrair informações que o OCR possa ter perdido, como o QR code.
-        Retorne um objeto JSON com as seguintes informações. Se uma informação não for encontrada em nenhuma das fontes, retorne null para aquele campo.
+        Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos.
+        O texto OCR é a fonte primária, mas a imagem deve ser usada para verificar e corrigir erros.
+        Retorne um objeto JSON com as seguintes informações. Se algo não for encontrado, retorne null.
         Datas devem estar no formato AAAA-MM-DD. O valor deve ser um número.
 
         - recipient: O nome do beneficiário/cedente.
         - drawee: O nome do sacado.
         - documentDate: A "Data do Documento".
         - dueDate: A data de vencimento.
-        - amount: O valor final a ser pago ("Valor Cobrado"). Se não houver, use o "Valor do Documento".
+        - amount: O valor final a ser pago. Priorize o campo "(=) Valor Cobrado" ou "Total a Pagar". Se ausente, use "(=) Valor do Documento". O valor NUNCA deve ser zero se houver um valor de documento preenchido.
         - discount: O valor de qualquer desconto ("(-) Desconto / Abatimento").
         - interestAndFines: A soma de quaisquer juros e multas ("(+) Juros / Multa" ou "Outros Acréscimos").
-        - barcode: A linha digitável completa.
+        - barcode: A linha digitável completa, sem pontos ou espaços.
         - guideNumber: O "Número do Documento".
         - pixQrCodeText: O conteúdo completo (copia e cola) do QR Code PIX.
     `,
@@ -365,20 +364,19 @@ const en: typeof pt = {
     settingsLoadError: 'Failed to load settings.',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
-        Your task is to analyze the OCR-EXTRACTED TEXT and the IMAGE provided below.
-        The OCR text is the primary source of information, as it may contain text not selectable from the image. However, the OCR may contain errors.
-        Use the image to verify the layout, correct character recognition errors from the OCR, and extract information the OCR might have missed, like the QR code.
-        Return a JSON object with the following information. If a piece of information is not found in either source, return null for that field.
+        Your task is to analyze the provided OCR-EXTRACTED TEXT and the IMAGE.
+        The OCR text is the primary source, but the image should be used to verify and correct errors.
+        Return a JSON object with the following information. If something is not found, return null.
         Dates must be in YYYY-MM-DD format. The amount must be a number.
 
         - recipient: The name of the beneficiary/payee.
         - drawee: The name of the drawee (Sacado).
         - documentDate: The "Data do Documento" (Document Date).
         - dueDate: The due date.
-        - amount: The final amount to be paid ("Valor Cobrado"). If not present, use "Valor do Documento".
+        - amount: The final amount to be paid. Prioritize the field "(=) Valor Cobrado" or "Total a Pagar". If absent, use "(=) Valor do Documento". The value should NEVER be zero if a document value is present.
         - discount: The value of any discount ("(-) Desconto / Abatimento").
         - interestAndFines: The sum of any interest and fines ("(+) Juros / Multa" or "Outros Acréscimos").
-        - barcode: The complete digitable line (linha digitável).
+        - barcode: The complete digitable line, without dots or spaces.
         - guideNumber: The "Número do Documento" (Document Number).
         - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code.
     `,
