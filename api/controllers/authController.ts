@@ -1,13 +1,14 @@
 // FIX: Use explicit type imports from express to avoid conflicts with global DOM types
-import express from 'express';
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { appConfig } from '../services/configService';
+import { Role } from '../../types';
 
-const generateToken = (id: string, username: string, role: string, company_id: string | null) => {
+const generateToken = (id: string, username: string, role: Role, company_id: string | null) => {
   if (!appConfig.JWT_SECRET || appConfig.JWT_SECRET === 'default_jwt_secret_please_change') {
     console.error('CRITICAL: JWT_SECRET is not configured. Cannot generate token. Please set it in the admin panel or .env file.');
     throw new Error('Server authentication is not properly configured.');
@@ -18,8 +19,8 @@ const generateToken = (id: string, username: string, role: string, company_id: s
 };
 
 // FIX: Use imported express types for request and response.
-export const registerUser = async (req: express.Request, res: express.Response) => {
-  const { username, password, role = 'user', companyId = null } = req.body;
+export const registerUser = async (req: Request, res: Response) => {
+  const { username, password, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ message: 'Please provide username and password' });
@@ -45,7 +46,7 @@ export const registerUser = async (req: express.Request, res: express.Response) 
 };
 
 // FIX: Use imported express types for request and response.
-export const loginUser = async (req: express.Request, res: express.Response) => {
+export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -66,12 +67,15 @@ export const loginUser = async (req: express.Request, res: express.Response) => 
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Backwards compatibility: map old 'user' role to 'editor'
+    const userRole: Role = user.role === 'user' ? 'editor' : user.role;
+
     res.json({
       id: user.id,
       username: user.username,
-      role: user.role,
+      role: userRole,
       companyId: user.company_id,
-      token: generateToken(user.id, user.username, user.role, user.company_id),
+      token: generateToken(user.id, user.username, userRole, user.company_id),
     });
   } catch (error) {
     console.error(error);

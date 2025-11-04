@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company, SslStatus } from '../types';
@@ -235,8 +236,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         const [isUserModalOpen, setIsUserModalOpen] = useState(false);
         const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
         const [selectedUser, setSelectedUser] = useState<RegisteredUser | null>(null);
-        const [userForm, setUserForm] = useState({ username: '', password: '', role: 'user' as Role, companyId: '' });
+        const [userForm, setUserForm] = useState({ username: '', password: '', role: 'viewer' as Role, companyId: '' });
         const [companyForm, setCompanyForm] = useState({ name: '', cnpj: '', address: ''});
+
+        const roleClassMap: Record<Role, string> = {
+            admin: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+            editor: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+            viewer: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+        };
 
         const refreshData = async () => {
             try {
@@ -253,7 +260,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
 
         const openAddUserModal = () => {
             setModalMode('add'); setSelectedUser(null);
-            setUserForm({ username: '', password: '', role: 'user', companyId: '' });
+            setUserForm({ username: '', password: '', role: 'viewer', companyId: '' });
             setIsUserModalOpen(true);
         };
 
@@ -383,7 +390,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                                     <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{user.username}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{companies.find(c => c.id === user.companyId)?.name || <span className="italic">{t('noCompany')}</span>}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>{user.role}</span></td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleClassMap[user.role]}`}>{user.role}</span></td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
                                             <button onClick={() => openEditUserModal(user)} className="text-blue-600 hover:text-blue-900"><EditIcon className="w-5 h-5 inline-block"/></button>
                                             <button onClick={() => handleDeleteUser(user.id)} className={`text-red-600 hover:text-red-900 ${currentUser.id === user.id ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={currentUser.id === user.id}><TrashIcon className="w-5 h-5 inline-block" /></button>
@@ -399,7 +406,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormEmailLabel')}</label><input type="email" value={userForm.username} onChange={(e) => setUserForm({...userForm, username: e.target.value})} className="mt-1 block w-full input-field"/></div>
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormPasswordLabel')}</label><input type="password" value={userForm.password} onChange={(e) => setUserForm({...userForm, password: e.target.value})} placeholder={modalMode === 'edit' ? t('userFormPasswordPlaceholder') : ''} className="mt-1 block w-full input-field"/></div>
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('companyLabel')}</label><select value={userForm.companyId} onChange={(e) => setUserForm({...userForm, companyId: e.target.value})} className="mt-1 block w-full input-field"><option value="">{t('noCompany')}</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-                        <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormRoleLabel')}</label><select value={userForm.role} onChange={(e) => setUserForm({...userForm, role: e.target.value as Role})} className="mt-1 block w-full input-field"><option value="user">User</option><option value="admin">Admin</option></select></div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormRoleLabel')}</label>
+                            <select value={userForm.role} onChange={(e) => setUserForm({...userForm, role: e.target.value as Role})} className="mt-1 block w-full input-field">
+                                <option value="viewer">Viewer</option>
+                                <option value="editor">Editor</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
                         <div className="flex justify-end pt-4 space-x-2"><button onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('cancelButton')}</button><button onClick={handleUserFormSubmit} className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">{t('saveButton')}</button></div>
                     </div>
                 </Modal>

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
-import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification } from '../types';
+import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification, Role } from '../types';
 import { TranslationKey } from '../translations';
 import Header from './Header';
 import FileUpload from './FileUpload';
@@ -47,7 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isUploadDisabled = (user.role !== 'admin' && !user.companyId) || (user.role === 'admin' && !selectedCompanyFilter);
+  const isUploadDisabled = user.role === 'viewer' || (user.role !== 'admin' && !user.companyId) || (user.role === 'admin' && !selectedCompanyFilter);
 
   const handleFileUpload = async (file: File) => {
     const uploadId = crypto.randomUUID();
@@ -330,9 +330,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
         {isLoadingBoletos ? <div className="flex justify-center items-center h-64"><Spinner /></div> : (
           <div className="flex flex-col md:flex-row -mx-2">
-            <KanbanColumn title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
-            <KanbanColumn title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
-            <KanbanColumn title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+            <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+            <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+            <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
           </div>
         )}
         {dbError && <p className="text-red-500 text-center mt-4">{dbError}</p>}
@@ -344,7 +344,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         disabled={isUploadDisabled}
       />
 
-      {selectedBoletoIds.length > 0 && (
+      {selectedBoletoIds.length > 0 && user.role !== 'viewer' && (
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl p-4 z-30 mb-20 md:mb-0">
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 animate-fade-in-up">
                 <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm sm:text-base">{t('itemsSelected', { count: selectedBoletoIds.length.toString() })}</p>

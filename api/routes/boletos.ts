@@ -1,4 +1,5 @@
 
+
 import express from 'express';
 import {
   getBoletos,
@@ -8,15 +9,15 @@ import {
   updateBoletoComments,
   deleteBoleto,
 } from '../controllers/boletoController';
-import { protect } from '../middleware/auth';
+import { protect, editor } from '../middleware/auth';
 import multer from 'multer';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.route('/').get(protect, getBoletos).post(protect, upload.single('file'), createBoleto);
-router.route('/:id/status').put(protect, updateBoletoStatus);
-router.route('/:id/comments').put(protect, updateBoletoComments);
-router.route('/:id').get(protect, getBoletoById).delete(protect, deleteBoleto);
+router.route('/').get(protect, getBoletos).post(protect, editor, upload.single('file'), createBoleto);
+router.route('/:id/status').put(protect, editor, updateBoletoStatus);
+router.route('/:id/comments').put(protect, editor, updateBoletoComments);
+router.route('/:id').get(protect, getBoletoById).delete(protect, editor, deleteBoleto);
 
 export default router;

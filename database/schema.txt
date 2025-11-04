@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the user',
   `username` VARCHAR(255) NOT NULL COMMENT 'User''s email address, used for login',
   `password` VARCHAR(255) NOT NULL COMMENT 'Hashed password for security',
-  `role` ENUM('user', 'admin') NOT NULL DEFAULT 'user' COMMENT 'User role for authorization',
+  `role` ENUM('viewer', 'editor', 'admin') NOT NULL DEFAULT 'viewer' COMMENT 'User role for authorization',
   `company_id` VARCHAR(36) DEFAULT NULL COMMENT 'Foreign key linking to the company',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

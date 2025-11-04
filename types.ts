@@ -30,7 +30,7 @@ export interface Boleto {
   comments: string | null;
 }
 
-export type Role = 'user' | 'admin';
+export type Role = 'viewer' | 'editor' | 'admin';
 
 export interface User {
   id: string;

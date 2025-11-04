@@ -3,7 +3,7 @@
 
 
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { Boleto, BoletoStatus } from '../types';
+import { Boleto, BoletoStatus, Role } from '../types';
 import BoletoCard from './BoletoCard';
 
 interface KanbanColumnProps {
@@ -16,9 +16,10 @@ interface KanbanColumnProps {
   selectedBoletoIds: string[];
   onToggleSelection: (id: string) => void;
   onToggleSelectAll: (boletos: Boleto[]) => void;
+  userRole: Role;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll, userRole }) => {
     const columnBoletoIds = useMemo(() => boletos.map(b => b.id), [boletos]);
     const selectedInColumn = useMemo(() => columnBoletoIds.filter(id => selectedBoletoIds.includes(id)), [columnBoletoIds, selectedBoletoIds]);
     const [isOver, setIsOver] = useState(false);
@@ -71,7 +72,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
       <div className={`bg-gray-100/80 dark:bg-gray-800/80 rounded-xl shadow-inner h-full flex flex-col transition-colors duration-300 ${isOver ? 'bg-blue-100 dark:bg-blue-900/50' : ''}`}>
         <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300 p-4 border-b border-gray-200 dark:border-gray-700 sticky top-16 bg-gray-100/80 dark:bg-gray-800/80 rounded-t-xl backdrop-blur-sm flex items-center justify-between">
           <span>{title} ({boletos.length})</span>
-          {boletos.length > 0 && (
+          {boletos.length > 0 && userRole !== 'viewer' && (
             <input
                 ref={checkboxRef}
                 type="checkbox"
@@ -93,6 +94,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
                 onUpdateComments={onUpdateComments}
                 isSelected={selectedBoletoIds.includes(boleto.id)}
                 onToggleSelection={onToggleSelection}
+                userRole={userRole}
               />
             ))
           ) : (

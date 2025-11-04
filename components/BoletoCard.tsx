@@ -1,6 +1,7 @@
 
+
 import React, { useState } from 'react';
-import { Boleto, BoletoStatus } from '../types';
+import { Boleto, BoletoStatus, Role } from '../types';
 import { HashtagIcon, CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -11,9 +12,10 @@ interface BoletoCardProps {
   onUpdateComments: (id: string, comments: string) => void;
   isSelected: boolean;
   onToggleSelection: (id: string) => void;
+  userRole: Role;
 }
 
-const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection }) => {
+const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, userRole }) => {
   const { t, language } = useLanguage();
   const { id, recipient, drawee, documentDate, dueDate, amount, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
   const [pixCopied, setPixCopied] = useState(false);
@@ -123,6 +125,26 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         onUpdateStatus(id, newStatus);
     };
 
+    if (userRole === 'viewer') {
+        let statusText = '';
+        let statusColor = 'text-gray-500 dark:text-gray-400';
+        switch (status) {
+            case BoletoStatus.TO_PAY:
+                statusText = t('kanbanTitleToDo');
+                statusColor = 'text-red-500 dark:text-red-400';
+                break;
+            case BoletoStatus.VERIFYING:
+                statusText = t('kanbanTitleVerifying');
+                statusColor = 'text-yellow-500 dark:text-yellow-400';
+                break;
+            case BoletoStatus.PAID:
+                statusText = t('kanbanTitlePaid');
+                statusColor = 'text-green-500 dark:text-green-400';
+                break;
+        }
+        return <p className={`text-sm font-semibold text-center py-2 ${statusColor}`}>{statusText}</p>;
+    }
+
     switch (status) {
       case BoletoStatus.TO_PAY:
         return (
@@ -172,7 +194,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
 
   return (
     <div 
-      draggable
+      draggable={userRole !== 'viewer'}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       className={`bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-lg p-4 border transition-all duration-200 hover:shadow-xl hover:-translate-y-1
@@ -187,22 +209,26 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={fileName}>{fileName}</p>
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(id);
-            }} 
-            className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-          >
-            <TrashIcon className="w-5 h-5" />
-          </button>
-          <input
-            type="checkbox"
-            className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-offset-gray-800 cursor-pointer"
-            checked={isSelected}
-            onClick={(e) => e.stopPropagation()}
-            onChange={() => onToggleSelection(id)}
-          />
+          {userRole !== 'viewer' && (
+            <>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(id);
+                }} 
+                className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              >
+                <TrashIcon className="w-5 h-5" />
+              </button>
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-offset-gray-800 cursor-pointer"
+                checked={isSelected}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => onToggleSelection(id)}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -236,15 +262,17 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             <div className="flex-1">
                 {getAction()}
             </div>
-            <button
-                title={t('addComment')}
-                onClick={toggleCommentSection}
-                className={`flex-shrink-0 flex items-center justify-center p-3 rounded-md transition-colors ${
-                    comments ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900' : 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600/50 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-            >
-                <ChatBubbleIcon className="w-5 h-5" />
-            </button>
+            {userRole !== 'viewer' && (
+              <button
+                  title={t('addComment')}
+                  onClick={toggleCommentSection}
+                  className={`flex-shrink-0 flex items-center justify-center p-3 rounded-md transition-colors ${
+                      comments ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900' : 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600/50 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+              >
+                  <ChatBubbleIcon className="w-5 h-5" />
+              </button>
+            )}
         </div>
         <div className="flex items-center justify-center space-x-6">
              <button
