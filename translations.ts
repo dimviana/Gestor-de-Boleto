@@ -190,21 +190,20 @@ const pt = {
     paymentCodes: 'Códigos de Pagamento',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
-        Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos.
-        O texto OCR é a fonte primária, mas a imagem deve ser usada para verificar e corrigir erros.
-        Retorne um objeto JSON com as seguintes informações. Se algo não for encontrado, retorne null.
-        Datas devem estar no formato AAAA-MM-DD. O valor deve ser um número.
+        Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos. A imagem ajuda a entender o layout e a corrigir erros do OCR.
+        Retorne um objeto JSON com as seguintes informações. Se um campo não for encontrado, retorne null para ele.
+        Datas devem estar no formato AAAA-MM-DD. Valores monetários devem ser números.
 
-        - recipient: O nome do beneficiário/cedente.
+        - recipient: O nome completo do beneficiário/cedente, mesmo que o nome seja longo, tenha barras ou ocupe várias linhas.
         - drawee: O nome do sacado.
         - documentDate: A "Data do Documento".
-        - dueDate: A data de vencimento.
-        - amount: O valor final a ser pago. Priorize o campo "(=) Valor Cobrado" ou "Total a Pagar". Se ausente, use "(=) Valor do Documento". O valor NUNCA deve ser zero se houver um valor de documento preenchido.
-        - discount: O valor de qualquer desconto ("(-) Desconto / Abatimento").
-        - interestAndFines: A soma de quaisquer juros e multas ("(+) Juros / Multa" ou "Outros Acréscimos").
-        - barcode: A linha digitável completa, sem pontos ou espaços.
-        - guideNumber: O "Número do Documento".
-        - pixQrCodeText: O conteúdo completo (copia e cola) do QR Code PIX.
+        - dueDate: A data de vencimento ("Vencimento").
+        - amount: O valor final a ser pago. **Priorize sempre** o campo "(=) Valor Cobrado". Se este não existir, use "(=) Valor do Documento". O valor NUNCA deve ser zero se houver um valor de documento preenchido.
+        - discount: O valor total de descontos, somando campos como "(-) Desconto / Abatimento" e "(-) Outras Deduções".
+        - interestAndFines: O valor total de acréscimos, somando campos como "(+) Juros / Multa" e "(+) Outros Acréscimos".
+        - barcode: A linha digitável completa, contendo apenas números (remova todos os pontos e espaços).
+        - guideNumber: O número do documento. **Priorize** o campo "Nº Documento/Guia". Se não houver, use "Nosso Número".
+        - pixQrCodeText: O conteúdo completo do QR Code PIX (Copia e Cola).
     `,
 };
 
@@ -396,20 +395,19 @@ const en: typeof pt = {
     paymentCodes: 'Payment Codes',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
-        Your task is to analyze the provided OCR-EXTRACTED TEXT and the IMAGE.
-        The OCR text is the primary source, but the image should be used to verify and correct errors.
-        Return a JSON object with the following information. If something is not found, return null.
-        Dates must be in YYYY-MM-DD format. The amount must be a number.
+        Your task is to analyze the provided OCR-EXTRACTED TEXT and the IMAGE. The image helps understand the layout and correct OCR errors.
+        Return a JSON object with the following information. If a field is not found, return null for it.
+        Dates must be in YYYY-MM-DD format. Monetary values must be numbers.
 
-        - recipient: The name of the beneficiary/payee.
+        - recipient: The full name of the beneficiary/payee, even if the name is long, contains slashes, or spans multiple lines.
         - drawee: The name of the drawee (Sacado).
         - documentDate: The "Data do Documento" (Document Date).
-        - dueDate: The due date.
-        - amount: The final amount to be paid. Prioritize the field "(=) Valor Cobrado" or "Total a Pagar". If absent, use "(=) Valor do Documento". The value should NEVER be zero if a document value is present.
-        - discount: The value of any discount ("(-) Desconto / Abatimento").
-        - interestAndFines: The sum of any interest and fines ("(+) Juros / Multa" or "Outros Acréscimos").
-        - barcode: The complete digitable line, without dots or spaces.
-        - guideNumber: The "Número do Documento" (Document Number).
+        - dueDate: The due date ("Vencimento").
+        - amount: The final amount to be paid. **Always prioritize** the "(=) Valor Cobrado" field. If it does not exist, use "(=) Valor do Documento". The value should NEVER be zero if a document value is present.
+        - discount: The total discount amount, summing fields like "(-) Desconto / Abatimento" and "(-) Outras Deduções".
+        - interestAndFines: The total amount of additions, summing fields like "(+) Juros / Multa" and "(+) Outros Acréscimos".
+        - barcode: The complete digitable line, containing only numbers (remove all dots and spaces).
+        - guideNumber: The document number. **Prioritize** the "Nº Documento/Guia" field. If not present, use "Nosso Número".
         - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code.
     `,
 };

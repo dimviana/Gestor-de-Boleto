@@ -1,6 +1,7 @@
 
 
 
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
@@ -94,15 +95,15 @@ export const extractBoletoInfo = async (
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        recipient: { type: Type.STRING, description: 'The name of the beneficiary or company to be paid (Beneficiário/Cedente).' },
+                        recipient: { type: Type.STRING, description: 'The full name of the beneficiary or company to be paid (Beneficiário/Cedente), even if it spans multiple lines.' },
                         drawee: { type: Type.STRING, description: 'The name of the drawee (Sacado). Should be null if not found.' },
                         documentDate: { type: Type.STRING, description: 'The document creation date (Data do Documento) in YYYY-MM-DD format. Should be null if not found.' },
                         dueDate: { type: Type.STRING, description: 'The due date (Vencimento) in YYYY-MM-DD format.' },
-                        amount: { type: Type.NUMBER, description: "The final payment amount. Prioritize 'Valor Cobrado'. If absent, use 'Valor do Documento'. It should not be zero if a document value is present." },
-                        discount: { type: Type.NUMBER, description: 'The discount amount (Desconto / Abatimento). Should be null if not found.' },
-                        interestAndFines: { type: Type.NUMBER, description: 'The interest and fines amount (Juros / Multa). Should be null if not found.' },
-                        barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável).' },
-                        guideNumber: { type: Type.STRING, description: 'The document number (número do documento) of the boleto. Should be null if not found.' },
+                        amount: { type: Type.NUMBER, description: "The final payment amount. ALWAYS prioritize 'Valor Cobrado'. If absent, use 'Valor do Documento'. It should not be zero if a document value is present." },
+                        discount: { type: Type.NUMBER, description: 'The total discount amount, combining fields like "Desconto / Abatimento" or "Outras Deduções". Should be null if not found.' },
+                        interestAndFines: { type: Type.NUMBER, description: 'The total amount of interest and fines, combining fields like "Juros / Multa" or "Outros Acréscimos". Should be null if not found.' },
+                        barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável), with all spaces, dots, or other formatting removed. It should contain only numbers.' },
+                        guideNumber: { type: Type.STRING, description: 'The document number of the boleto. Prioritize the field labeled "Nº Documento/Guia". If absent, look for "Nosso Número". Should be null if not found.' },
                         pixQrCodeText: { type: Type.STRING, description: 'The full text content of the PIX QR Code (Copia e Cola). Should be null if not found.' },
                     },
                     required: ["recipient", "dueDate", "amount", "barcode"],
