@@ -1,5 +1,5 @@
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import type { Request, Response, NextFunction } from 'express';
+import type { Request as ExpressRequest, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // Import 'multer' to make Express.Multer.File type augmentation available.
@@ -9,7 +9,8 @@ import { appConfig } from '../services/configService';
 // By extending express.Request, AuthRequest inherits standard properties
 // like `headers`, `body`, `file`, etc., resolving type errors in controllers.
 // The `multer` import augments the base `Request` type to include `file`.
-export interface AuthRequest extends Request {
+// FIX: Changed `Request` to `ExpressRequest` to avoid conflict with lib.dom.d.ts's Request type.
+export interface AuthRequest extends ExpressRequest {
   user?: User;
 }
 

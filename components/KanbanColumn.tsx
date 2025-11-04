@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
 import BoletoCard from './BoletoCard';
@@ -16,10 +13,11 @@ interface KanbanColumnProps {
   selectedBoletoIds: string[];
   onToggleSelection: (id: string) => void;
   onToggleSelectAll: (boletos: Boleto[]) => void;
+  onViewPdf: (boleto: Boleto) => void;
   userRole: Role;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll, userRole }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll, onViewPdf, userRole }) => {
     const columnBoletoIds = useMemo(() => boletos.map(b => b.id), [boletos]);
     const selectedInColumn = useMemo(() => columnBoletoIds.filter(id => selectedBoletoIds.includes(id)), [columnBoletoIds, selectedBoletoIds]);
     const [isOver, setIsOver] = useState(false);
@@ -94,6 +92,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
                 onUpdateComments={onUpdateComments}
                 isSelected={selectedBoletoIds.includes(boleto.id)}
                 onToggleSelection={onToggleSelection}
+                onViewPdf={onViewPdf}
                 userRole={userRole}
               />
             ))

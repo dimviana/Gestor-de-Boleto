@@ -11,10 +11,11 @@ interface BoletoCardProps {
   onUpdateComments: (id: string, comments: string) => void;
   isSelected: boolean;
   onToggleSelection: (id: string) => void;
+  onViewPdf: (boleto: Boleto) => void;
   userRole: Role;
 }
 
-const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, userRole }) => {
+const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewPdf, userRole }) => {
   const { t, language } = useLanguage();
   const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
   const [pixCopied, setPixCopied] = useState(false);
@@ -41,20 +42,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         style: 'currency', 
         currency: 'BRL'
     });
-  };
-
-  const handleOpenPdf = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!fileData) return;
-    const byteCharacters = atob(fileData);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'application/pdf' });
-    const fileURL = URL.createObjectURL(blob);
-    window.open(fileURL, '_blank');
   };
 
   const handleDownloadPdf = (e: React.MouseEvent) => {
@@ -339,7 +326,10 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         </div>
         <div className="flex items-center justify-center space-x-6">
              <button
-                onClick={handleOpenPdf}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onViewPdf(boleto);
+                }}
                 disabled={!fileData}
                 className="flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             >
