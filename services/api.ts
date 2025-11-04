@@ -86,12 +86,12 @@ export const fetchBoletos = (): Promise<Boleto[]> => apiFetch('/boletos');
 
 export const fetchBoletoById = (id: string): Promise<Boleto> => apiFetch(`/boletos/${id}`);
 
-export const createBoleto = (
+export const extractBoletoData = (
     file: File, 
     companyId: string, 
     method: ProcessingMethod,
     onProgress: (progress: number) => void
-): Promise<Boleto> => {
+): Promise<Omit<Boleto, 'id' | 'status' | 'comments' | 'companyId'>> => {
     return new Promise((resolve, reject) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -99,7 +99,7 @@ export const createBoleto = (
         formData.append('method', method);
 
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${API_BASE_URL}/boletos`);
+        xhr.open('POST', `${API_BASE_URL}/boletos/extract`);
 
         const token = getAuthToken();
         if (token) {
@@ -108,12 +108,13 @@ export const createBoleto = (
 
         xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
-                const percentComplete = (event.loaded / event.total) * 100;
+                const percentComplete = (event.loaded / event.total) * 90; // 90% for upload, 10% for processing
                 onProgress(percentComplete);
             }
         };
 
         xhr.onload = () => {
+            onProgress(100); // Set to 100 on completion
             if (xhr.status >= 200 && xhr.status < 300) {
                 try {
                     const responseJson = JSON.parse(xhr.responseText);
@@ -138,6 +139,13 @@ export const createBoleto = (
         };
 
         xhr.send(formData);
+    });
+};
+
+export const saveBoleto = (boletoData: Omit<Boleto, 'id' | 'status' | 'comments' | 'companyId' >, companyId: string): Promise<Boleto> => {
+    return apiFetch('/boletos/save', {
+        method: 'POST',
+        body: JSON.stringify({ boletoData, companyId }),
     });
 };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Boleto, BoletoStatus, User, ProcessingMethod } from '../types';
+import { Boleto, BoletoStatus, User } from '../types';
 import * as api from '../services/api';
 
 export const useBoletos = (user: User | null) => {
@@ -7,7 +7,7 @@ export const useBoletos = (user: User | null) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAndSetBoletos = useCallback(async () => {
+  const fetchBoletos = useCallback(async () => {
     if (!user) {
       setBoletos([]);
       setIsLoading(false);
@@ -27,19 +27,8 @@ export const useBoletos = (user: User | null) => {
   }, [user]);
 
   useEffect(() => {
-    fetchAndSetBoletos();
-  }, [fetchAndSetBoletos]);
-
-  const addBoleto = useCallback(async (
-    user: User, 
-    file: File, 
-    companyId: string, 
-    method: ProcessingMethod,
-    onProgress: (progress: number) => void
-  ) => {
-    await api.createBoleto(file, companyId, method, onProgress);
-    await fetchAndSetBoletos(); // Refresh data from the database
-  }, [fetchAndSetBoletos]);
+    fetchBoletos();
+  }, [fetchBoletos]);
 
   const updateBoletoStatus = useCallback(async (user: User, id: string, status: BoletoStatus) => {
     const updatedBoleto = await api.updateBoletoStatus(id, status);
@@ -62,5 +51,5 @@ export const useBoletos = (user: User | null) => {
     setBoletos(prev => prev.filter(b => b.id !== id));
   }, []);
 
-  return { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading, error };
+  return { boletos, fetchBoletos, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading, error };
 };

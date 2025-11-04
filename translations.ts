@@ -1,5 +1,4 @@
 
-
 export type Language = 'pt' | 'en';
 
 const pt = {
@@ -24,7 +23,7 @@ const pt = {
     uploadCTA: 'Clique para enviar',
     uploadOrDrag: 'ou arraste e solte',
     uploadHint: 'Apenas arquivos PDF',
-    uploadSuccess: 'Boleto adicionado com sucesso!',
+    uploadSuccess: 'Boleto salvo com sucesso!',
     uploadStatusTitle: 'Status do Upload',
     clearList: 'Limpar Lista',
     kanbanTitleToDo: 'Pagar',
@@ -188,22 +187,26 @@ const pt = {
     detailedValues: 'Valores Detalhados',
     documentInfo: 'Informações do Documento',
     paymentCodes: 'Códigos de Pagamento',
+    confirmExtractionTitle: 'Confirmar Dados Extraídos',
+    confirmExtractionMessage: 'Por favor, verifique os dados extraídos pela IA antes de salvar o boleto. Edições poderão ser feitas no card após a confirmação.',
+    fileNameLabel: 'Nome do Arquivo',
+    confirmAndSaveButton: 'Confirmar e Salvar',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
         Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos. A imagem ajuda a entender o layout e a corrigir erros do OCR.
         Retorne um objeto JSON com as seguintes informações. Se um campo não for encontrado, retorne null para ele.
         Datas devem estar no formato AAAA-MM-DD. Valores monetários devem ser números.
 
-        - recipient: O nome completo do beneficiário/cedente, mesmo que o nome seja longo, tenha barras ou ocupe várias linhas.
-        - drawee: O nome do sacado.
+        - recipient: O nome completo do beneficiário/cedente. Capture o nome inteiro, mesmo que seja longo, contenha barras, ou ocupe várias linhas.
+        - drawee: O nome do sacado/pagador.
         - documentDate: A "Data do Documento".
-        - dueDate: A data de vencimento ("Vencimento").
+        - dueDate: A data de vencimento ("Vencimento"). Se houver múltiplas datas de vencimento com valores diferentes, use a data principal.
         - amount: O valor final a ser pago. **Priorize sempre** o campo "(=) Valor Cobrado". Se este não existir, use "(=) Valor do Documento". O valor NUNCA deve ser zero se houver um valor de documento preenchido.
-        - discount: O valor total de descontos, somando campos como "(-) Desconto / Abatimento" e "(-) Outras Deduções".
-        - interestAndFines: O valor total de acréscimos, somando campos como "(+) Juros / Multa" e "(+) Outros Acréscimos".
-        - barcode: A linha digitável completa, contendo apenas números (remova todos os pontos e espaços).
-        - guideNumber: O número do documento. **Priorize** o campo "Nº Documento/Guia". Se não houver, use "Nosso Número".
-        - pixQrCodeText: O conteúdo completo do QR Code PIX (Copia e Cola).
+        - discount: O valor total de descontos, somando campos como "(-) Desconto / Abatimento" e "(-) Outras Deduções". Se não houver, deve ser null.
+        - interestAndFines: O valor total de acréscimos, somando campos como "(+) Juros / Multa" e "(+) Outros Acréscimos". Se não houver, deve ser null.
+        - barcode: A linha digitável completa. Remova todos os pontos, espaços e outros caracteres, retornando apenas os números. O resultado deve ter 47 ou 48 dígitos.
+        - guideNumber: O número do documento. **Dê prioridade máxima** ao campo rotulado como "Nº Documento" ou "Nº do Documento". Se este não existir, procure por "Nosso Número".
+        - pixQrCodeText: O conteúdo completo do QR Code PIX (Copia e Cola). Se não houver, deve ser null.
     `,
 };
 
@@ -229,7 +232,7 @@ const en: typeof pt = {
     uploadCTA: 'Click to upload',
     uploadOrDrag: 'or drag and drop',
     uploadHint: 'PDF files only',
-    uploadSuccess: 'Boleto added successfully!',
+    uploadSuccess: 'Boleto saved successfully!',
     uploadStatusTitle: 'Upload Status',
     clearList: 'Clear List',
     kanbanTitleToDo: 'To Pay',
@@ -393,22 +396,26 @@ const en: typeof pt = {
     detailedValues: 'Detailed Values',
     documentInfo: 'Document Information',
     paymentCodes: 'Payment Codes',
+    confirmExtractionTitle: 'Confirm Extracted Data',
+    confirmExtractionMessage: 'Please verify the data extracted by the AI before saving the boleto. Edits can be made on the card after confirmation.',
+    fileNameLabel: 'File Name',
+    confirmAndSaveButton: 'Confirm and Save',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
         Your task is to analyze the provided OCR-EXTRACTED TEXT and the IMAGE. The image helps understand the layout and correct OCR errors.
         Return a JSON object with the following information. If a field is not found, return null for it.
         Dates must be in YYYY-MM-DD format. Monetary values must be numbers.
 
-        - recipient: The full name of the beneficiary/payee, even if the name is long, contains slashes, or spans multiple lines.
-        - drawee: The name of the drawee (Sacado).
+        - recipient: The full name of the beneficiary/payee. Capture the entire name, even if it is long, contains slashes, or spans multiple lines.
+        - drawee: The name of the drawee/payer (Sacado/Pagador).
         - documentDate: The "Data do Documento" (Document Date).
-        - dueDate: The due date ("Vencimento").
+        - dueDate: The due date ("Vencimento"). If there are multiple due dates with different values, use the primary one.
         - amount: The final amount to be paid. **Always prioritize** the "(=) Valor Cobrado" field. If it does not exist, use "(=) Valor do Documento". The value should NEVER be zero if a document value is present.
-        - discount: The total discount amount, summing fields like "(-) Desconto / Abatimento" and "(-) Outras Deduções".
-        - interestAndFines: The total amount of additions, summing fields like "(+) Juros / Multa" and "(+) Outros Acréscimos".
-        - barcode: The complete digitable line, containing only numbers (remove all dots and spaces).
-        - guideNumber: The document number. **Prioritize** the "Nº Documento/Guia" field. If not present, use "Nosso Número".
-        - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code.
+        - discount: The total discount amount, summing fields like "(-) Desconto / Abatimento" and "(-) Outras Deduções". If none, it must be null.
+        - interestAndFines: The total amount of additions, summing fields like "(+) Juros / Multa" and "(+) Outros Acréscimos". If none, it must be null.
+        - barcode: The complete digitable line. Remove all dots, spaces, and other characters, returning only the numbers. The result must have 47 or 48 digits.
+        - guideNumber: The document number. **Give maximum priority** to the field labeled "Nº Documento" or "Nº do Documento". If this does not exist, look for "Nosso Número".
+        - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code. If none, it must be null.
     `,
 };
 

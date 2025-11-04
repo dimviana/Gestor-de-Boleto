@@ -21,6 +21,7 @@ import UploadProgress, { UploadStatus } from './UploadProgress';
 import FloatingMenu from './FloatingMenu';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
 import PdfViewerModal from './PdfViewerModal';
+import BoletoConfirmationModal from './BoletoConfirmationModal';
 
 
 interface DashboardProps {
@@ -31,7 +32,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs }) => {
-  const { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos(user);
+  const { boletos, fetchBoletos, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos(user);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const { t } = useLanguage();
@@ -41,6 +42,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingPdfBoleto, setViewingPdfBoleto] = useState<Boleto | null>(null);
+  const [boletoForConfirmation, setBoletoForConfirmation] = useState<Omit<Boleto, 'companyId' | 'id' | 'status' | 'comments'> | null>(null);
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
@@ -50,8 +52,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
   const handleFileUpload = async (file: File) => {
     const uploadId = crypto.randomUUID();
-    // Prepend to show the latest upload at the top, initializing progress
-    setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: 'Enviando...', progress: 0 }, ...prev]);
+    setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: 'Enviando e extraindo...', progress: 0 }, ...prev]);
 
     const onProgress = (progress: number) => {
         setUploadStatuses(prev => prev.map(up =>
@@ -61,7 +62,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         ));
     };
 
-
     try {
       const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
 
@@ -70,13 +70,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         throw new Error(errorKey);
       }
 
-      await addBoleto(user, file, targetCompanyId, method, onProgress);
+      const extractedData = await api.extractBoletoData(file, targetCompanyId, method, onProgress);
 
       setUploadStatuses(prev => prev.map(up => 
             up.id === uploadId 
-            ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } 
+            ? { ...up, status: 'success', message: 'Extração concluída. Aguardando confirmação.', progress: 100 } 
             : up
       ));
+      
+      setBoletoForConfirmation(extractedData);
 
     } catch (error: any) {
       console.error("Upload failed:", error);
@@ -84,14 +86,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
       const messageFromServer = error.message || 'genericErrorText';
       let errorMessage = '';
 
-      // Handle special case for duplicate barcode which includes the identifier
       if (messageFromServer.startsWith('Duplicate barcode:')) {
           const substitutions = { identifier: messageFromServer.split(': ')[1] || 'N/A' };
           errorMessage = t('duplicateBarcodeErrorText', substitutions);
       } else {
-          // For all other errors, the message IS the translation key.
-          // The `t` function will handle it if it's a valid key.
-          // If not a valid key (e.g., unexpected server error string), it will just display the string itself, which is a decent fallback.
           const isKnownKey = Object.keys(translations.pt).includes(messageFromServer);
           errorMessage = t(isKnownKey ? messageFromServer as TranslationKey : 'genericErrorText');
       }
@@ -102,6 +100,54 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
             : up
       ));
     }
+  };
+  
+  const handleConfirmBoleto = async () => {
+    if (!boletoForConfirmation) return;
+
+    const uploadId = crypto.randomUUID();
+    setUploadStatuses(prev => [{ id: uploadId, fileName: boletoForConfirmation.fileName, status: 'processing', message: 'Salvando no banco de dados...', progress: 100 }, ...prev]);
+    
+    try {
+        const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
+        if (!targetCompanyId) {
+            throw new Error(user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText');
+        }
+
+        await api.saveBoleto(boletoForConfirmation, targetCompanyId);
+
+        setUploadStatuses(prev => prev.map(up => 
+            up.id === uploadId 
+            ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } 
+            : up
+        ));
+        
+        await fetchBoletos();
+        setBoletoForConfirmation(null);
+
+    } catch(error: any) {
+        console.error("Save failed:", error);
+        const messageFromServer = error.message || 'genericErrorText';
+        let errorMessage = '';
+        if (messageFromServer.startsWith('Duplicate barcode:')) {
+            const substitutions = { identifier: messageFromServer.split(': ')[1] || 'N/A' };
+            errorMessage = t('duplicateBarcodeErrorText', substitutions);
+        } else {
+            const isKnownKey = Object.keys(translations.pt).includes(messageFromServer);
+            errorMessage = t(isKnownKey ? messageFromServer as TranslationKey : 'genericErrorText');
+        }
+
+        setUploadStatuses(prev => prev.map(up => 
+            up.id === uploadId 
+            ? { ...up, status: 'error', message: errorMessage, progress: 0 } 
+            : up
+        ));
+        setBoletoForConfirmation(null); // Close modal on error too
+    }
+  };
+
+  const handleCancelConfirmation = () => {
+      setBoletoForConfirmation(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -265,7 +311,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         onSearch={setSearchTerm}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        {/* Hidden file input, controlled by refs */}
         <input 
           id="file-upload-input" 
           type="file" 
@@ -275,7 +320,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
           ref={fileInputRef}
         />
         
-        {/* Desktop Upload UI */}
         <div className="hidden md:block mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">
           <FileUpload 
             onFileUpload={handleFileUpload} 
@@ -311,20 +355,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
            <FolderWatcher {...folderWatcher} />
         </div>
         
-        {/* Mobile Upload UI Progress */}
         <div className="md:hidden mb-4">
             <UploadProgress statuses={uploadStatuses} onClear={() => setUploadStatuses([])} />
         </div>
         
         <div className="flex flex-col">
-            {/* Summary Cards: Will be order 2 on mobile */}
             <div className="order-2 md:order-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 mt-8 md:mt-0">
                 <SummaryCard icon={<PaymentTerminalIcon className="w-6 h-6" />} title={t('totalToPay')} value={totalToDo} colorClass="text-red-500" />
                 <SummaryCard icon={<HourglassIcon className="w-6 h-6" />} title={t('totalVerifying')} value={totalVerifying} colorClass="text-yellow-500" />
                 <SummaryCard icon={<CheckCircleIcon className="w-6 h-6" />} title={t('totalPaid')} value={totalPaid} colorClass="text-green-500" />
             </div>
 
-            {/* Kanban Board: Will be order 1 on mobile */}
             {isLoadingBoletos ? <div className="order-1 md:order-2 flex justify-center items-center h-64"><Spinner /></div> : (
               <div className="order-1 md:order-2 flex flex-col md:flex-row -mx-2">
                 <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewPdf={setViewingPdfBoleto} />
@@ -373,6 +414,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
           boleto={viewingPdfBoleto}
           onClose={() => setViewingPdfBoleto(null)}
         />
+      )}
+
+      {boletoForConfirmation && (
+          <BoletoConfirmationModal
+            boleto={boletoForConfirmation}
+            onConfirm={handleConfirmBoleto}
+            onCancel={handleCancelConfirmation}
+          />
       )}
     </>
   );

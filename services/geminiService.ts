@@ -140,15 +140,15 @@ export const processBoletoPDF = async (
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        recipient: { type: Type.STRING, description: 'The full name of the beneficiary or company to be paid (Beneficiário/Cedente), even if it spans multiple lines.' },
-                        drawee: { type: Type.STRING, description: 'The name of the drawee (Sacado). Should be null if not found.' },
+                        recipient: { type: Type.STRING, description: 'The full name of the beneficiary/payee (Beneficiário/Cedente). Capture the entire name, even if it is long or spans multiple lines.' },
+                        drawee: { type: Type.STRING, description: 'The name of the drawee/payer (Sacado/Pagador). Should be null if not found.' },
                         documentDate: { type: Type.STRING, description: 'The document creation date (Data do Documento) in YYYY-MM-DD format. Should be null if not found.' },
-                        dueDate: { type: Type.STRING, description: 'The due date (Vencimento) in YYYY-MM-DD format.' },
-                        amount: { type: Type.NUMBER, description: "The final payment amount. ALWAYS prioritize 'Valor Cobrado'. If absent, use 'Valor do Documento'. It should not be zero if a document value is present." },
-                        discount: { type: Type.NUMBER, description: 'The total discount amount, combining fields like "Desconto / Abatimento" or "Outras Deduções". Should be null if not found.' },
-                        interestAndFines: { type: Type.NUMBER, description: 'The total amount of interest and fines, combining fields like "Juros / Multa" or "Outros Acréscimos". Should be null if not found.' },
-                        barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável), with all spaces, dots, or other formatting removed. It should contain only numbers.' },
-                        guideNumber: { type: Type.STRING, description: 'The document number of the boleto. Prioritize the field labeled "Nº Documento/Guia". If absent, look for "Nosso Número". Should be null if not found.' },
+                        dueDate: { type: Type.STRING, description: 'The main due date (Vencimento) in YYYY-MM-DD format.' },
+                        amount: { type: Type.NUMBER, description: "The final payment amount. ALWAYS prioritize the field labeled '(=) Valor Cobrado'. If it's absent, use '(=) Valor do Documento'. It must not be zero if a document value is present." },
+                        discount: { type: Type.NUMBER, description: 'The total discount amount, by summing fields like "(-) Desconto / Abatimento" or "(-) Outras Deduções". Should be null if not found or zero.' },
+                        interestAndFines: { type: Type.NUMBER, description: 'The total amount of interest and fines, by summing fields like "(+) Juros / Multa" or "(+) Outros Acréscimos". Should be null if not found or zero.' },
+                        barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável), with all spaces, dots, and other non-numeric formatting removed. It must contain only numbers and be 47 or 48 digits long.' },
+                        guideNumber: { type: Type.STRING, description: 'The document number. Give maximum priority to the field labeled "Nº Documento" or "Nº do Documento". If absent, look for "Nosso Número". Should be null if not found.' },
                         pixQrCodeText: { type: Type.STRING, description: 'The full text content of the PIX QR Code (Copia e Cola). Should be null if not found.' },
                     },
                     required: ["recipient", "dueDate", "amount", "barcode"],
@@ -156,7 +156,6 @@ export const processBoletoPDF = async (
             },
         });
         
-        // FIX: Access response text via the .text property
         const responseText = response.text;
         if (!responseText) {
             console.error("Gemini API returned an empty or invalid response object:", response);

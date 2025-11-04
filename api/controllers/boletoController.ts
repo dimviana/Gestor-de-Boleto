@@ -1,4 +1,4 @@
-// FIX: Use qualified express types to resolve conflicts with global DOM types.
+
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
@@ -63,36 +63,14 @@ export const getBoletoById = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const createBoleto = async (req: AuthRequest, res: Response) => {
-    const user = req.user!;
-    const { companyId: adminSelectedCompanyId, method } = req.body;
-
+export const extractBoleto = async (req: AuthRequest, res: Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
+    const { method } = req.body;
 
-    let targetCompanyId: string | null;
-    if (user.role === 'admin') {
-        if (!adminSelectedCompanyId) {
-            return res.status(400).json({ message: 'adminMustSelectCompanyErrorText' });
-        }
-        targetCompanyId = adminSelectedCompanyId;
-    } else {
-        if (!user.companyId) {
-            return res.status(400).json({ message: 'userHasNoCompanyErrorText' });
-        }
-        targetCompanyId = user.companyId;
-    }
-
-    if (!targetCompanyId) {
-        return res.status(500).json({ message: 'Internal Server Error: Target company ID was not determined.' });
-    }
-
-    const connection = await pool.getConnection();
     try {
-        await connection.beginTransaction();
-
-        const [settingsRows] = await connection.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = 'ai_settings'");
+        const [settingsRows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = 'ai_settings'");
         const aiSettings = settingsRows.length > 0 ? JSON.parse(settingsRows[0].setting_value) : {};
         
         let extractedData;
@@ -103,30 +81,60 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
         }
 
         if (extractedData.amount === null || extractedData.amount === undefined) {
-            await connection.rollback();
-            return res.status(400).json({ message: 'amountNotFoundErrorText' });
+             return res.status(400).json({ message: 'amountNotFoundErrorText' });
         }
-        
-        if (extractedData.barcode) {
-             const [existing] = await connection.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [extractedData.barcode, targetCompanyId]);
+
+        res.status(200).json({ ...extractedData, fileData: req.file.buffer.toString('base64') });
+
+    } catch (error: any) {
+        console.error("Error extracting boleto data:", error);
+        res.status(500).json({ message: error.message || 'Failed to process boleto' });
+    }
+};
+
+export const saveBoleto = async (req: AuthRequest, res: Response) => {
+    const user = req.user!;
+    const { boletoData, companyId } = req.body;
+
+    let targetCompanyId: string | null;
+    if (user.role === 'admin') {
+        if (!companyId) {
+            return res.status(400).json({ message: 'adminMustSelectCompanyErrorText' });
+        }
+        targetCompanyId = companyId;
+    } else {
+        if (!user.companyId) {
+            return res.status(400).json({ message: 'userHasNoCompanyErrorText' });
+        }
+        targetCompanyId = user.companyId;
+    }
+    
+    if (!targetCompanyId) {
+        return res.status(500).json({ message: 'Internal Server Error: Target company ID was not determined.' });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        if (boletoData.barcode) {
+             const [existing] = await connection.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [boletoData.barcode, targetCompanyId]);
              if (existing.length > 0) {
                  await connection.rollback();
-                 return res.status(409).json({ message: `Duplicate barcode: ${extractedData.guideNumber || extractedData.barcode}`});
+                 return res.status(409).json({ message: `Duplicate barcode: ${boletoData.guideNumber || boletoData.barcode}`});
              }
         }
 
         const newBoleto: Boleto = {
             id: uuidv4(),
-            ...extractedData,
+            ...boletoData,
             status: BoletoStatus.TO_PAY,
-            fileData: req.file.buffer.toString('base64'),
             comments: null,
             companyId: targetCompanyId,
         };
         
-        const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments, companyId } = newBoleto;
+        const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments } = newBoleto;
         
-        // Sanitize date fields to ensure 'null' strings are converted to actual null values for the database.
         const finalDocumentDate = documentDate === 'null' ? null : documentDate;
         const finalDueDate = dueDate === 'null' ? null : dueDate;
 
@@ -148,11 +156,10 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
 
         await connection.commit();
         res.status(201).json(newBoleto);
-
     } catch (error: any) {
         await connection.rollback();
-        console.error("Error creating boleto:", error);
-        res.status(500).json({ message: error.message || 'Failed to process boleto' });
+        console.error("Error saving boleto:", error);
+        res.status(500).json({ message: error.message || 'Failed to save boleto' });
     } finally {
         connection.release();
     }
