@@ -1,5 +1,5 @@
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // Import 'multer' to make Express.Multer.File type augmentation available.
@@ -10,11 +10,11 @@ import { appConfig } from '../services/configService';
 // like `headers`, `body`, `file`, etc., resolving type errors in controllers.
 // The `multer` import augments the base `Request` type to include `file`.
 // FIX: Changed Request to `express.Request` to avoid conflict with lib.dom.d.ts's Request type.
-export interface AuthRequest extends Request {
+export interface AuthRequest extends express.Request {
   user?: User;
 }
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const protect = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -40,7 +40,7 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const admin = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -48,7 +48,7 @@ export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     }
 };
 
-export const editor = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const editor = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {

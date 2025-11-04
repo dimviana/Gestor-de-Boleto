@@ -125,10 +125,14 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
         };
         
         const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments, companyId } = newBoleto;
+        
+        // Sanitize date fields to ensure 'null' strings are converted to actual null values for the database.
+        const finalDocumentDate = documentDate === 'null' ? null : documentDate;
+        const finalDueDate = dueDate === 'null' ? null : dueDate;
 
         await connection.query(
             'INSERT INTO boletos (id, user_id, company_id, recipient, drawee, document_date, due_date, amount, discount, interest_and_fines, barcode, guide_number, pix_qr_code_text, status, file_name, file_data, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [id, user.id, companyId, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments]
+            [id, user.id, companyId, recipient, drawee, finalDocumentDate, finalDueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments]
         );
 
         await connection.query(
