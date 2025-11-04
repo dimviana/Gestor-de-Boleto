@@ -1,6 +1,5 @@
-
 // FIX: Use explicit type imports from express to avoid conflict with global DOM types
-import express, { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../../types';
 // Import 'multer' to make Express.Multer.File type augmentation available.

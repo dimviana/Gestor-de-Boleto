@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { Boleto, BoletoStatus } from '../types';
 import BoletoCard from './BoletoCard';
@@ -15,10 +16,9 @@ interface KanbanColumnProps {
   selectedBoletoIds: string[];
   onToggleSelection: (id: string) => void;
   onToggleSelectAll: (boletos: Boleto[]) => void;
-  onViewDetails: (boletoId: string) => void;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll, onViewDetails }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll }) => {
     const columnBoletoIds = useMemo(() => boletos.map(b => b.id), [boletos]);
     const selectedInColumn = useMemo(() => columnBoletoIds.filter(id => selectedBoletoIds.includes(id)), [columnBoletoIds, selectedBoletoIds]);
     const [isOver, setIsOver] = useState(false);
@@ -93,7 +93,6 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
                 onUpdateComments={onUpdateComments}
                 isSelected={selectedBoletoIds.includes(boleto.id)}
                 onToggleSelection={onToggleSelection}
-                onViewDetails={onViewDetails}
               />
             ))
           ) : (

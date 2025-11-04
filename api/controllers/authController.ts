@@ -1,6 +1,5 @@
-
 // FIX: Use explicit type imports from express to avoid conflicts with global DOM types
-import express, { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';

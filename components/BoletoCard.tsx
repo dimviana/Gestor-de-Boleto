@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus } from '../types';
 import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon } from './icons/Icons';
@@ -10,10 +11,9 @@ interface BoletoCardProps {
   onUpdateComments: (id: string, comments: string) => void;
   isSelected: boolean;
   onToggleSelection: (id: string) => void;
-  onViewDetails: (boletoId: string) => void;
 }
 
-const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewDetails }) => {
+const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection }) => {
   const { t, language } = useLanguage();
   const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
   const [pixCopied, setPixCopied] = useState(false);
@@ -162,10 +162,9 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`bg-white dark:bg-gray-700 rounded-lg shadow-md dark:shadow-lg p-4 border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 animate-fade-in cursor-pointer
+      className={`bg-white dark:bg-gray-700 rounded-lg shadow-md dark:shadow-lg p-4 border transition-all duration-200 hover:shadow-xl hover:-translate-y-1
       ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-200 dark:border-gray-600'}
       ${isDragging ? 'opacity-50' : ''}`}
-      onClick={() => onViewDetails(id)}
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">

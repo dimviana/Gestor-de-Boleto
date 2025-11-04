@@ -53,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
           </div>
 
            <div className="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-end">
-                <div className="max-w-lg w-full lg:max-w-xs">
+                <div className="w-full max-w-[150px] sm:max-w-xs">
                     <label htmlFor="search" className="sr-only">{t('searchPlaceholder')}</label>
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

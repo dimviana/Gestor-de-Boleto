@@ -4,19 +4,13 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface FileUploadProps {
   onFileUpload: (file: File) => void;
+  onClick: () => void;
   disabled: boolean;
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, disabled }) => {
+const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, onClick, disabled }) => {
   const [isDragging, setIsDragging] = useState(false);
   const { t } = useLanguage();
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      onFileUpload(e.target.files[0]);
-      e.target.value = ''; // Reset input
-    }
-  };
   
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -54,10 +48,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, disabled }) => {
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
+        onClick={onClick}
     >
-      <label
-        htmlFor="dropzone-file"
-        className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700
+      <div
+        className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700
         ${isDragging ? 'border-blue-500' : 'border-gray-300 dark:border-gray-600'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
@@ -68,15 +62,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, disabled }) => {
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('uploadHint')}</p>
         </div>
-        <input 
-          id="dropzone-file" 
-          type="file" 
-          className="hidden" 
-          accept="application/pdf"
-          onChange={handleFileChange}
-          disabled={disabled}
-        />
-      </label>
+      </div>
     </div>
   );
 };

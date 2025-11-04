@@ -1,9 +1,7 @@
 
 
-
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
-// FIX: Moved TranslationKey import to the correct file 'translations.ts' from 'types.ts'.
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification } from '../types';
 import { TranslationKey } from '../translations';
 import Header from './Header';
@@ -19,10 +17,11 @@ import Documentation from './Documentation';
 import { HourglassIcon, CheckCircleIcon, TrashIcon, PaymentTerminalIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
-import { BoletoDetailsModal } from './BoletoDetailsModal';
 import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
 import UploadProgress, { UploadStatus } from './UploadProgress';
+import FloatingMenu from './FloatingMenu';
+import { useFolderWatcher } from '../hooks/useFolderWatcher';
 
 
 interface DashboardProps {
@@ -42,22 +41,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   
   const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
-  const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
-  const [isBoletoDetailsLoading, setIsBoletoDetailsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (user.role === 'admin') {
-      const loadCompanies = async () => {
-        const fetchedCompanies = await api.fetchCompanies();
-        setCompanies(fetchedCompanies);
-      };
-      loadCompanies();
-    }
-  }, [user.role]);
+  const isUploadDisabled = (user.role !== 'admin' && !user.companyId) || (user.role === 'admin' && !selectedCompanyFilter);
 
   const handleFileUpload = async (file: File) => {
     const uploadId = crypto.randomUUID();
@@ -76,11 +66,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
        }
 
       const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
-
-      // The backend will be the source of truth for these fields.
-      // We send only the core data extracted from the PDF.
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      // FIX: property 'companyId' does not exist on type 'Omit<Boleto, "companyId">'.
       const { id, status, comments, fileData, ...dataForApi } = processedBoletoData;
 
       await addBoleto(user, dataForApi, file, targetCompanyId);
@@ -123,6 +108,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
       ));
     }
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileUpload(e.target.files[0]);
+      e.target.value = ''; // Reset input
+    }
+  };
+
+  // FIX: Pass the 'handleFileUpload' function to the 'onFileUpload' prop of the hook.
+  const folderWatcher = useFolderWatcher({ onFileUpload: handleFileUpload, disabled: isUploadDisabled });
+
+  useEffect(() => {
+    if (user.role === 'admin') {
+      const loadCompanies = async () => {
+        const fetchedCompanies = await api.fetchCompanies();
+        setCompanies(fetchedCompanies);
+      };
+      loadCompanies();
+    }
+  }, [user.role]);
 
   const handleToggleBoletoSelection = useCallback((id: string) => {
     setSelectedBoletoIds(prevSelected =>
@@ -172,24 +177,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     deleteBoleto(user, id);
     setSelectedBoletoIds(prev => prev.filter(selectedId => selectedId !== id));
   };
-
-  const handleViewBoletoDetails = useCallback(async (boletoId: string) => {
-    setIsBoletoDetailsLoading(true);
-    // Find the basic boleto info from the list to show immediately
-    const placeholderBoleto = boletos.find(b => b.id === boletoId);
-    setViewingBoleto(placeholderBoleto || { id: boletoId } as Boleto);
-
-    try {
-        const fetchedBoleto = await api.fetchBoletoById(boletoId);
-        setViewingBoleto(fetchedBoleto); // Replace placeholder with full data
-    } catch (error) {
-        console.error("Failed to fetch boleto details:", error);
-        // Here you could show an error toast/notification
-        setViewingBoleto(null); // Close modal on error
-    } finally {
-        setIsBoletoDetailsLoading(false);
-    }
-  }, [boletos]);
 
   const filteredBoletos = useMemo(() => {
     let baseList: Boleto[] = [];
@@ -253,11 +240,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     return [...boletoNotifications];
   }, [boletoNotifications]);
   
-  const isUploadDisabled = (user.role !== 'admin' && !user.companyId) || (user.role === 'admin' && !selectedCompanyFilter);
 
   const formatCurrency = (value: number) => {
-    // Using Intl.NumberFormat for robust, locale-aware formatting.
-    // This is generally more reliable and explicit than toLocaleString.
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
@@ -287,9 +271,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         onSearch={setSearchTerm}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">
-          <FileUpload onFileUpload={handleFileUpload} disabled={isUploadDisabled} />
-           <UploadProgress statuses={uploadStatuses} onClear={() => setUploadStatuses([])} />
+        {/* Hidden file input, controlled by refs */}
+        <input 
+          id="file-upload-input" 
+          type="file" 
+          className="hidden" 
+          accept="application/pdf"
+          onChange={handleFileChange}
+          ref={fileInputRef}
+        />
+        
+        {/* Desktop Upload UI */}
+        <div className="hidden md:block mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">
+          <FileUpload 
+            onFileUpload={handleFileUpload} 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploadDisabled} 
+          />
+          <UploadProgress statuses={uploadStatuses} onClear={() => setUploadStatuses([])} />
           {user.role !== 'admin' && !user.companyId && (
               <div className="text-center p-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 text-sm rounded-lg">
                   {t('uploadDisabledNoCompany')}
@@ -315,7 +314,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
               </select>
             </div>
           )}
-           <FolderWatcher onFileUpload={handleFileUpload} disabled={isUploadDisabled} />
+           <FolderWatcher {...folderWatcher} />
+        </div>
+        
+        {/* Mobile Upload UI Progress */}
+        <div className="md:hidden mb-4">
+            <UploadProgress statuses={uploadStatuses} onClear={() => setUploadStatuses([])} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -326,25 +330,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
         {isLoadingBoletos ? <div className="flex justify-center items-center h-64"><Spinner /></div> : (
           <div className="flex flex-col md:flex-row -mx-2">
-            <KanbanColumn title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewDetails={handleViewBoletoDetails} />
-            <KanbanColumn title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewDetails={handleViewBoletoDetails} />
-            <KanbanColumn title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewDetails={handleViewBoletoDetails} />
+            <KanbanColumn title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+            <KanbanColumn title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+            <KanbanColumn title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
           </div>
         )}
         {dbError && <p className="text-red-500 text-center mt-4">{dbError}</p>}
       </main>
       
+      <FloatingMenu 
+        onFileUploadClick={() => fileInputRef.current?.click()}
+        onFolderWatchClick={folderWatcher.handleSelectFolder}
+        disabled={isUploadDisabled}
+      />
+
       {selectedBoletoIds.length > 0 && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl p-4 z-30">
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl p-4 z-30 mb-20 md:mb-0">
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 animate-fade-in-up">
-                <p className="font-semibold text-gray-700 dark:text-gray-200">{t('itemsSelected', { count: selectedBoletoIds.length.toString() })}</p>
-                <div className="flex items-center space-x-2">
-                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.TO_PAY)} className="px-3 py-2 text-sm font-medium text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/60">{t('moveTo', { status: t('kanbanTitleToDo')})}</button>
-                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.VERIFYING)} className="px-3 py-2 text-sm font-medium text-yellow-600 bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300 rounded-md hover:bg-yellow-200 dark:hover:bg-yellow-900/60">{t('moveTo', { status: t('kanbanTitleVerifying')})}</button>
-                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.PAID)} className="px-3 py-2 text-sm font-medium text-green-600 bg-green-100 dark:bg-green-900/40 dark:text-green-300 rounded-md hover:bg-green-200 dark:hover:bg-green-900/60">{t('moveTo', { status: t('kanbanTitlePaid')})}</button>
+                <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm sm:text-base">{t('itemsSelected', { count: selectedBoletoIds.length.toString() })}</p>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.TO_PAY)} className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/60">{t('moveTo', { status: t('kanbanTitleToDo')})}</button>
+                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.VERIFYING)} className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-yellow-600 bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300 rounded-md hover:bg-yellow-200 dark:hover:bg-yellow-900/60">{t('moveTo', { status: t('kanbanTitleVerifying')})}</button>
+                    <button onClick={() => handleBulkUpdateStatus(BoletoStatus.PAID)} className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-green-600 bg-green-100 dark:bg-green-900/40 dark:text-green-300 rounded-md hover:bg-green-200 dark:hover:bg-green-900/60">{t('moveTo', { status: t('kanbanTitlePaid')})}</button>
                     <button onClick={handleBulkDelete} className="p-2 text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/60" title={t('deleteSelected')}><TrashIcon className="w-5 h-5"/></button>
                 </div>
-                <button onClick={() => setSelectedBoletoIds([])} className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">{t('deselectAll')}</button>
+                <button onClick={() => setSelectedBoletoIds([])} className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">{t('deselectAll')}</button>
             </div>
         </div>
       )}
@@ -359,14 +369,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
               getLogs={getLogs} 
           />
       </Modal>
-      
-      {viewingBoleto && (
-        <BoletoDetailsModal 
-            boleto={viewingBoleto} 
-            isLoading={isBoletoDetailsLoading}
-            onClose={() => setViewingBoleto(null)} 
-        />
-      )}
     </>
   );
 };

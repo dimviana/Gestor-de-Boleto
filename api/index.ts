@@ -1,5 +1,3 @@
-
-
 // Use default import for express and named imports for types to avoid conflicts with global DOM types.
 // FIX: Use a single default import for express and qualify types to resolve conflicts with global DOM types.
 // Corrected import to bring in types directly

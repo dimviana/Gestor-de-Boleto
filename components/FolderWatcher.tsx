@@ -1,5 +1,6 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+
+import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { FolderOpenIcon } from './icons/Icons';
 import { TranslationKey } from '../translations';
@@ -22,79 +23,19 @@ declare global {
     }
 }
 
-
-interface FolderWatcherProps {
-  onFileUpload: (file: File) => void;
-  disabled: boolean;
-}
-
 const isApiSupported = 'showDirectoryPicker' in window;
 
-const FolderWatcher: React.FC<FolderWatcherProps> = ({ onFileUpload, disabled }) => {
+interface FolderWatcherProps {
+  directoryHandle: FileSystemDirectoryHandle | null;
+  error: string | null;
+  disabled: boolean;
+  handleSelectFolder: () => void;
+  stopWatching: () => void;
+}
+
+const FolderWatcher: React.FC<FolderWatcherProps> = ({ directoryHandle, error, disabled, handleSelectFolder, stopWatching }) => {
     const { t } = useLanguage();
-    const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const processedFiles = useRef<Set<string>>(new Set());
-    const intervalId = useRef<number | null>(null);
-
-    const stopWatching = useCallback(() => {
-        if (intervalId.current) {
-            clearInterval(intervalId.current);
-        }
-        intervalId.current = null;
-        setDirectoryHandle(null);
-        processedFiles.current.clear();
-    }, []);
-
-    const scanDirectory = useCallback(async (handle: FileSystemDirectoryHandle) => {
-        if (disabled) return;
-        try {
-            for await (const entry of handle.values()) {
-                if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
-                    if (!processedFiles.current.has(entry.name)) {
-                        processedFiles.current.add(entry.name);
-                        const file = await (entry as FileSystemFileHandle).getFile();
-                        onFileUpload(file);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Error scanning directory. Permission may have been revoked.", error);
-            // If permission is lost, stop watching.
-            stopWatching();
-        }
-    }, [onFileUpload, disabled, stopWatching]);
-
-    const handleSelectFolder = async () => {
-        setError(null);
-        try {
-            const handle = await window.showDirectoryPicker();
-            stopWatching(); // Stop any previous watcher
-            setDirectoryHandle(handle);
-            
-            // Perform initial scan
-            await scanDirectory(handle); 
-            
-            // Start polling
-            intervalId.current = window.setInterval(() => {
-                scanDirectory(handle);
-            }, 10000); // Poll every 10 seconds
-        } catch (err) {
-            if (err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) {
-                console.error("Directory Picker security error:", err);
-                setError('folderWatcherCrossOriginError');
-            } else if ((err as Error).name !== 'AbortError') { // User cancelled dialog
-                 console.error("Error selecting directory:", err);
-                 setError('genericErrorText');
-            }
-        }
-    };
-
-    useEffect(() => {
-        // Cleanup on component unmount
-        return () => stopWatching();
-    }, [stopWatching]);
-
+    
     if (!isApiSupported) {
         return (
             <div className="text-center p-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 text-sm rounded-lg">
