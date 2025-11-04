@@ -86,15 +86,58 @@ export const fetchBoletos = (): Promise<Boleto[]> => apiFetch('/boletos');
 
 export const fetchBoletoById = (id: string): Promise<Boleto> => apiFetch(`/boletos/${id}`);
 
-export const createBoleto = (file: File, companyId: string, method: ProcessingMethod): Promise<Boleto> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('companyId', companyId);
-    formData.append('method', method);
-    
-    return apiFetch('/boletos', {
-        method: 'POST',
-        body: formData,
+export const createBoleto = (
+    file: File, 
+    companyId: string, 
+    method: ProcessingMethod,
+    onProgress: (progress: number) => void
+): Promise<Boleto> => {
+    return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('companyId', companyId);
+        formData.append('method', method);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_BASE_URL}/boletos`);
+
+        const token = getAuthToken();
+        if (token) {
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        }
+
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                onProgress(percentComplete);
+            }
+        };
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const responseJson = JSON.parse(xhr.responseText);
+                    resolve(responseJson);
+                } catch (e) {
+                    reject(new Error('Invalid JSON response from server'));
+                }
+            } else {
+                let errorMessage = `HTTP error! status: ${xhr.status} ${xhr.statusText}`;
+                 try {
+                    const errorJson = JSON.parse(xhr.responseText);
+                    errorMessage = errorJson.message || xhr.responseText;
+                } catch (e) {
+                    errorMessage = xhr.responseText || errorMessage;
+                }
+                reject(new Error(errorMessage));
+            }
+        };
+
+        xhr.onerror = () => {
+            reject(new Error('Network error during file upload'));
+        };
+
+        xhr.send(formData);
     });
 };
 

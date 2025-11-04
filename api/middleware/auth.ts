@@ -1,5 +1,5 @@
-// FIX: Use default import for express and qualify types to resolve conflicts with global DOM types
-import express from 'express';
+// FIX: Use namespace import for express to ensure proper type resolution and avoid conflicts with global DOM types
+import * as express from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // Import 'multer' to make Express.Multer.File type augmentation available.

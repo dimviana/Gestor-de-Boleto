@@ -7,6 +7,7 @@ export interface UploadStatus {
   fileName: string;
   status: 'processing' | 'success' | 'error';
   message: string;
+  progress?: number;
 }
 
 interface UploadProgressProps {
@@ -47,10 +48,25 @@ const UploadProgress: React.FC<UploadProgressProps> = ({ statuses, onClear }) =>
               {getStatusIcon(upload.status)}
             </div>
             <div className="flex-grow min-w-0">
-              <p className="font-medium text-gray-800 dark:text-gray-200 truncate">{upload.fileName}</p>
-              <p className={`text-xs ${
-                upload.status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
-              }`}>{upload.message}</p>
+                <div className="flex justify-between items-center">
+                    <p className="font-medium text-gray-800 dark:text-gray-200 truncate pr-2">{upload.fileName}</p>
+                    {upload.status === 'processing' && typeof upload.progress === 'number' && upload.progress < 100 && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono flex-shrink-0">{Math.round(upload.progress)}%</span>
+                    )}
+                </div>
+              
+                {upload.status === 'processing' && typeof upload.progress === 'number' && upload.progress < 100 ? (
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 mt-1">
+                        <div 
+                            className="bg-blue-600 h-1.5 rounded-full transition-all duration-150 ease-linear" 
+                            style={{ width: `${upload.progress}%` }}>
+                        </div>
+                    </div>
+                ) : (
+                    <p className={`text-xs mt-0.5 ${
+                        upload.status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
+                    }`}>{upload.message}</p>
+                )}
             </div>
           </li>
         ))}

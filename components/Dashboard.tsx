@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification, Role } from '../types';
@@ -48,8 +46,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
   const handleFileUpload = async (file: File) => {
     const uploadId = crypto.randomUUID();
-    // Prepend to show the latest upload at the top
-    setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: t('processingStatus') }, ...prev]);
+    // Prepend to show the latest upload at the top, initializing progress
+    setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: 'Enviando...', progress: 0 }, ...prev]);
+
+    const onProgress = (progress: number) => {
+        setUploadStatuses(prev => prev.map(up =>
+            up.id === uploadId
+            ? { ...up, progress: progress }
+            : up
+        ));
+    };
+
 
     try {
       const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
@@ -59,11 +66,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         throw new Error(t(errorKey as TranslationKey));
       }
 
-      await addBoleto(user, file, targetCompanyId, method);
+      await addBoleto(user, file, targetCompanyId, method, onProgress);
 
       setUploadStatuses(prev => prev.map(up => 
             up.id === uploadId 
-            ? { ...up, status: 'success', message: t('uploadSuccess') } 
+            ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } 
             : up
       ));
 
@@ -94,7 +101,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
       setUploadStatuses(prev => prev.map(up => 
             up.id === uploadId 
-            ? { ...up, status: 'error', message: errorMessage } 
+            ? { ...up, status: 'error', message: errorMessage, progress: 0 } 
             : up
       ));
     }

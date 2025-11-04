@@ -30,8 +30,14 @@ export const useBoletos = (user: User | null) => {
     fetchAndSetBoletos();
   }, [fetchAndSetBoletos]);
 
-  const addBoleto = useCallback(async (user: User, file: File, companyId: string, method: ProcessingMethod) => {
-    await api.createBoleto(file, companyId, method);
+  const addBoleto = useCallback(async (
+    user: User, 
+    file: File, 
+    companyId: string, 
+    method: ProcessingMethod,
+    onProgress: (progress: number) => void
+  ) => {
+    await api.createBoleto(file, companyId, method, onProgress);
     await fetchAndSetBoletos(); // Refresh data from the database
   }, [fetchAndSetBoletos]);
 
