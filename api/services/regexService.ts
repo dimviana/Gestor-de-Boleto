@@ -1,5 +1,3 @@
-
-
 import { Boleto } from '../../types';
 import * as pdfjs from 'pdfjs-dist';
 import { Buffer } from 'buffer';
@@ -59,7 +57,7 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
         amountValorCobrado: /(?:Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         amountValorDocumento: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        amountGeneric: /(?:Valor Total|Valor a Pagar|Valor L[íi]quido)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        amountGeneric: /(?:Valor Total|Valor a ser Pago|Valor a Pagar|Valor L[íi]quido)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=(?:\b(?:Agência|CNPJ|CPF|Nosso Número|Vencimento)\b)|Data (?:do )?Documento)/i,
