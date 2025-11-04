@@ -1,4 +1,3 @@
-
 import { Boleto } from '../../types';
 import * as pdfjs from 'pdfjs-dist';
 import { Buffer } from 'buffer';
@@ -60,7 +59,8 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
 
     const patterns = {
         barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
-        amount: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento|Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        amountValorCobrado: /(?:Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        amountValorDocumento: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         discount: /(?:(?:\(-\)\s*)?Desconto|Abatimento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         interestAndFines: /(?:(?:\(\+\)\s*)?Juros|Multa|Acréscimos)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
@@ -72,7 +72,11 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     };
 
     const barcodeMatch = normalizedText.match(patterns.barcode);
-    const amountMatch = normalizedText.match(patterns.amount);
+    // Prioritize Valor Cobrado
+    let amountMatch = normalizedText.match(patterns.amountValorCobrado);
+    if (!amountMatch) {
+        amountMatch = normalizedText.match(patterns.amountValorDocumento);
+    }
     const discountMatch = normalizedText.match(patterns.discount);
     const interestAndFinesMatch = normalizedText.match(patterns.interestAndFines);
     const dueDateMatch = normalizedText.match(patterns.dueDate);
@@ -89,7 +93,19 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         if (!match || !match[1]) return null;
         let valueStr = match[1];
         valueStr = cleanOcrMistakes(valueStr);
-        valueStr = valueStr.replace(/\./g, '').replace(',', '.');
+        // Remove all characters except digits and the last comma/period
+        valueStr = valueStr.replace(/[^\d,.]/g, '');
+        // Standardize decimal separator to a period
+        if (valueStr.includes(',')) {
+            // Replace all dots (thousands separators) and then replace comma with dot
+            valueStr = valueStr.replace(/\./g, '').replace(',', '.');
+        } else if (valueStr.includes('.')) {
+            // If there are multiple dots, assume the last one is the decimal
+            const parts = valueStr.split('.');
+            if (parts.length > 2) {
+                valueStr = parts.slice(0, -1).join('') + '.' + parts.slice(-1);
+            }
+        }
         if (isNaN(parseFloat(valueStr))) return null;
         return parseFloat(valueStr);
     };

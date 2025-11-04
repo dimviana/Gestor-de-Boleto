@@ -94,7 +94,7 @@ export const extractBoletoInfo = async (
                     drawee: { type: Type.STRING, description: 'The name of the drawee (Sacado). Should be null if not found.' },
                     documentDate: { type: Type.STRING, description: 'The document creation date (Data do Documento) in YYYY-MM-DD format. Should be null if not found.' },
                     dueDate: { type: Type.STRING, description: 'The due date (Vencimento) in YYYY-MM-DD format.' },
-                    amount: { type: Type.NUMBER, description: 'The final payment amount (Valor Cobrado or Valor do Documento) as a number.' },
+                    amount: { type: Type.NUMBER, description: "The final payment amount. Prioritize 'Valor Cobrado'. If absent, use 'Valor do Documento'. It should not be zero if a document value is present." },
                     discount: { type: Type.NUMBER, description: 'The discount amount (Desconto / Abatimento). Should be null if not found.' },
                     interestAndFines: { type: Type.NUMBER, description: 'The interest and fines amount (Juros / Multa). Should be null if not found.' },
                     barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável).' },
