@@ -2,9 +2,9 @@ import { Boleto } from '../../types';
 import * as pdfjs from 'pdfjs-dist';
 import { Buffer } from 'buffer';
 
-// FIX: Removed explicit `require.resolve` to avoid TypeScript type errors.
-// pdf.js will internally require this path in a Node.js environment.
-pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.js';
+// This line is for browser environments and can cause issues in Node.js.
+// pdfjs-dist's Node.js build does not require a worker script.
+// pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.js';
 
 const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
     const data = new Uint8Array(pdfBuffer);
@@ -91,23 +91,35 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     
     const parseCurrency = (match: RegExpMatchArray | null): number | null => {
         if (!match || !match[1]) return null;
-        let valueStr = match[1];
+        let valueStr = match[1].trim();
         valueStr = cleanOcrMistakes(valueStr);
-        // Remove all characters except digits and the last comma/period
-        valueStr = valueStr.replace(/[^\d,.]/g, '');
-        // Standardize decimal separator to a period
-        if (valueStr.includes(',')) {
-            // Replace all dots (thousands separators) and then replace comma with dot
+
+        if (!/\d/.test(valueStr)) return null;
+
+        // Standardize format: remove thousands separators, use dot for decimal.
+        const hasComma = valueStr.includes(',');
+        const hasDot = valueStr.includes('.');
+
+        if (hasComma) {
+            // Brazilian format "1.234,56"
             valueStr = valueStr.replace(/\./g, '').replace(',', '.');
-        } else if (valueStr.includes('.')) {
-            // If there are multiple dots, assume the last one is the decimal
+        } else if (hasDot) {
+            // Ambiguous format "1.234" or "12.34"
             const parts = valueStr.split('.');
-            if (parts.length > 2) {
-                valueStr = parts.slice(0, -1).join('') + '.' + parts.slice(-1);
+            // If the last part has 2 digits and it's not the only part, assume it's a decimal part.
+            if (parts.length > 1 && parts[parts.length - 1].length === 2) {
+                valueStr = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+            } else {
+                // Otherwise, all dots are thousands separators.
+                valueStr = valueStr.replace(/\./g, '');
             }
         }
-        if (isNaN(parseFloat(valueStr))) return null;
-        return parseFloat(valueStr);
+        
+        // Remove any remaining non-numeric characters except the decimal point
+        valueStr = valueStr.replace(/[^\d.]/g, '');
+
+        const num = parseFloat(valueStr);
+        return isNaN(num) ? null : num;
     };
 
     const amount = parseCurrency(amountMatch);
