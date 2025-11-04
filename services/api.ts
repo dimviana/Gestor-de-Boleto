@@ -99,14 +99,14 @@ export const createBoleto = (boletoData: Partial<Boleto>, file: File, companyId?
     });
 };
 
-export const updateBoletoStatus = (id: string, status: BoletoStatus): Promise<{ message: string }> => {
+export const updateBoletoStatus = (id: string, status: BoletoStatus): Promise<Boleto> => {
     return apiFetch(`/boletos/${id}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status }),
     });
 };
 
-export const updateBoletoComments = (id: string, comments: string): Promise<{ message: string }> => {
+export const updateBoletoComments = (id: string, comments: string): Promise<Boleto> => {
     return apiFetch(`/boletos/${id}/comments`, {
         method: 'PUT',
         body: JSON.stringify({ comments }),

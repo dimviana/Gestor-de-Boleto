@@ -1,11 +1,12 @@
+
 // FIX: Use explicit type imports from express to avoid conflicts with global DOM types
-import express from 'express';
+import express, { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-export const getCompanies = async (req: AuthRequest, res: express.Response) => {
+export const getCompanies = async (req: AuthRequest, res: Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
     res.json(companies);
@@ -15,7 +16,7 @@ export const getCompanies = async (req: AuthRequest, res: express.Response) => {
   }
 };
 
-export const createCompany = async (req: AuthRequest, res: express.Response) => {
+export const createCompany = async (req: AuthRequest, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -48,7 +49,7 @@ export const createCompany = async (req: AuthRequest, res: express.Response) => 
   }
 };
 
-export const updateCompany = async (req: AuthRequest, res: express.Response) => {
+export const updateCompany = async (req: AuthRequest, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -84,7 +85,7 @@ export const updateCompany = async (req: AuthRequest, res: express.Response) => 
   }
 };
 
-export const deleteCompany = async (req: AuthRequest, res: express.Response) => {
+export const deleteCompany = async (req: AuthRequest, res: Response) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();

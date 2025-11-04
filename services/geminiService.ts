@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Boleto, BoletoStatus, AiSettings } from '../types';
 import { translations } from '../translations';
@@ -155,6 +156,7 @@ export const processBoletoPDF = async (
             },
         });
         
+        // FIX: Access response text via the .text property
         const responseText = response.text;
         if (!responseText) {
             console.error("Gemini API returned an empty or invalid response object:", response);

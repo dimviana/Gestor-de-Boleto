@@ -43,20 +43,18 @@ export const useBoletos = (user: User | null) => {
   }, []);
 
   const updateBoletoStatus = useCallback(async (user: User, id: string, status: BoletoStatus) => {
-    await api.updateBoletoStatus(id, status);
-    // Optimistic UI update
+    const updatedBoleto = await api.updateBoletoStatus(id, status);
+    // Update state with the returned object from the server
     setBoletos(prev =>
-      prev.map(b => (b.id === id ? { ...b, status } : b))
+      prev.map(b => (b.id === id ? updatedBoleto : b))
     );
-    // Optionally re-fetch for consistency
-    // await fetchAndSetBoletos();
   }, []);
 
   const updateBoletoComments = useCallback(async (user: User, id:string, comments: string) => {
-    await api.updateBoletoComments(id, comments);
-    // Optimistic UI update
+    const updatedBoleto = await api.updateBoletoComments(id, comments);
+    // Update state with the returned object from the server
     setBoletos(prev =>
-      prev.map(b => (b.id === id ? { ...b, comments } : b))
+      prev.map(b => (b.id === id ? updatedBoleto : b))
     );
   }, []);
 

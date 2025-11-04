@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { AiSettings, User } from '../types';
 import { addLogEntry } from '../services/logService';
