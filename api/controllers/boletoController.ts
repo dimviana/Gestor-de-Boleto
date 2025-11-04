@@ -1,29 +1,26 @@
-// FIX: Use explicit type imports from express to avoid conflicts with global DOM types
-import { Response } from 'express';
+// FIX: Use default import for express and qualify types to resolve conflicts with global DOM types
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
+import { extractBoletoInfo as extractWithAI } from '../services/geminiService';
+import { extractBoletoInfo as extractWithRegex } from '../services/regexService';
 
-export const getBoletos = async (req: AuthRequest, res: Response) => {
+export const getBoletos = async (req: AuthRequest, res: express.Response) => {
   const user = req.user!;
   try {
-    // If a non-admin user is not associated with a company, they cannot have any boletos.
-    // Return an empty array to prevent errors and unnecessary database queries.
     if (user.role !== 'admin' && !user.companyId) {
       return res.json([]);
     }
 
-    // Optimization: Exclude the large `file_data` field from the main list fetching
     let query = 'SELECT id, recipient, drawee, document_date, due_date, amount, discount, interest_and_fines, barcode, guide_number, pix_qr_code_text, status, file_name, company_id, comments, created_at FROM boletos';
     const params: (string | null)[] = [];
     if (user.role !== 'admin') {
-      // This is now safe because we've already checked for user.companyId existence.
       query += ' WHERE company_id = ?';
       params.push(user.companyId);
     } else if (req.query.companyId) {
-      // Admin can filter by company
       query += ' WHERE company_id = ?';
       params.push(req.query.companyId as string);
     }
@@ -37,7 +34,7 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getBoletoById = async (req: AuthRequest, res: Response) => {
+export const getBoletoById = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
 
@@ -45,7 +42,6 @@ export const getBoletoById = async (req: AuthRequest, res: Response) => {
         let query = 'SELECT * FROM boletos WHERE id = ?';
         const params: (string | null)[] = [boletoId];
 
-        // Security check: Non-admins can only fetch boletos from their own company.
         if (user.role !== 'admin') {
             if (!user.companyId) {
                 return res.status(403).json({ message: 'User is not associated with a company.' });
@@ -67,22 +63,18 @@ export const getBoletoById = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const createBoleto = async (req: AuthRequest, res: Response) => {
+export const createBoleto = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
-    const adminSelectedCompanyId = req.body.companyId;
-    const extractedDataJSON = req.body.extractedData;
+    const { companyId: adminSelectedCompanyId, method } = req.body;
 
-    if (!extractedDataJSON || typeof extractedDataJSON !== 'string') {
-        return res.status(400).json({ message: 'Missing or invalid extractedData in request body.' });
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
     }
-    
-    const extractedData = JSON.parse(extractedDataJSON);
 
     let targetCompanyId: string | null;
-
     if (user.role === 'admin') {
         if (!adminSelectedCompanyId) {
-            return res.status(400).json({ message: 'Admin must select a company to upload a boleto.' });
+            return res.status(400).json({ message: 'Admin must select a company' });
         }
         targetCompanyId = adminSelectedCompanyId;
     } else {
@@ -90,11 +82,6 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ message: 'User is not associated with a company' });
         }
         targetCompanyId = user.companyId;
-    }
-
-
-    if (!req.file) {
-        return res.status(400).json({ message: 'No file uploaded' });
     }
 
     if (!targetCompanyId) {
@@ -105,11 +92,26 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
     try {
         await connection.beginTransaction();
 
+        const [settingsRows] = await connection.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = 'ai_settings'");
+        const aiSettings = settingsRows.length > 0 ? JSON.parse(settingsRows[0].setting_value) : {};
+        
+        let extractedData;
+        if (method === 'ai') {
+            extractedData = await extractWithAI(req.file.buffer, req.file.originalname, 'pt', aiSettings);
+        } else {
+            extractedData = await extractWithRegex(req.file.buffer, req.file.originalname);
+        }
+
+        if (extractedData.amount === null || extractedData.amount === undefined || extractedData.amount === 0) {
+            await connection.rollback();
+            return res.status(400).json({ message: 'freeBoletoErrorText' });
+        }
+        
         if (extractedData.barcode) {
              const [existing] = await connection.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [extractedData.barcode, targetCompanyId]);
              if (existing.length > 0) {
                  await connection.rollback();
-                 return res.status(409).json({ message: `Duplicate barcode for document: ${extractedData.guideNumber || extractedData.recipient}`});
+                 return res.status(409).json({ message: `Duplicate barcode: ${extractedData.guideNumber || extractedData.barcode}`});
              }
         }
 
@@ -120,7 +122,6 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
             fileData: req.file.buffer.toString('base64'),
             comments: null,
             companyId: targetCompanyId,
-            fileName: req.file.originalname,
         };
         
         const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments, companyId } = newBoleto;
@@ -153,7 +154,7 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
+export const updateBoletoStatus = async (req: AuthRequest, res: express.Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -187,7 +188,6 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
         await connection.commit();
 
         if (rows.length === 0) {
-            // This case should be rare if the first select succeeds
             return res.status(404).json({ message: 'Boleto not found after update' });
         }
         res.json(rows[0]);
@@ -200,7 +200,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
+export const updateBoletoComments = async (req: AuthRequest, res: express.Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -244,7 +244,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const deleteBoleto = async (req: AuthRequest, res: Response) => {
+export const deleteBoleto = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();

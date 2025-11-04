@@ -1,4 +1,4 @@
-import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus, VpsSettings } from '../types';
+import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus, VpsSettings, ProcessingMethod } from '../types';
 
 const API_BASE_URL = '/api'; // Use relative URL to proxy to the backend
 
@@ -86,13 +86,12 @@ export const fetchBoletos = (): Promise<Boleto[]> => apiFetch('/boletos');
 
 export const fetchBoletoById = (id: string): Promise<Boleto> => apiFetch(`/boletos/${id}`);
 
-export const createBoleto = (boletoData: Partial<Boleto>, file: File, companyId?: string): Promise<Boleto> => {
+export const createBoleto = (file: File, companyId: string, method: ProcessingMethod): Promise<Boleto> => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('extractedData', JSON.stringify(boletoData));
-    if (companyId) {
-        formData.append('companyId', companyId);
-    }
+    formData.append('companyId', companyId);
+    formData.append('method', method);
+    
     return apiFetch('/boletos', {
         method: 'POST',
         body: formData,

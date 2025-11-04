@@ -1,7 +1,7 @@
 // Use default import for express and named imports for types to avoid conflicts with global DOM types.
 // FIX: Use a single default import for express and qualify types to resolve conflicts with global DOM types.
 // Corrected import to bring in types directly
-import express, { Request, Response } from 'express';
+import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
@@ -44,7 +44,7 @@ apiRouter.use('/vps', vpsRoutes);
 
 // Health check for the API router itself
 // FIX: Use explicit Request and Response types from express to resolve type conflicts.
-apiRouter.get('/', (req: Request, res: Response) => {
+apiRouter.get('/', (req: express.Request, res: express.Response) => {
   res.send('Boleto Manager AI Backend is running!');
 });
 
@@ -63,7 +63,7 @@ app.use(express.static(staticPath));
 // 2. SPA Fallback: For any GET request that doesn't match an API route or a static file,
 // serve the main index.html file. This is crucial for client-side routing.
 // FIX: Use explicit Request and Response types from express to resolve type conflicts.
-app.get('/*', (req: Request, res: Response) => {
+app.get('/*', (req: express.Request, res: express.Response) => {
   // This guard prevents the fallback from ever serving index.html for an API-like route.
   if (req.path.startsWith('/api/')) {
     return res.status(404).send('API endpoint not found.');

@@ -8,8 +8,6 @@ import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
 import Spinner from './Spinner';
-import { processBoletoPDF as processBoletoWithAI } from '../services/geminiService';
-import { processBoletoPDFWithRegex } from '../services/regexService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
@@ -35,9 +33,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const { boletos, addBoleto, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading: isLoadingBoletos, error: dbError } = useBoletos(user);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { method } = useProcessingMethod();
-  const { aiSettings } = useAiSettings();
   
   const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
@@ -55,20 +52,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: t('processingStatus') }, ...prev]);
 
     try {
-      let processedBoletoData: Omit<Boleto, 'companyId'>;
-       if (method === 'ai') {
-           processedBoletoData = await processBoletoWithAI(file, language, aiSettings);
-       } else {
-           processedBoletoData = await processBoletoPDFWithRegex(file);
-       }
-       if (processedBoletoData.amount === null || processedBoletoData.amount === undefined || processedBoletoData.amount === 0) {
-         throw new Error('freeBoletoErrorText'); // Use key for consistent error handling
-       }
-
       const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
-      const { id, status, comments, fileData, ...dataForApi } = processedBoletoData;
 
-      await addBoleto(user, dataForApi, file, targetCompanyId);
+      if (!targetCompanyId) {
+        const errorKey = user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText';
+        throw new Error(t(errorKey as TranslationKey));
+      }
+
+      await addBoleto(user, file, targetCompanyId, method);
 
       setUploadStatuses(prev => prev.map(up => 
             up.id === uploadId 
@@ -116,7 +107,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     }
   };
 
-  // FIX: Pass the 'handleFileUpload' function to the 'onFileUpload' prop of the hook.
   const folderWatcher = useFolderWatcher({ onFileUpload: handleFileUpload, disabled: isUploadDisabled });
 
   useEffect(() => {

@@ -8,14 +8,10 @@ import Tesseract from 'tesseract.js';
 import { Buffer } from 'buffer';
 import { appConfig } from './configService';
 
-// FIX: Update 'require' declaration to include the 'resolve' method for Node.js compatibility.
-declare const require: {
-    (id: string): any;
-    resolve(id: string): string;
-};
-
 // Setting the worker script for pdf.js in a Node.js environment.
-pdfjs.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/build/pdf.worker.js');
+// FIX: Removed explicit `require.resolve` to avoid TypeScript type errors.
+// pdf.js will internally require this path in a Node.js environment.
+pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.js';
 
 const renderPdfPageToCanvas = async (pdfBuffer: Buffer): Promise<Canvas> => {
     const data = new Uint8Array(pdfBuffer);
@@ -26,8 +22,6 @@ const renderPdfPageToCanvas = async (pdfBuffer: Buffer): Promise<Canvas> => {
     const canvas = createCanvas(viewport.width, viewport.height);
     const context = canvas.getContext('2d');
 
-    // FIX: Cast the entire render parameters object to 'any' to resolve a type conflict
-    // between node-canvas and pdf.js, which appears to have a faulty type definition.
     await page.render({ canvasContext: context, viewport: viewport } as any).promise;
     return canvas;
 };
@@ -36,14 +30,17 @@ const preprocessCanvasForOcr = (canvas: Canvas): Canvas => {
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
+    const contrast = 64;
+    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
 
     for (let i = 0; i < data.length; i += 4) {
         const r = data[i], g = data[i + 1], b = data[i + 2];
-        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        const color = gray < 128 ? 0 : 255;
-        data[i] = data[i + 1] = data[i + 2] = color;
+        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        gray = factor * (gray - 128) + 128;
+        gray = Math.max(0, Math.min(255, gray));
+        const value = gray < 128 ? 0 : 255;
+        data[i] = data[i + 1] = data[i + 2] = value;
     }
-    
     ctx.putImageData(imageData, 0, 0);
     return canvas;
 };
@@ -66,17 +63,17 @@ export const extractBoletoInfo = async (
     aiSettings: AiSettings
 ): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     if (!appConfig.API_KEY) {
-        throw new Error("API key is missing.");
+        throw new Error("A chave da API do Gemini não está configurada no servidor.");
     }
     const ai = new GoogleGenAI({ apiKey: appConfig.API_KEY });
     
     const canvas = await renderPdfPageToCanvas(pdfBuffer);
     const ocrText = await performOcr(canvas);
 
-    const fileAsBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+    const imageAsBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
     
     const imagePart = {
-        inlineData: { mimeType: 'image/jpeg', data: fileAsBase64 },
+        inlineData: { mimeType: 'image/jpeg', data: imageAsBase64 },
     };
 
     const prompt = translations[lang].geminiPrompt;
@@ -109,7 +106,6 @@ export const extractBoletoInfo = async (
         },
     });
     
-    // FIX: Access response text via the .text property
     const responseText = response.text;
     if (!responseText) {
         console.error("Gemini API returned an empty or invalid response object:", response);
