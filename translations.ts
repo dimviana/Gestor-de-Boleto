@@ -215,7 +215,7 @@ const pt = {
         Retorne um objeto JSON com as seguintes informações. Se um campo não for encontrado, retorne null para ele.
         Datas devem estar no formato AAAA-MM-DD. Valores monetários devem ser números.
 
-        - recipient: O nome completo do beneficiário/cedente. Capture o nome inteiro, mesmo que seja longo, contenha barras, ou ocupe várias linhas.
+        - recipient: O nome completo do beneficiário/cedente. Pode consistir em várias partes (ex: "Tribunal de Justiça / Ofício..."). Capture todo o texto associado a este campo, mesmo que ocupe várias linhas, até o início do próximo campo (como CNPJ ou Endereço).
         - drawee: O nome do sacado/pagador.
         - documentDate: A "Data do Documento".
         - dueDate: A data de vencimento ("Vencimento"). Se houver múltiplas datas de vencimento com valores diferentes, use a data principal.
@@ -440,7 +440,7 @@ const en: typeof pt = {
         Return a JSON object with the following information. If a field is not found, return null for it.
         Dates must be in YYYY-MM-DD format. Monetary values must be numbers.
 
-        - recipient: The full name of the beneficiary/payee. Capture the entire name, even if it is long, contains slashes, or spans multiple lines.
+        - recipient: The full name of the beneficiary/payee. It may consist of multiple parts (e.g., "Court of Justice / Notary Office..."). Capture all text associated with this field, even if it spans multiple lines, until the next field (like CNPJ or Address) begins.
         - drawee: The name of the drawee/payer (Sacado/Pagador).
         - documentDate: The "Data do Documento" (Document Date).
         - dueDate: The due date ("Vencimento"). If there are multiple due dates with different values, use the primary one.

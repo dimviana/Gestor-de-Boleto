@@ -83,17 +83,16 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     // Normalize text: remove multiple spaces, but keep newlines for structure
     const normalizedText = text.replace(/ +/g, ' ').trim();
 
-    // Upgraded REGEX patterns for improved data extraction.
     const patterns = {
         barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
         amountValorCobrado: /(?:Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         amountValorDocumento: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        amountGeneric: /(?:Valor Total|Valor a Pagar|Valor L[íi]quido)[\s.:\n]*?R?\$?\s*([\d.,]+)/i, // Fallback
+        amountGeneric: /(?:Valor Total|Valor a Pagar|Valor L[íi]quido)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         guideNumber: /(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero|Guia)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
-        recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
-        drawee: /(?:Pagador|Sacado)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
+        recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\n.*(?:Agência|CNPJ|CPF|Nosso Número|Vencimento)\b|Data (?:do )?Documento)/i,
+        drawee: /(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\n.*(?:Nosso Número|Vencimento|Valor)\b|Data (?:do )?Documento)/i,
         pixQrCodeText: /(000201\S{100,})/i,
     };
     
@@ -164,13 +163,20 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
 
     const getMatchValue = (match: RegExpMatchArray | null): string | null => {
         if (!match || !match[1]) return null;
-        const value = match[1].trim().replace(/--/g, '').trim();
+        const value = match[1]
+            .trim()
+            .replace(/\s*\n\s*/g, ' / ') // Join lines with a separator
+            .replace(/\s{2,}/g, ' ')   // Remove multiple spaces
+            .replace(/--/g, '')
+            .trim();
         return value || null;
     };
 
     const recipient = getMatchValue(recipientMatch);
     const drawee = getMatchValue(draweeMatch);
-    const guideNumber = getMatchValue(guideNumberMatch);
+    // Use a simpler regex for guide number as the complex one might fail
+    const simpleGuideNumberMatch = normalizedText.match(/(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero|Guia)[\s.:\n]*?(\S+)/i);
+    const guideNumber = getMatchValue(simpleGuideNumberMatch);
 
     return {
         recipient,

@@ -1,4 +1,3 @@
-// FIX: Use qualified express types to resolve conflicts with global DOM types.
 import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';

@@ -88,8 +88,8 @@ export const extractBoletoInfo = async (
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        recipient: { type: Type.STRING, description: 'The full name of the beneficiary/payee (Beneficiário/Cedente). Capture the entire name, even if it is long or spans multiple lines.' },
-                        drawee: { type: Type.STRING, description: 'The name of the drawee/payer (Sacado/Pagador). Should be null if not found.' },
+                        recipient: { type: Type.STRING, description: 'The full name of the beneficiary/payee (Beneficiário/Cedente). It may contain multiple parts separated by slashes or hyphens (e.g., "Main Name / Secondary Name - Details"). Capture all text associated with this field, even if it spans multiple lines, until the next field (like CNPJ or Address) begins.' },
+                        drawee: { type: Type.STRING, description: 'The name of the drawee/payer (Sacado/Pagador). Capture the full name, which is often found on a line below the label.' },
                         documentDate: { type: Type.STRING, description: 'The document creation date (Data do Documento) in YYYY-MM-DD format. Should be null if not found.' },
                         dueDate: { type: Type.STRING, description: 'The main due date (Vencimento) in YYYY-MM-DD format.' },
                         amount: { type: Type.NUMBER, description: "The final payment amount. First, search for '(=) Valor Cobrado'. If not found, search for '(=) Valor do Documento'. As a fallback, use any field clearly labeled 'Valor Total' or similar that specifies the final payment value. The value should NEVER be zero if a document value is present." },
