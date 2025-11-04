@@ -58,8 +58,6 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
         amountValorCobrado: /(?:Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         amountValorDocumento: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        discount: /(?:(?:\(-\)\s*)?(?:Desconto|Abatimento|Outras Deduções))[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        interestAndFines: /(?:(?:\(\+\)\s*)?(?:Juros|Multa|Acréscimos|Outros Acréscimos))[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         guideNumber: /(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero|Guia)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
@@ -74,8 +72,6 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     if (!amountMatch) {
         amountMatch = normalizedText.match(patterns.amountValorDocumento);
     }
-    const discountMatch = normalizedText.match(patterns.discount);
-    const interestAndFinesMatch = normalizedText.match(patterns.interestAndFines);
     const dueDateMatch = normalizedText.match(patterns.dueDate);
     const documentDateMatch = normalizedText.match(patterns.documentDate);
     const guideNumberMatch = normalizedText.match(patterns.guideNumber);
@@ -113,8 +109,6 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     };
 
     const amount = parseCurrency(amountMatch);
-    const discount = parseCurrency(discountMatch);
-    const interestAndFines = parseCurrency(interestAndFinesMatch);
     
     const parseDate = (match: RegExpMatchArray | null): string | null => {
         if (!match || !match[1]) return null;
@@ -142,8 +136,8 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         documentDate,
         dueDate,
         amount,
-        discount,
-        interestAndFines,
+        discount: null,
+        interestAndFines: null,
         barcode,
         guideNumber,
         pixQrCodeText: pixQrCodeTextMatch ? pixQrCodeTextMatch[0].trim() : null,

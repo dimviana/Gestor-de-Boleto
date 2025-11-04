@@ -220,8 +220,6 @@ const pt = {
         - documentDate: A "Data do Documento".
         - dueDate: A data de vencimento ("Vencimento"). Se houver múltiplas datas de vencimento com valores diferentes, use a data principal.
         - amount: O valor final a ser pago. **Priorize sempre** o campo "(=) Valor Cobrado". Se este não existir, use "(=) Valor do Documento". O valor NUNCA deve ser zero se houver um valor de documento preenchido.
-        - discount: O valor total de descontos, somando campos como "(-) Desconto / Abatimento" e "(-) Outras Deduções". Se não houver, deve ser null.
-        - interestAndFines: O valor total de acréscimos, somando campos como "(+) Juros / Multa" e "(+) Outros Acréscimos". Se não houver, deve ser null.
         - barcode: A linha digitável completa. Remova todos os pontos, espaços e outros caracteres, retornando apenas os números. O resultado deve ter 47 ou 48 dígitos.
         - guideNumber: O número do documento. **Dê prioridade máxima** ao campo rotulado como "Nº Documento" ou "Nº do Documento". Se este não existir, procure por "Nosso Número".
         - pixQrCodeText: O conteúdo completo do QR Code PIX (Copia e Cola). Se não houver, deve ser null.
@@ -447,8 +445,6 @@ const en: typeof pt = {
         - documentDate: The "Data do Documento" (Document Date).
         - dueDate: The due date ("Vencimento"). If there are multiple due dates with different values, use the primary one.
         - amount: The final amount to be paid. **Always prioritize** the "(=) Valor Cobrado" field. If it does not exist, use "(=) Valor do Documento". The value should NEVER be zero if a document value is present.
-        - discount: The total discount amount, summing fields like "(-) Desconto / Abatimento" and "(-) Outras Deduções". If none, it must be null.
-        - interestAndFines: The total amount of additions, summing fields like "(+) Juros / Multa" and "(+) Outros Acréscimos". If none, it must be null.
         - barcode: The complete digitable line. Remove all dots, spaces, and other characters, returning only the numbers. The result must have 47 or 48 digits.
         - guideNumber: The document number. **Give maximum priority** to the field labeled "Nº Documento" or "Nº do Documento". If this does not exist, look for "Nosso Número".
         - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code. If none, it must be null.
