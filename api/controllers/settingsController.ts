@@ -1,11 +1,11 @@
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import { Response } from 'express';
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
-export const getSettings = async (req: AuthRequest, res: Response) => {
+export const getSettings = async (req: AuthRequest, res: express.Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -24,7 +24,7 @@ export const getSettings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const updateSettings = async (req: AuthRequest, res: Response) => {
+export const updateSettings = async (req: AuthRequest, res: express.Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {

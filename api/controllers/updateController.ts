@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -12,7 +12,7 @@ const PROJECT_PATH = process.env.PROJECT_PATH || path.join(process.env.HOME || '
 const BACKUP_PATH = process.env.BACKUP_PATH || path.join(process.env.HOME || '~', 'db_backups');
 const APP_NAME = process.env.APP_NAME || 'boleto-manager-ai';
 
-export const getUpdateHistory = async (req: AuthRequest, res: Response) => {
+export const getUpdateHistory = async (req: AuthRequest, res: express.Response) => {
     try {
         const [history] = await pool.query<RowDataPacket[]>('SELECT * FROM deployments ORDER BY deployed_at DESC');
         res.json(history);
@@ -22,7 +22,7 @@ export const getUpdateHistory = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const triggerRollback = async (req: AuthRequest, res: Response) => {
+export const triggerRollback = async (req: AuthRequest, res: express.Response) => {
     const { deploymentId } = req.body;
     if (!deploymentId) {
         return res.status(400).json({ message: "Deployment ID is required." });

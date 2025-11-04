@@ -1,4 +1,5 @@
 
+
 import { Boleto } from '../../types';
 import * as pdfjs from 'pdfjs-dist';
 import { Buffer } from 'buffer';
@@ -58,6 +59,7 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
         amountValorCobrado: /(?:Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         amountValorDocumento: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        amountGeneric: /(?:Valor Total|Valor a Pagar|Valor L[íi]quido)[\s.:\n]*?R?\$?\s*([\d.,]+)/i, // Fallback
         dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         guideNumber: /(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero|Guia)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
@@ -67,11 +69,15 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     };
 
     const barcodeMatch = normalizedText.match(patterns.barcode);
-    // Prioritize Valor Cobrado
+    // Prioritize Valor Cobrado, then Valor Documento, then a generic fallback
     let amountMatch = normalizedText.match(patterns.amountValorCobrado);
     if (!amountMatch) {
         amountMatch = normalizedText.match(patterns.amountValorDocumento);
     }
+    if (!amountMatch) {
+        amountMatch = normalizedText.match(patterns.amountGeneric);
+    }
+
     const dueDateMatch = normalizedText.match(patterns.dueDate);
     const documentDateMatch = normalizedText.match(patterns.documentDate);
     const guideNumberMatch = normalizedText.match(patterns.guideNumber);
