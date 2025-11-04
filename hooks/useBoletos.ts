@@ -38,9 +38,9 @@ export const useBoletos = (user: User | null) => {
         throw new Error('Admin must select a company');
     }
     
-    const newBoleto = await api.createBoleto(boletoData, file, companyId);
-    setBoletos(prev => [newBoleto, ...prev]);
-  }, []);
+    await api.createBoleto(boletoData, file, companyId);
+    await fetchAndSetBoletos(); // Refresh data from the database
+  }, [fetchAndSetBoletos]);
 
   const updateBoletoStatus = useCallback(async (user: User, id: string, status: BoletoStatus) => {
     const updatedBoleto = await api.updateBoletoStatus(id, status);
