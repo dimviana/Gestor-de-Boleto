@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
@@ -65,60 +66,87 @@ export const extractBoletoInfo = async (
     if (!appConfig.API_KEY) {
         throw new Error("A chave da API do Gemini não está configurada no servidor.");
     }
-    const ai = new GoogleGenAI({ apiKey: appConfig.API_KEY });
-    
-    const canvas = await renderPdfPageToCanvas(pdfBuffer);
-    const ocrText = await performOcr(canvas);
 
-    const imageAsBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
-    
-    const imagePart = {
-        inlineData: { mimeType: 'image/jpeg', data: imageAsBase64 },
-    };
+    try {
+        const ai = new GoogleGenAI({ apiKey: appConfig.API_KEY });
+        
+        const canvas = await renderPdfPageToCanvas(pdfBuffer);
+        const ocrText = await performOcr(canvas);
 
-    const prompt = translations[lang].geminiPrompt;
-    const fullPromptWithOcr = `${prompt}\n\n--- TEXTO EXTRAÍDO VIA OCR ---\n${ocrText}\n--- FIM DO TEXTO EXTRAÍDO ---`;
+        const imageAsBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+        
+        const imagePart = {
+            inlineData: { mimeType: 'image/jpeg', data: imageAsBase64 },
+        };
 
-    const response = await ai.models.generateContent({
-        model: aiSettings.model,
-        contents: { parts: [{ text: fullPromptWithOcr }, imagePart] },
-        config: {
-            temperature: aiSettings.temperature,
-            topK: aiSettings.topK,
-            topP: aiSettings.topP,
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    recipient: { type: Type.STRING, description: 'The name of the beneficiary or company to be paid (Beneficiário/Cedente).' },
-                    drawee: { type: Type.STRING, description: 'The name of the drawee (Sacado). Should be null if not found.' },
-                    documentDate: { type: Type.STRING, description: 'The document creation date (Data do Documento) in YYYY-MM-DD format. Should be null if not found.' },
-                    dueDate: { type: Type.STRING, description: 'The due date (Vencimento) in YYYY-MM-DD format.' },
-                    amount: { type: Type.NUMBER, description: "The final payment amount. Prioritize 'Valor Cobrado'. If absent, use 'Valor do Documento'. It should not be zero if a document value is present." },
-                    discount: { type: Type.NUMBER, description: 'The discount amount (Desconto / Abatimento). Should be null if not found.' },
-                    interestAndFines: { type: Type.NUMBER, description: 'The interest and fines amount (Juros / Multa). Should be null if not found.' },
-                    barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável).' },
-                    guideNumber: { type: Type.STRING, description: 'The document number (número do documento) of the boleto. Should be null if not found.' },
-                    pixQrCodeText: { type: Type.STRING, description: 'The full text content of the PIX QR Code (Copia e Cola). Should be null if not found.' },
+        const prompt = translations[lang].geminiPrompt;
+        const fullPromptWithOcr = `${prompt}\n\n--- TEXTO EXTRAÍDO VIA OCR ---\n${ocrText}\n--- FIM DO TEXTO EXTRAÍDO ---`;
+
+        const response = await ai.models.generateContent({
+            model: aiSettings.model,
+            contents: { parts: [{ text: fullPromptWithOcr }, imagePart] },
+            config: {
+                temperature: aiSettings.temperature,
+                topK: aiSettings.topK,
+                topP: aiSettings.topP,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        recipient: { type: Type.STRING, description: 'The name of the beneficiary or company to be paid (Beneficiário/Cedente).' },
+                        drawee: { type: Type.STRING, description: 'The name of the drawee (Sacado). Should be null if not found.' },
+                        documentDate: { type: Type.STRING, description: 'The document creation date (Data do Documento) in YYYY-MM-DD format. Should be null if not found.' },
+                        dueDate: { type: Type.STRING, description: 'The due date (Vencimento) in YYYY-MM-DD format.' },
+                        amount: { type: Type.NUMBER, description: "The final payment amount. Prioritize 'Valor Cobrado'. If absent, use 'Valor do Documento'. It should not be zero if a document value is present." },
+                        discount: { type: Type.NUMBER, description: 'The discount amount (Desconto / Abatimento). Should be null if not found.' },
+                        interestAndFines: { type: Type.NUMBER, description: 'The interest and fines amount (Juros / Multa). Should be null if not found.' },
+                        barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável).' },
+                        guideNumber: { type: Type.STRING, description: 'The document number (número do documento) of the boleto. Should be null if not found.' },
+                        pixQrCodeText: { type: Type.STRING, description: 'The full text content of the PIX QR Code (Copia e Cola). Should be null if not found.' },
+                    },
+                    required: ["recipient", "dueDate", "amount", "barcode"],
                 },
-                required: ["recipient", "dueDate", "amount", "barcode"],
             },
-        },
-    });
-    
-    const responseText = response.text;
-    if (!responseText) {
-        console.error("Gemini API returned an empty or invalid response object:", response);
-        throw new Error("A resposta da API da IA está vazia ou é inválida.");
-    }
-    const parsedJson = JSON.parse(responseText);
+        });
+        
+        const responseText = response.text;
+        if (!responseText) {
+            console.error("Gemini API returned an empty or invalid response object:", response);
+            throw new Error("A API de IA retornou uma resposta vazia. Isso pode ocorrer devido a filtros de segurança ou um erro interno.");
+        }
 
-    if (parsedJson.barcode) {
-        parsedJson.barcode = parsedJson.barcode.replace(/[^\d]/g, '');
+        let parsedJson;
+        try {
+            parsedJson = JSON.parse(responseText);
+        } catch (jsonError) {
+            console.error("Failed to parse JSON from Gemini API:", responseText);
+            throw new Error("A API de IA retornou um formato de dados inválido (não-JSON).");
+        }
+
+
+        if (parsedJson.barcode) {
+            parsedJson.barcode = parsedJson.barcode.replace(/[^\d]/g, '');
+        }
+        
+        return {
+            ...parsedJson,
+            fileName: fileName,
+        };
+
+    } catch (error: any) {
+        console.error("Error during Gemini AI processing:", error);
+
+        const knownErrors = [
+            "A API de IA retornou uma resposta vazia",
+            "A API de IA retornou um formato de dados inválido",
+            "A chave da API do Gemini não está configurada"
+        ];
+        
+        if (knownErrors.some(e => error.message.includes(e))) {
+            throw error; // Rethrow the specific, user-friendly error
+        }
+
+        // For other errors (e.g., network, API key invalid from Google), provide a general message.
+        throw new Error("Falha na comunicação com a API de IA. Verifique sua chave de API, as configurações do modelo e a conexão.");
     }
-    
-    return {
-        ...parsedJson,
-        fileName: fileName,
-    };
 };

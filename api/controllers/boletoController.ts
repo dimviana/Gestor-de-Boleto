@@ -1,5 +1,6 @@
+
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import type { Response } from 'express';
+import * as express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -8,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { extractBoletoInfo as extractWithAI } from '../services/geminiService';
 import { extractBoletoInfo as extractWithRegex } from '../services/regexService';
 
-export const getBoletos = async (req: AuthRequest, res: Response) => {
+export const getBoletos = async (req: AuthRequest, res: express.Response) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -34,7 +35,7 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getBoletoById = async (req: AuthRequest, res: Response) => {
+export const getBoletoById = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
 
@@ -63,7 +64,7 @@ export const getBoletoById = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const createBoleto = async (req: AuthRequest, res: Response) => {
+export const createBoleto = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
     const { companyId: adminSelectedCompanyId, method } = req.body;
 
@@ -154,7 +155,7 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
+export const updateBoletoStatus = async (req: AuthRequest, res: express.Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -200,7 +201,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
+export const updateBoletoComments = async (req: AuthRequest, res: express.Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -244,7 +245,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const deleteBoleto = async (req: AuthRequest, res: Response) => {
+export const deleteBoleto = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();

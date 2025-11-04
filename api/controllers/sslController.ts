@@ -1,5 +1,6 @@
+
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import type { Response } from 'express';
+import * as express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -8,7 +9,7 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-export const getSslSettings = async (req: AuthRequest, res: Response) => {
+export const getSslSettings = async (req: AuthRequest, res: express.Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
         if (rows.length > 0) {
@@ -22,7 +23,7 @@ export const getSslSettings = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const saveSslSettings = async (req: AuthRequest, res: Response) => {
+export const saveSslSettings = async (req: AuthRequest, res: express.Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
         return res.status(400).json({ message: 'Invalid domain specified.' });
@@ -41,7 +42,7 @@ export const saveSslSettings = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const checkSslStatus = (req: AuthRequest, res: Response) => {
+export const checkSslStatus = (req: AuthRequest, res: express.Response) => {
     const { domain } = req.body;
     if (!domain) {
         return res.status(400).json({ message: 'Domain is required.' });

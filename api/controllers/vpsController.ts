@@ -1,5 +1,6 @@
+
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import type { Response } from 'express';
+import * as express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { VpsSettings } from '../../types';
@@ -7,7 +8,7 @@ import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { NodeSSH } from 'node-ssh';
 
-export const getVpsSettings = async (req: AuthRequest, res: Response) => {
+export const getVpsSettings = async (req: AuthRequest, res: express.Response) => {
   const user = req.user!;
   if (!user.companyId) {
     return res.status(400).json({ message: 'Admin user must be associated with a company.' });
@@ -26,7 +27,7 @@ export const getVpsSettings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const saveVpsSettings = async (req: AuthRequest, res: Response) => {
+export const saveVpsSettings = async (req: AuthRequest, res: express.Response) => {
   const user = req.user!;
   const { hostname, username, password, ssh_port, project_path } = req.body;
 
@@ -60,7 +61,7 @@ export const saveVpsSettings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const triggerUpdate = async (req: AuthRequest, res: Response) => {
+export const triggerUpdate = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
     if (!user.companyId) {
         return res.status(400).json({ message: 'Admin user must be associated with a company.' });
