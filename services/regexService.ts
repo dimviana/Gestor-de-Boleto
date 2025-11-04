@@ -84,31 +84,29 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     const normalizedText = text.replace(/ +/g, ' ').trim();
 
     // Upgraded REGEX patterns for improved data extraction.
-    // The lookahead `(?=...)` now also includes `[\r\n]` to correctly stop capturing
-    // at the end of a line, which is crucial for multi-line layouts.
     const patterns = {
-        // Handles formatted line (with optional dots and flexible spaces) OR a raw 47-48 digit number.
         barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
-        // Allows amount to be on the next line. Handles "(=) Valor do Documento".
-        amount: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento|Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        discount: /(?:(?:\(-\)\s*)?Desconto|Abatimento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        interestAndFines: /(?:(?:\(\+\)\s*)?Juros|Multa|Acréscimos)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        // Allows due date to be on the next line and handles common OCR errors for '/'.
+        amountValorCobrado: /(?:Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        amountValorDocumento: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        discount: /(?:(?:\(-\)\s*)?(?:Desconto|Abatimento|Outras Deduções))[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        interestAndFines: /(?:(?:\(\+\)\s*)?(?:Juros|Multa|Acréscimos|Outros Acréscimos))[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
-        // Allows document date to be on the next line and handles common OCR errors for '/'.
         documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
-        // Flexible capture that stops at a wide gap OR a newline.
         guideNumber: /(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero|Guia)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
-        // Flexible capture that stops at a wide gap OR a newline.
         recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
-        // Flexible capture that stops at a wide gap OR a newline.
         drawee: /(?:Pagador|Sacado)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
-        // Captures any long non-whitespace string starting with the PIX identifier.
         pixQrCodeText: /(000201\S{100,})/i,
     };
-
+    
+    // Process matches
     const barcodeMatch = normalizedText.match(patterns.barcode);
-    const amountMatch = normalizedText.match(patterns.amount);
+    
+    // Prioritize "Valor Cobrado" over "Valor do Documento"
+    let amountMatch = normalizedText.match(patterns.amountValorCobrado);
+    if (!amountMatch) {
+        amountMatch = normalizedText.match(patterns.amountValorDocumento);
+    }
+    
     const discountMatch = normalizedText.match(patterns.discount);
     const interestAndFinesMatch = normalizedText.match(patterns.interestAndFines);
     const dueDateMatch = normalizedText.match(patterns.dueDate);
@@ -118,7 +116,6 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     const draweeMatch = normalizedText.match(patterns.drawee);
     const pixQrCodeTextMatch = normalizedText.match(patterns.pixQrCodeText);
     
-    // Process matches
     const rawBarcode = barcodeMatch ? (barcodeMatch[1] || barcodeMatch[2]) : null;
     const barcode = rawBarcode ? cleanOcrMistakes(rawBarcode).replace(/[^\d]/g, '') : null;
     
@@ -146,7 +143,6 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     const dueDate = parseDate(dueDateMatch);
     const documentDate = parseDate(documentDateMatch);
 
-    // With improved regex, a simple trim is usually sufficient.
     const getMatchValue = (match: RegExpMatchArray | null): string | null => {
         if (!match || !match[1]) return null;
         const value = match[1].trim().replace(/--/g, '').trim();
