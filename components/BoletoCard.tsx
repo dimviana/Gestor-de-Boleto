@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus } from '../types';
-import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon } from './icons/Icons';
+import { HashtagIcon, CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface BoletoCardProps {
@@ -15,7 +15,7 @@ interface BoletoCardProps {
 
 const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection }) => {
   const { t, language } = useLanguage();
-  const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
+  const { id, recipient, drawee, documentDate, dueDate, amount, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
   const [pixCopied, setPixCopied] = useState(false);
   const [barcodeCopied, setBarcodeCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -24,17 +24,12 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t('notAvailable');
-    // Handles YYYY-MM-DD
-    const parts = dateString.split('-');
-    if (parts.length === 3) {
-      try {
-        const date = new Date(`${dateString}T00:00:00`);
-        return new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : 'en-US').format(date);
-      } catch (e) {
-        return dateString;
-      }
+    try {
+      const date = new Date(`${dateString}T00:00:00`);
+      return new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : 'en-US').format(date);
+    } catch (e) {
+      return dateString;
     }
-    return dateString;
   };
 
   const formatCurrency = (value: number | null) => {
@@ -62,7 +57,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const handleDownloadPdf = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!fileData) return;
-
     const byteCharacters = atob(fileData);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -71,13 +65,11 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     const byteArray = new Uint8Array(byteNumbers);
     const blob = new Blob([byteArray], { type: 'application/pdf' });
     const fileURL = URL.createObjectURL(blob);
-    
     const link = document.createElement('a');
     link.href = fileURL;
     link.download = fileName;
     document.body.appendChild(link);
     link.click();
-    
     document.body.removeChild(link);
     URL.revokeObjectURL(fileURL);
   };
@@ -125,7 +117,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   };
 
   const getAction = () => {
-    const baseButtonClasses = "w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-white rounded-md transition-colors";
+    const baseButtonClasses = "w-full flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors";
     const handleActionClick = (e: React.MouseEvent, newStatus: BoletoStatus) => {
         e.stopPropagation();
         onUpdateStatus(id, newStatus);
@@ -157,18 +149,39 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     }
   };
 
+  const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string | null; onCopy?: (e: React.MouseEvent) => void; copyState?: boolean; copyLabel?: string; }> = ({ icon, label, value, onCopy, copyState, copyLabel }) => {
+    if (!value) return null;
+    return (
+      <div className="flex items-start">
+        <div className="flex-shrink-0 w-5 h-5 text-gray-400 dark:text-gray-500">{icon}</div>
+        <div className="ml-3 flex-1 min-w-0">
+            <p className="text-sm text-gray-600 dark:text-gray-300 break-words">
+                <span className="font-medium">{label} </span>
+                <span className={`${label.toLowerCase().includes('barras') ? 'font-mono text-xs' : ''}`}>{value}</span>
+            </p>
+        </div>
+        {onCopy && (
+            <button onClick={onCopy} title={copyLabel} className="ml-2 p-1 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex-shrink-0 rounded-md">
+                {copyState ? <CheckIcon className="w-4 h-4 text-green-500" /> : <CopyIcon className="w-4 h-4" />}
+            </button>
+        )}
+      </div>
+    );
+  };
+
+
   return (
     <div 
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`bg-white dark:bg-gray-700 rounded-lg shadow-md dark:shadow-lg p-4 border transition-all duration-200 hover:shadow-xl hover:-translate-y-1
-      ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-200 dark:border-gray-600'}
+      className={`bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-lg p-4 border transition-all duration-200 hover:shadow-xl hover:-translate-y-1
+      ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-200 dark:border-slate-700'}
       ${isDragging ? 'opacity-50' : ''}`}
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
-            <h3 className="font-bold text-gray-800 dark:text-gray-100 break-words">
+            <h3 className="font-extrabold text-lg text-gray-800 dark:text-gray-100 break-words">
               {drawee || recipient || t('recipientNotFound')}
             </h3>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={fileName}>{fileName}</p>
@@ -185,7 +198,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
           </button>
           <input
             type="checkbox"
-            className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-500 dark:bg-gray-600 dark:focus:ring-offset-gray-700 cursor-pointer"
+            className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-offset-gray-800 cursor-pointer"
             checked={isSelected}
             onClick={(e) => e.stopPropagation()}
             onChange={() => onToggleSelection(id)}
@@ -193,68 +206,32 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 my-4 text-center border-t border-b border-gray-100 dark:border-gray-600 py-3">
+      <div className="grid grid-cols-2 gap-x-6 my-4 border-t border-gray-100 dark:border-slate-700 pt-4">
           <div>
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('amount')}</p>
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(amount)}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
+              <p className="text-2xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(amount)}</p>
           </div>
           <div>
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dueDate')}</p>
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{formatDate(dueDate)}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
+              <p className="text-2xl font-extrabold text-blue-500 dark:text-blue-400">{formatDate(dueDate)}</p>
           </div>
       </div>
       
-      <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-        {recipient && (
-          <div className="flex items-center">
-            <UserIcon className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-            <p className="text-sm text-gray-500 dark:text-gray-400 truncate" title={recipient}>
-              <span className="font-normal">{t('recipient')}:</span> {recipient}
-            </p>
-          </div>
-        )}
-         {documentDate && (
-            <div className="flex items-center">
-                <FileTextIcon className="w-4 h-4 mr-2 text-orange-500" />
-                <span>{t('documentDate')} <span className="font-semibold">{formatDate(documentDate)}</span></span>
-            </div>
-         )}
-        {(discount !== null && discount > 0) && (
-            <div className="flex items-center">
-                <DollarSignIcon className="w-4 h-4 mr-2 text-red-500" />
-                <span>{t('discount')} <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(discount)}</span></span>
-            </div>
-        )}
-        {(interestAndFines !== null && interestAndFines > 0) && (
-            <div className="flex items-center">
-                <DollarSignIcon className="w-4 h-4 mr-2 text-orange-500" />
-                <span>{t('interestAndFines')} <span className="font-semibold text-orange-600 dark:text-orange-400">{formatCurrency(interestAndFines)}</span></span>
-            </div>
-        )}
-        {guideNumber && (
-            <div className="flex items-center">
-                <IdIcon className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
-                <span>{t('guideNumber')} <span className="font-semibold">{guideNumber}</span></span>
-            </div>
-        )}
-        {barcode && (
-            <div className="flex items-start justify-between">
-              <div className="flex items-start flex-1 min-w-0">
-                <BarcodeIcon className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0" />
-                <span className="break-all">{t('barcode')} <span className="font-mono text-xs">{barcode}</span></span>
-              </div>
-              <button
-                onClick={handleCopyBarcode}
-                title={t('copyBarcode')}
-                className="ml-2 p-1 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex-shrink-0 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-700 focus:ring-blue-500"
-              >
-                {barcodeCopied ? <CheckIcon className="w-4 h-4 text-green-500" /> : <CopyIcon className="w-4 h-4" />}
-              </button>
-            </div>
-        )}
+      <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 pt-4">
+        <DetailItem icon={<UserIcon />} label={`${t('recipient')}:`} value={recipient} />
+        <DetailItem icon={<FileTextIcon />} label={`${t('documentDate')}`} value={formatDate(documentDate)} />
+        <DetailItem icon={<IdIcon />} label={`${t('guideNumber')}`} value={guideNumber} />
+        <DetailItem 
+          icon={<BarcodeIcon />} 
+          label={`${t('barcode')}`} 
+          value={barcode}
+          onCopy={handleCopyBarcode}
+          copyState={barcodeCopied}
+          copyLabel={t('copyBarcode')}
+        />
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600 space-y-2">
+      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 space-y-3">
         <div className="flex items-center space-x-2">
             <div className="flex-1">
                 {getAction()}
@@ -262,37 +239,35 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             <button
                 title={t('addComment')}
                 onClick={toggleCommentSection}
-                className={`flex-shrink-0 flex items-center justify-center p-2 text-sm font-medium rounded-md transition-colors ${
-                    comments ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900' : 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'
+                className={`flex-shrink-0 flex items-center justify-center p-3 rounded-md transition-colors ${
+                    comments ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900' : 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600/50 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
             >
                 <ChatBubbleIcon className="w-5 h-5" />
             </button>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-center space-x-6">
              <button
-                title={t('openPdf')}
                 onClick={handleOpenPdf}
                 disabled={!fileData}
-                className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <FileTextIcon className="w-4 h-4 mr-2" />
+                <FileTextIcon className="w-4 h-4 mr-1.5" />
                 <span>{t('openPdf')}</span>
             </button>
             <button
-                title={t('downloadPdfButton')}
                 onClick={handleDownloadPdf}
                 disabled={!fileData}
-                className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/40 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center text-sm font-medium text-green-600 dark:text-green-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <DownloadIcon className="w-4 h-4 mr-2" />
+                <DownloadIcon className="w-4 h-4 mr-1.5" />
                 <span>{t('downloadPdfButton')}</span>
             </button>
         </div>
       </div>
-
+      
       {!isCommentOpen && comments && (
-        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-600">
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
             <p className="text-xs text-gray-500 dark:text-gray-400 italic whitespace-pre-wrap break-words">
                 <strong>{t('commentsLabel')}:</strong> {comments}
             </p>
@@ -300,7 +275,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       )}
 
       {isCommentOpen && (
-        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-600" onClick={e => e.stopPropagation()}>
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700" onClick={e => e.stopPropagation()}>
             <label htmlFor={`comment-${id}`} className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('addCommentLabel')}</label>
             <textarea
                 id={`comment-${id}`}
@@ -322,19 +297,19 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       )}
 
       {pixQrCodeText && (
-        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600">
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
             <div className="flex items-center font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                <QrCodeIcon className="w-5 h-5 mr-2 flex-shrink-0" />
+                <HashtagIcon className="w-5 h-5 mr-2 flex-shrink-0" />
                 <span>{t('pixQrCode')}</span>
             </div>
-            <div className="relative p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+            <div className="relative p-3 bg-gray-100 dark:bg-slate-900 rounded-md">
                 <p className="text-xs text-gray-600 dark:text-gray-300 font-mono break-all pr-10 leading-relaxed">
                     {pixQrCodeText}
                 </p>
                 <button
                     onClick={handleCopyPix}
                     title={t('copyPixCode')}
-                    className="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="absolute top-2 right-2 p-1.5 text-gray-500 hover:text-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                     {pixCopied ? <CheckIcon className="w-5 h-5 text-green-500" /> : <CopyIcon className="w-5 h-5" />}
                 </button>
