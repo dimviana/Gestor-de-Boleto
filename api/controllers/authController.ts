@@ -1,6 +1,7 @@
 
+
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import * as express from 'express';
+import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';

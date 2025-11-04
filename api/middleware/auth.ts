@@ -1,6 +1,7 @@
 
+
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import * as express from 'express';
+import express from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // Import 'multer' to make Express.Multer.File type augmentation available.

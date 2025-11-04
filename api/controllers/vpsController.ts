@@ -1,6 +1,7 @@
 
+
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import * as express from 'express';
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { VpsSettings } from '../../types';

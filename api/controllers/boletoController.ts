@@ -1,6 +1,7 @@
 
+
 // FIX: Use qualified express types to resolve conflicts with global DOM types.
-import * as express from 'express';
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -75,12 +76,12 @@ export const createBoleto = async (req: AuthRequest, res: express.Response) => {
     let targetCompanyId: string | null;
     if (user.role === 'admin') {
         if (!adminSelectedCompanyId) {
-            return res.status(400).json({ message: 'Admin must select a company' });
+            return res.status(400).json({ message: 'adminMustSelectCompanyErrorText' });
         }
         targetCompanyId = adminSelectedCompanyId;
     } else {
         if (!user.companyId) {
-            return res.status(400).json({ message: 'User is not associated with a company' });
+            return res.status(400).json({ message: 'userHasNoCompanyErrorText' });
         }
         targetCompanyId = user.companyId;
     }
@@ -146,10 +147,10 @@ export const createBoleto = async (req: AuthRequest, res: express.Response) => {
         await connection.commit();
         res.status(201).json(newBoleto);
 
-    } catch (error) {
+    } catch (error: any) {
         await connection.rollback();
         console.error("Error creating boleto:", error);
-        res.status(500).json({ message: 'Failed to process boleto' });
+        res.status(500).json({ message: error.message || 'Failed to process boleto' });
     } finally {
         connection.release();
     }

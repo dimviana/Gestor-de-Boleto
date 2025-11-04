@@ -1,8 +1,9 @@
 
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification, Role } from '../types';
-import { TranslationKey } from '../translations';
+import { TranslationKey, translations } from '../translations';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
@@ -66,7 +67,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
       if (!targetCompanyId) {
         const errorKey = user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText';
-        throw new Error(t(errorKey as TranslationKey));
+        throw new Error(errorKey);
       }
 
       await addBoleto(user, file, targetCompanyId, method, onProgress);
@@ -79,28 +80,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
     } catch (error: any) {
       console.error("Upload failed:", error);
-
-      const errorMap: { [key: string]: TranslationKey } = {
-          'Duplicate barcode': 'duplicateBarcodeErrorText',
-          'User is not associated with a company': 'userHasNoCompanyErrorText',
-          'Admin must select a company': 'adminMustSelectCompanyErrorText',
-          'freeBoletoErrorText': 'freeBoletoErrorText'
-      };
       
-      let errorKey: TranslationKey = 'genericErrorText';
-      let substitutions: Record<string, string> = {};
+      const messageFromServer = error.message || 'genericErrorText';
+      let errorMessage = '';
 
-      for (const key in errorMap) {
-          if (error.message.includes(key)) {
-              errorKey = errorMap[key];
-              if (key === 'Duplicate barcode') {
-                  substitutions.identifier = error.message.split(': ')[1] || 'N/A';
-              }
-              break;
-          }
+      // Handle special case for duplicate barcode which includes the identifier
+      if (messageFromServer.startsWith('Duplicate barcode:')) {
+          const substitutions = { identifier: messageFromServer.split(': ')[1] || 'N/A' };
+          errorMessage = t('duplicateBarcodeErrorText', substitutions);
+      } else {
+          // For all other errors, the message IS the translation key.
+          // The `t` function will handle it if it's a valid key.
+          // If not a valid key (e.g., unexpected server error string), it will just display the string itself, which is a decent fallback.
+          const isKnownKey = Object.keys(translations.pt).includes(messageFromServer);
+          errorMessage = t(isKnownKey ? messageFromServer as TranslationKey : 'genericErrorText');
       }
-      
-      const errorMessage = t(errorKey, substitutions);
 
       setUploadStatuses(prev => prev.map(up => 
             up.id === uploadId 

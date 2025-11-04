@@ -1,5 +1,6 @@
 
 
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
@@ -64,7 +65,7 @@ export const extractBoletoInfo = async (
     aiSettings: AiSettings
 ): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     if (!appConfig.API_KEY) {
-        throw new Error("A chave da API do Gemini não está configurada no servidor.");
+        throw new Error("geminiNoApiKeyServer");
     }
 
     try {
@@ -112,7 +113,7 @@ export const extractBoletoInfo = async (
         const responseText = response.text;
         if (!responseText) {
             console.error("Gemini API returned an empty or invalid response object:", response);
-            throw new Error("A API de IA retornou uma resposta vazia. Isso pode ocorrer devido a filtros de segurança ou um erro interno.");
+            throw new Error("geminiEmptyResponse");
         }
 
         let parsedJson;
@@ -120,7 +121,7 @@ export const extractBoletoInfo = async (
             parsedJson = JSON.parse(responseText);
         } catch (jsonError) {
             console.error("Failed to parse JSON from Gemini API:", responseText);
-            throw new Error("A API de IA retornou um formato de dados inválido (não-JSON).");
+            throw new Error("geminiInvalidJson");
         }
 
 
@@ -136,17 +137,28 @@ export const extractBoletoInfo = async (
     } catch (error: any) {
         console.error("Error during Gemini AI processing:", error);
 
-        const knownErrors = [
-            "A API de IA retornou uma resposta vazia",
-            "A API de IA retornou um formato de dados inválido",
-            "A chave da API do Gemini não está configurada"
-        ];
+        const errorMessage = error.message || '';
         
-        if (knownErrors.some(e => error.message.includes(e))) {
-            throw error; // Rethrow the specific, user-friendly error
+        // Check for our custom thrown errors first.
+        if (['geminiNoApiKeyServer', 'geminiEmptyResponse', 'geminiInvalidJson'].includes(errorMessage)) {
+            throw error;
         }
 
-        // For other errors (e.g., network, API key invalid from Google), provide a general message.
-        throw new Error("Falha na comunicação com a API de IA. Verifique sua chave de API, as configurações do modelo e a conexão.");
+        // Check for specific strings in the error message from the Gemini API
+        if (errorMessage.includes('API_KEY_INVALID') || errorMessage.includes('API key not valid')) {
+            throw new Error("geminiErrorApiKey");
+        }
+        if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit')) {
+            throw new Error("geminiErrorRateLimit");
+        }
+        if (errorMessage.toLowerCase().includes('safety')) {
+             throw new Error("geminiErrorSafety");
+        }
+        if (errorMessage.includes('400')) {
+             throw new Error("geminiErrorBadRequest");
+        }
+
+        // General fallback
+        throw new Error("geminiGenericError");
     }
 };
