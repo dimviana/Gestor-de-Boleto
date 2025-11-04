@@ -84,6 +84,8 @@ export const register = (username?: string, password?: string): Promise<any> => 
 // --- Boletos API ---
 export const fetchBoletos = (): Promise<Boleto[]> => apiFetch('/boletos');
 
+export const fetchBoletoById = (id: string): Promise<Boleto> => apiFetch(`/boletos/${id}`);
+
 export const createBoleto = (boletoData: Partial<Boleto>, file: File, companyId?: string): Promise<Boleto> => {
     const formData = new FormData();
     formData.append('file', file);

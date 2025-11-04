@@ -10,7 +10,7 @@ interface BoletoCardProps {
   onUpdateComments: (id: string, comments: string) => void;
   isSelected: boolean;
   onToggleSelection: (id: string) => void;
-  onViewDetails: (boleto: Boleto) => void;
+  onViewDetails: (boletoId: string) => void;
 }
 
 const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewDetails }) => {
@@ -142,17 +142,11 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       className={`bg-white dark:bg-gray-700 rounded-lg shadow-md dark:shadow-lg p-4 border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 animate-fade-in cursor-pointer
       ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-200 dark:border-gray-600'}
       ${isDragging ? 'opacity-50' : ''}`}
-      onClick={() => onToggleSelection(id)}
+      onClick={() => onViewDetails(id)}
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
-            <h3 
-              className="font-bold text-gray-800 dark:text-gray-100 break-words cursor-pointer hover:underline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewDetails(boleto);
-              }}
-            >
+            <h3 className="font-bold text-gray-800 dark:text-gray-100 break-words">
               {drawee || recipient || t('recipientNotFound')}
             </h3>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={fileName}>{fileName}</p>
@@ -171,7 +165,8 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             type="checkbox"
             className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-500 dark:bg-gray-600 dark:focus:ring-offset-gray-700 cursor-pointer"
             checked={isSelected}
-            readOnly // The card's onClick handles the logic
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => onToggleSelection(id)}
           />
         </div>
       </div>

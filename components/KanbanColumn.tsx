@@ -1,5 +1,6 @@
 
 
+
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { Boleto, BoletoStatus } from '../types';
 import BoletoCard from './BoletoCard';
@@ -14,7 +15,7 @@ interface KanbanColumnProps {
   selectedBoletoIds: string[];
   onToggleSelection: (id: string) => void;
   onToggleSelectAll: (boletos: Boleto[]) => void;
-  onViewDetails: (boleto: Boleto) => void;
+  onViewDetails: (boletoId: string) => void;
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll, onViewDetails }) => {

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 // FIX: Moved TranslationKey import to the correct file 'translations.ts' from 'types.ts'.
@@ -42,6 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [viewingBoleto, setViewingBoleto] = useState<Boleto | null>(null);
+  const [isBoletoDetailsLoading, setIsBoletoDetailsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -171,9 +173,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     setSelectedBoletoIds(prev => prev.filter(selectedId => selectedId !== id));
   };
 
-  const handleViewBoletoDetails = useCallback((boleto: Boleto) => {
-    setViewingBoleto(boleto);
-  }, []);
+  const handleViewBoletoDetails = useCallback(async (boletoId: string) => {
+    setIsBoletoDetailsLoading(true);
+    // Find the basic boleto info from the list to show immediately
+    const placeholderBoleto = boletos.find(b => b.id === boletoId);
+    setViewingBoleto(placeholderBoleto || { id: boletoId } as Boleto);
+
+    try {
+        const fetchedBoleto = await api.fetchBoletoById(boletoId);
+        setViewingBoleto(fetchedBoleto); // Replace placeholder with full data
+    } catch (error) {
+        console.error("Failed to fetch boleto details:", error);
+        // Here you could show an error toast/notification
+        setViewingBoleto(null); // Close modal on error
+    } finally {
+        setIsBoletoDetailsLoading(false);
+    }
+  }, [boletos]);
 
   const filteredBoletos = useMemo(() => {
     let baseList: Boleto[] = [];
@@ -344,7 +360,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
           />
       </Modal>
       
-      {viewingBoleto && (<BoletoDetailsModal boleto={viewingBoleto} onClose={() => setViewingBoleto(null)} />)}
+      {viewingBoleto && (
+        <BoletoDetailsModal 
+            boleto={viewingBoleto} 
+            isLoading={isBoletoDetailsLoading}
+            onClose={() => setViewingBoleto(null)} 
+        />
+      )}
     </>
   );
 };

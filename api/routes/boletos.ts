@@ -2,6 +2,7 @@
 import express from 'express';
 import {
   getBoletos,
+  getBoletoById,
   createBoleto,
   updateBoletoStatus,
   updateBoletoComments,
@@ -16,6 +17,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.route('/').get(protect, getBoletos).post(protect, upload.single('file'), createBoleto);
 router.route('/:id/status').put(protect, updateBoletoStatus);
 router.route('/:id/comments').put(protect, updateBoletoComments);
-router.route('/:id').delete(protect, deleteBoleto);
+router.route('/:id').get(protect, getBoletoById).delete(protect, deleteBoleto);
 
 export default router;

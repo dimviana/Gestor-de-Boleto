@@ -1,15 +1,17 @@
 
 
 
+
+
 // FIX: Use explicit type imports from express to avoid conflicts with global DOM types
-import { Response } from 'express';
+import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-export const getBoletos = async (req: AuthRequest, res: Response) => {
+export const getBoletos = async (req: AuthRequest, res: express.Response) => {
   const user = req.user!;
   try {
     // If a non-admin user is not associated with a company, they cannot have any boletos.
@@ -18,7 +20,8 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
       return res.json([]);
     }
 
-    let query = 'SELECT * FROM boletos';
+    // Optimization: Exclude the large `file_data` field from the main list fetching
+    let query = 'SELECT id, recipient, drawee, document_date, due_date, amount, discount, interest_and_fines, barcode, guide_number, pix_qr_code_text, status, file_name, company_id, comments, created_at FROM boletos';
     const params: (string | null)[] = [];
     if (user.role !== 'admin') {
       // This is now safe because we've already checked for user.companyId existence.
@@ -39,7 +42,37 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const createBoleto = async (req: AuthRequest, res: Response) => {
+export const getBoletoById = async (req: AuthRequest, res: express.Response) => {
+    const user = req.user!;
+    const boletoId = req.params.id;
+
+    try {
+        let query = 'SELECT * FROM boletos WHERE id = ?';
+        const params: (string | null)[] = [boletoId];
+
+        // Security check: Non-admins can only fetch boletos from their own company.
+        if (user.role !== 'admin') {
+            if (!user.companyId) {
+                return res.status(403).json({ message: 'User is not associated with a company.' });
+            }
+            query += ' AND company_id = ?';
+            params.push(user.companyId);
+        }
+        
+        const [boletos] = await pool.query<RowDataPacket[]>(query, params);
+
+        if (boletos.length === 0) {
+            return res.status(404).json({ message: 'Boleto not found or access denied.' });
+        }
+
+        res.json(boletos[0]);
+    } catch (error) {
+        console.error(`Error fetching boleto with ID ${boletoId}:`, error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const createBoleto = async (req: AuthRequest, res: express.Response) => {
     const user = req.user!;
     const adminSelectedCompanyId = req.body.companyId;
     const extractedDataJSON = req.body.extractedData;
@@ -106,7 +139,7 @@ export const createBoleto = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
+export const updateBoletoStatus = async (req: AuthRequest, res: express.Response) => {
     const { status } = req.body;
     try {
         await pool.query('UPDATE boletos SET status = ? WHERE id = ?', [status, req.params.id]);
@@ -116,7 +149,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
+export const updateBoletoComments = async (req: AuthRequest, res: express.Response) => {
     const { comments } = req.body;
     try {
         await pool.query('UPDATE boletos SET comments = ? WHERE id = ?', [comments, req.params.id]);
@@ -126,7 +159,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const deleteBoleto = async (req: AuthRequest, res: Response) => {
+export const deleteBoleto = async (req: AuthRequest, res: express.Response) => {
     try {
         await pool.query('DELETE FROM boletos WHERE id = ?', [req.params.id]);
         res.json({ message: 'Boleto deleted' });

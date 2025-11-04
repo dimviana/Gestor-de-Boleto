@@ -108,6 +108,7 @@ export const extractBoletoInfo = async (
         },
     });
     
+    // FIX: Access response text via the .text property
     const responseText = response.text;
     if (!responseText) {
         console.error("Gemini API returned an empty or invalid response object:", response);
