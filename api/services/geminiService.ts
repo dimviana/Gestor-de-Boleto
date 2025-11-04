@@ -8,10 +8,6 @@ import Tesseract from 'tesseract.js';
 import { Buffer } from 'buffer';
 import { appConfig } from './configService';
 
-// This line is for browser environments and can cause issues in Node.js.
-// pdfjs-dist's Node.js build does not require a worker script.
-// pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.js';
-
 const renderPdfPageToCanvas = async (pdfBuffer: Buffer): Promise<Canvas> => {
     const data = new Uint8Array(pdfBuffer);
     const pdf = await pdfjs.getDocument(data).promise;

@@ -1,10 +1,7 @@
+
 import { Boleto } from '../../types';
 import * as pdfjs from 'pdfjs-dist';
 import { Buffer } from 'buffer';
-
-// This line is for browser environments and can cause issues in Node.js.
-// pdfjs-dist's Node.js build does not require a worker script.
-// pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.js';
 
 const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
     const data = new Uint8Array(pdfBuffer);
@@ -96,23 +93,16 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
 
         if (!/\d/.test(valueStr)) return null;
 
-        // Standardize format: remove thousands separators, use dot for decimal.
+        // Standardize format: remove thousands separators (dot), use dot for decimal (replacing comma).
         const hasComma = valueStr.includes(',');
-        const hasDot = valueStr.includes('.');
-
+        
         if (hasComma) {
-            // Brazilian format "1.234,56"
+            // Assumes Brazilian format "1.234,56". Remove all dots, then replace the comma with a dot.
             valueStr = valueStr.replace(/\./g, '').replace(',', '.');
-        } else if (hasDot) {
-            // Ambiguous format "1.234" or "12.34"
-            const parts = valueStr.split('.');
-            // If the last part has 2 digits and it's not the only part, assume it's a decimal part.
-            if (parts.length > 1 && parts[parts.length - 1].length === 2) {
-                valueStr = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
-            } else {
-                // Otherwise, all dots are thousands separators.
-                valueStr = valueStr.replace(/\./g, '');
-            }
+        } else {
+            // Assumes format like "1234" or "1.234" (as integer). Just remove dots.
+            // This prevents "1.234" from becoming "1.23" incorrectly.
+             valueStr = valueStr.replace(/\./g, '');
         }
         
         // Remove any remaining non-numeric characters except the decimal point

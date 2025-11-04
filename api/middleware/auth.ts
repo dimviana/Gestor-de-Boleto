@@ -1,15 +1,15 @@
-// FIX: Use named type imports for express to resolve conflicts with global DOM types.
-import type { Request, Response, NextFunction } from 'express';
+
+
+// FIX: Changed type-only import to a regular import to ensure AuthRequest inherits all properties from Express's Request type.
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
-// Import 'multer' to make Express.Multer.File type augmentation available.
+// A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
 import 'multer';
 import { appConfig } from '../services/configService';
 
-// By extending express.Request, AuthRequest inherits standard properties
-// like `headers`, `body`, `file`, etc., resolving type errors in controllers.
-// The `multer` import augments the base `Request` type to include `file`.
-// FIX: Extend Request from express to correctly inherit Express request properties.
+// Ao estender Request do Express, AuthRequest herda propriedades padrão
+// como `headers`, `body`, `file`, etc., resolvendo erros de tipo nos controllers.
 export interface AuthRequest extends Request {
   user?: User;
 }
@@ -20,23 +20,21 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
     try {
       token = req.headers.authorization.split(' ')[1];
       
-      // Robust check for a valid JWT secret
       if (!appConfig.JWT_SECRET || appConfig.JWT_SECRET === 'default_jwt_secret_please_change') {
-          console.error('CRITICAL: JWT_SECRET is not configured correctly. Cannot verify token.');
-          return res.status(500).json({ message: 'Server authentication is not properly configured.' });
+          console.error('CRÍTICO: JWT_SECRET não está configurado corretamente. Não é possível verificar o token.');
+          return res.status(500).json({ message: 'A autenticação do servidor não está configurada corretamente.' });
       }
 
       const decoded = jwt.verify(token, appConfig.JWT_SECRET) as User;
       req.user = decoded;
       return next();
     } catch (error) {
-      // This will now primarily catch expired/malformed tokens, not server config errors.
-      return res.status(401).json({ message: 'Not authorized, token failed' });
+      return res.status(401).json({ message: 'Não autorizado, o token falhou' });
     }
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ message: 'Não autorizado, sem token' });
   }
 };
 
@@ -44,7 +42,7 @@ export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
-        res.status(403).json({ message: 'Not authorized as an admin' });
+        res.status(403).json({ message: 'Não autorizado como administrador' });
     }
 };
 
@@ -52,6 +50,6 @@ export const editor = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {
-        res.status(403).json({ message: 'Not authorized as an editor or admin' });
+        res.status(403).json({ message: 'Não autorizado como editor ou administrador' });
     }
 };
