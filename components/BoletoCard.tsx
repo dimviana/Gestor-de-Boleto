@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus } from '../types';
-import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon } from './icons/Icons';
+import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface BoletoCardProps {
@@ -57,6 +57,29 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     const blob = new Blob([byteArray], { type: 'application/pdf' });
     const fileURL = URL.createObjectURL(blob);
     window.open(fileURL, '_blank');
+  };
+
+  const handleDownloadPdf = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!fileData) return;
+
+    const byteCharacters = atob(fileData);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/pdf' });
+    const fileURL = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = fileURL;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    URL.revokeObjectURL(fileURL);
   };
 
   const handleCopyPix = (e: React.MouseEvent) => {
@@ -247,7 +270,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
                 <ChatBubbleIcon className="w-5 h-5" />
             </button>
         </div>
-        <div>
+        <div className="flex items-center space-x-2">
              <button
                 title={t('openPdf')}
                 onClick={handleOpenPdf}
@@ -256,6 +279,15 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             >
                 <FileTextIcon className="w-4 h-4 mr-2" />
                 <span>{t('openPdf')}</span>
+            </button>
+            <button
+                title={t('downloadPdfButton')}
+                onClick={handleDownloadPdf}
+                disabled={!fileData}
+                className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/40 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <DownloadIcon className="w-4 h-4 mr-2" />
+                <span>{t('downloadPdfButton')}</span>
             </button>
         </div>
       </div>
