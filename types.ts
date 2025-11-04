@@ -115,3 +115,12 @@ export interface SslStatus {
     issuedAt: string | null;
     error?: string;
 }
+
+// New type for the update/rollback system
+export interface Deployment {
+    id: string;
+    commit_sha: string;
+    commit_message: string;
+    db_backup_filename: string;
+    deployed_at: string; // ISO string
+}

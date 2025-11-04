@@ -92,6 +92,20 @@ CREATE TABLE IF NOT EXISTS `settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
+-- Table structure for table `deployments`
+--
+CREATE TABLE IF NOT EXISTS `deployments` (
+  `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the deployment record',
+  `commit_sha` VARCHAR(40) NOT NULL COMMENT 'Git commit SHA of the deployed version',
+  `commit_message` TEXT,
+  `db_backup_filename` VARCHAR(255) NOT NULL COMMENT 'Filename of the database backup taken before this deployment',
+  `deployed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `commit_sha_idx` (`commit_sha`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+--
 -- Initial data for `settings` table
 --
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES

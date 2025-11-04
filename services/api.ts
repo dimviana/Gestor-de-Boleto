@@ -1,4 +1,4 @@
-import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus, VpsSettings, ProcessingMethod } from '../types';
+import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus, VpsSettings, ProcessingMethod, Deployment } from '../types';
 
 const API_BASE_URL = '/api'; // Use relative URL to proxy to the backend
 
@@ -256,5 +256,15 @@ export const checkSslStatus = (domain: string): Promise<SslStatus> => {
     return apiFetch('/ssl/check', {
         method: 'POST',
         body: JSON.stringify({ domain }),
+    });
+};
+
+// --- Updates API ---
+export const fetchUpdateHistory = (): Promise<Deployment[]> => apiFetch('/updates/history');
+
+export const triggerRollback = (deploymentId: string): Promise<{ message: string; log: string; }> => {
+    return apiFetch('/updates/rollback', {
+        method: 'POST',
+        body: JSON.stringify({ deploymentId }),
     });
 };

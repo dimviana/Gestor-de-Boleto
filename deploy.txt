@@ -7,6 +7,7 @@ DOMAIN="gerenciaboleto.abildeveloper.com.br"
 ADMIN_EMAIL="admin@abildeveloper.com.br" # Used for Let's Encrypt registration.
 GIT_REPO="https://github.com/dimviana/Gestor-de-Boleto.git"
 PROJECT_PATH="$HOME/boleto-manager-ai"
+BACKUP_PATH="$HOME/db_backups" # New backup directory
 NGINX_CONF_NAME="gerenciaboleto"
 DB_HOST="localhost"
 DB_USER="root"
@@ -145,6 +146,30 @@ request_ssl() {
     sudo systemctl restart nginx
 }
 
+create_db_backup() {
+    echo -e "${YELLOW}Creating database backup...${NC}"
+    mkdir -p "$BACKUP_PATH"
+    BACKUP_FILENAME="backup_$(date +%Y%m%d_%H%M%S).sql"
+    mysqldump -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" > "$BACKUP_PATH/$BACKUP_FILENAME"
+    echo -e "${GREEN}Backup created: $BACKUP_PATH/$BACKUP_FILENAME${NC}"
+    # This exports the variable to be used by the calling function
+    export LAST_BACKUP_FILENAME="$BACKUP_FILENAME"
+}
+
+record_deployment() {
+    cd "$PROJECT_PATH"
+    COMMIT_SHA=$(git rev-parse HEAD)
+    COMMIT_MESSAGE=$(git log -1 --pretty=%B | sed "s/'/''/g") # Escape single quotes for SQL
+    DEPLOYMENT_ID=$(uuidgen)
+    
+    echo -e "${YELLOW}Recording deployment to database...${NC}"
+    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" <<MYSQL_SCRIPT
+INSERT INTO deployments (id, commit_sha, commit_message, db_backup_filename) VALUES ('${DEPLOYMENT_ID}', '${COMMIT_SHA}', '${COMMIT_MESSAGE}', '${LAST_BACKUP_FILENAME}');
+MYSQL_SCRIPT
+    echo -e "${GREEN}Deployment recorded with SHA ${COMMIT_SHA:0:7}${NC}"
+}
+
+
 # --- Task Functions ---
 install_full() {
     echo -e "${GREEN}--- Starting Full System Installation ---${NC}"
@@ -161,14 +186,23 @@ install_full() {
 update_system() {
     echo -e "${GREEN}--- Starting System Update ---${NC}"
     cd "$PROJECT_PATH" || { echo -e "${RED}Project path '$PROJECT_PATH' not found! Cannot update.${NC}"; exit 1; }
+    
+    create_db_backup
+    
     echo -e "${YELLOW}Pulling latest changes from Git...${NC}"
     git pull
+    
     echo -e "${YELLOW}Installing/updating dependencies...${NC}"
     npm install
+    
     echo -e "${YELLOW}Rebuilding project...${NC}"
     npm run build
+    
+    record_deployment
+    
     echo -e "${YELLOW}Restarting application...${NC}"
     pm2 restart "$APP_NAME"
+    
     echo -e "${GREEN}--- Update Complete! ---${NC}"
 }
 
@@ -193,6 +227,9 @@ uninstall_system() {
 
     echo -e "${YELLOW}Removing project directory...${NC}"
     rm -rf "$PROJECT_PATH"
+    
+    echo -e "${YELLOW}Removing backup directory...${NC}"
+    rm -rf "$BACKUP_PATH"
 
     echo -e "${RED}WARNING: The next step will offer to delete the database.${NC}"
     read -p "Do you want to PERMANENTLY DELETE the MySQL database '${DB_DATABASE}'? This CANNOT BE UNDONE. [y/N] " confirm_db

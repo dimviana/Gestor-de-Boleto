@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
-import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company, SslStatus } from '../types';
+import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company, SslStatus, Deployment } from '../types';
 import { TrashIcon, EditIcon, CheckCircleIcon, XCircleIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
@@ -22,7 +22,7 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser, getLogs }) => {
     const { t, language } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl'>('settings');
+    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl' | 'updates'>('settings');
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     
@@ -43,7 +43,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         loadLogs();
     }, [activeTab, getLogs]);
     
-    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl', label: string}> = ({ tabId, label}) => (
+    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl' | 'updates', label: string}> = ({ tabId, label}) => (
          <button
             onClick={() => setActiveTab(tabId)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -540,6 +540,105 @@ sudo certbot renew --dry-run</code></pre>
         );
     };
 
+    const UpdatesTab = () => {
+        const [history, setHistory] = useState<Deployment[]>([]);
+        const [isLoading, setIsLoading] = useState(true);
+        const [revertingId, setRevertingId] = useState<string | null>(null);
+        const [revertLog, setRevertLog] = useState<string | null>(null);
+        const [revertError, setRevertError] = useState<string | null>(null);
+
+        useEffect(() => {
+            const fetchHistory = async () => {
+                try {
+                    const data = await api.fetchUpdateHistory();
+                    setHistory(data);
+                } catch (error) {
+                    console.error("Failed to fetch update history:", error);
+                    showNotification("Failed to load update history.", 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchHistory();
+        }, []);
+
+        const handleRevert = (deployment: Deployment) => {
+            const date = new Date(deployment.deployed_at).toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US');
+            const confirmationMessage = t('confirmRevertMessage', { version: deployment.commit_sha.substring(0, 7), date });
+
+            if (window.confirm(confirmationMessage)) {
+                setRevertingId(deployment.id);
+                setRevertLog('');
+                setRevertError('');
+
+                api.triggerRollback(deployment.id)
+                    .then(response => {
+                        setRevertLog(response.log);
+                        showNotification(t('revertSuccess'), 'success');
+                        setTimeout(() => window.location.reload(), 3000);
+                    })
+                    .catch(error => {
+                        setRevertError(error.message || t('revertError'));
+                        showNotification(t('revertError'), 'error');
+                    })
+                    .finally(() => {
+                        setRevertingId(null);
+                    });
+            }
+        };
+
+        return (
+            <div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{t('updatesTitle')}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('updatesDescription')}</p>
+                
+                {isLoading ? <div className="flex justify-center mt-8"><Spinner /></div> : (
+                    <div className="mt-6 overflow-x-auto border border-gray-200 dark:border-gray-600 rounded-lg">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                            <thead className="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('version')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('commitMessage')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('deployedAt')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('actions')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                                {history.map((dep, index) => (
+                                    <tr key={dep.id}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-700 dark:text-gray-300">{dep.commit_sha.substring(0, 7)}</td>
+                                        <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100 max-w-sm">{dep.commit_message}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatLogTimestamp(dep.deployed_at)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            {index === 0 ? (
+                                                <span className="text-xs font-semibold text-green-600">Versão Atual</span>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => handleRevert(dep)}
+                                                    disabled={!!revertingId}
+                                                    className="px-3 py-1 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                                                >
+                                                    {revertingId === dep.id ? t('reverting') : t('revertButton')}
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                {(revertLog || revertError) && (
+                    <div className="mt-4 p-4 bg-gray-900 text-white rounded-lg max-h-60 overflow-y-auto">
+                        <h4 className="font-semibold mb-2">{t('revertLog')}</h4>
+                        {revertError && <pre className="text-sm text-red-400 whitespace-pre-wrap">{revertError}</pre>}
+                        <pre className="text-xs text-gray-300 whitespace-pre-wrap">{revertLog}</pre>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
 
     return (
         <>
@@ -566,6 +665,7 @@ sudo certbot renew --dry-run</code></pre>
                 <nav className="flex space-x-2">
                     <TabButton tabId="settings" label={t('adminPanelSettingsTab')} />
                     <TabButton tabId="users_companies" label={t('adminPanelUsersCompaniesTab')} />
+                    <TabButton tabId="updates" label={t('adminPanelUpdatesTab')} />
                     <TabButton tabId="ssl" label="Certificado SSL" />
                     <TabButton tabId="logs" label={t('adminPanelLogsTab')} />
                 </nav>
@@ -573,6 +673,7 @@ sudo certbot renew --dry-run</code></pre>
             
             {activeTab === 'settings' && <SettingsTab />}
             {activeTab === 'users_companies' && <UsersAndCompaniesTab />}
+            {activeTab === 'updates' && <UpdatesTab />}
             {activeTab === 'ssl' && <SslTab />}
             {activeTab === 'logs' && <LogsTab />}
             

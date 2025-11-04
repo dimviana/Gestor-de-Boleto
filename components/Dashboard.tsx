@@ -12,7 +12,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
-import { HourglassIcon, CheckCircleIcon, TrashIcon, PaymentTerminalIcon } from './icons/Icons';
+import { HourglassIcon, CheckCircleIcon, TrashIcon, PaymentTerminalIcon, KanbanIcon, CalendarIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
 import { useAiSettings } from '../contexts/AiSettingsContext';
@@ -22,6 +22,7 @@ import FloatingMenu from './FloatingMenu';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
 import PdfViewerModal from './PdfViewerModal';
 import BoletoConfirmationModal from './BoletoConfirmationModal';
+import CalendarView from './CalendarView';
 
 
 interface DashboardProps {
@@ -43,6 +44,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingPdfBoleto, setViewingPdfBoleto] = useState<Boleto | null>(null);
   const [boletoForConfirmation, setBoletoForConfirmation] = useState<Omit<Boleto, 'companyId' | 'id' | 'status' | 'comments'> | null>(null);
+  const [currentView, setCurrentView] = useState<'kanban' | 'calendar'>('kanban');
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
@@ -366,11 +368,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
                 <SummaryCard icon={<CheckCircleIcon className="w-6 h-6" />} title={t('totalPaid')} value={totalPaid} colorClass="text-green-500" />
             </div>
 
-            {isLoadingBoletos ? <div className="order-1 md:order-2 flex justify-center items-center h-64"><Spinner /></div> : (
-              <div className="order-1 md:order-2 flex flex-col md:flex-row -mx-2">
-                <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewPdf={setViewingPdfBoleto} />
-                <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewPdf={setViewingPdfBoleto} />
-                <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewPdf={setViewingPdfBoleto} />
+            <div className="order-1 md:order-2 mb-6 flex justify-center">
+                <div className="inline-flex rounded-lg shadow-sm bg-gray-200 dark:bg-gray-700 p-1">
+                    <button onClick={() => setCurrentView('kanban')} className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center transition-colors ${currentView === 'kanban' ? 'bg-white text-blue-600 shadow dark:bg-gray-800' : 'text-gray-600 dark:text-gray-300'}`}>
+                        <KanbanIcon className="w-5 h-5 mr-2" /> {t('viewKanban')}
+                    </button>
+                    <button onClick={() => setCurrentView('calendar')} className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center transition-colors ${currentView === 'calendar' ? 'bg-white text-blue-600 shadow dark:bg-gray-800' : 'text-gray-600 dark:text-gray-300'}`}>
+                        <CalendarIcon className="w-5 h-5 mr-2" /> {t('viewCalendar')}
+                    </button>
+                </div>
+            </div>
+
+            {isLoadingBoletos ? <div className="order-3 flex justify-center items-center h-64"><Spinner /></div> : (
+              <div className="order-3">
+                {currentView === 'kanban' ? (
+                  <div className="flex flex-col md:flex-row -mx-2">
+                    <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewPdf={setViewingPdfBoleto} />
+                    <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewPdf={setViewingPdfBoleto} />
+                    <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewPdf={setViewingPdfBoleto} />
+                  </div>
+                ) : (
+                   <CalendarView boletos={filteredBoletos} onViewPdf={setViewingPdfBoleto} />
+                )}
               </div>
             )}
         </div>

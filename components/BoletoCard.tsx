@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
 import { HashtagIcon, CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, ArrowDownIcon, ArrowUpIcon } from './icons/Icons';
@@ -23,7 +24,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const [isDragging, setIsDragging] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(comments || '');
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(true);
 
 
   const formatDate = (dateString: string | null) => {

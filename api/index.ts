@@ -16,6 +16,7 @@ import logRoutes from './routes/logs';
 import settingsRoutes from './routes/settings';
 import sslRoutes from './routes/ssl';
 import vpsRoutes from './routes/vps';
+import updateRoutes from './routes/updates';
 
 // FIX: Declare __dirname to resolve TypeScript error in CommonJS context.
 declare const __dirname: string;
@@ -41,6 +42,7 @@ apiRouter.use('/logs', logRoutes);
 apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/ssl', sslRoutes);
 apiRouter.use('/vps', vpsRoutes);
+apiRouter.use('/updates', updateRoutes);
 
 // Health check for the API router itself
 // FIX: Use explicit Request and Response types from express to resolve type conflicts.
