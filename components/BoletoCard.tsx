@@ -158,7 +158,8 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     }
   };
 
-  const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string | null; onCopy?: (e: React.MouseEvent) => void; copyState?: boolean; copyLabel?: string; }> = ({ icon, label, value, onCopy, copyState, copyLabel }) => {
+  // FIX: Updated the type of 'value' to 'string | number | null' to resolve a TypeScript comparison error.
+  const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string | number | null; onCopy?: (e: React.MouseEvent) => void; copyState?: boolean; copyLabel?: string; }> = ({ icon, label, value, onCopy, copyState, copyLabel }) => {
     if (!value && value !== 0) return null;
     return (
       <div className="flex items-start">
@@ -230,11 +231,11 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
 
       <div className="grid grid-cols-2 gap-x-6 my-4 border-t border-gray-100 dark:border-slate-700 pt-4">
           <div>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount')}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
               <p className="text-2xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(amount)}</p>
           </div>
           <div>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate')}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
               <p className="text-2xl font-extrabold text-blue-500 dark:text-blue-400">{formatDate(dueDate)}</p>
           </div>
       </div>
@@ -255,28 +256,28 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       {isDetailsOpen && (
         <div className="animate-fade-in-up-fast mt-2">
             <Section title={t('parties')}>
-                <DetailItem icon={<UserIcon />} label={`${t('recipient')}:`} value={recipient} />
-                <DetailItem icon={<UserIcon />} label={`${t('drawee')}:`} value={drawee} />
+                <DetailItem icon={<UserIcon />} label={t('recipient')} value={recipient} />
+                <DetailItem icon={<UserIcon />} label={t('drawee')} value={drawee} />
             </Section>
 
             {(documentAmount || discount || interestAndFines) ? (
                 <Section title={t('detailedValues')}>
-                    <DetailItem icon={<DollarSignIcon />} label={`${t('documentAmount')}:`} value={formatCurrency(documentAmount)} />
-                    <DetailItem icon={<DollarSignIcon />} label={`${t('discount')}:`} value={formatCurrency(discount)} />
-                    <DetailItem icon={<DollarSignIcon />} label={`${t('interestAndFines')}:`} value={formatCurrency(interestAndFines)} />
+                    <DetailItem icon={<DollarSignIcon />} label={t('documentAmount')} value={formatCurrency(documentAmount)} />
+                    <DetailItem icon={<DollarSignIcon />} label={t('discount')} value={formatCurrency(discount)} />
+                    <DetailItem icon={<DollarSignIcon />} label={t('interestAndFines')} value={formatCurrency(interestAndFines)} />
                 </Section>
             ) : null}
 
             <Section title={t('documentInfo')}>
-                <DetailItem icon={<CalendarIcon />} label={`${t('documentDate')}:`} value={formatDate(documentDate)} />
-                <DetailItem icon={<IdIcon />} label={`${t('guideNumber')}:`} value={guideNumber} />
+                <DetailItem icon={<CalendarIcon />} label={t('documentDate')} value={formatDate(documentDate)} />
+                <DetailItem icon={<IdIcon />} label={t('guideNumber')} value={guideNumber} />
             </Section>
 
             {(barcode || pixQrCodeText) && (
                  <Section title={t('paymentCodes')}>
                     <DetailItem 
                         icon={<BarcodeIcon />} 
-                        label={`${t('barcode')}:`} 
+                        label={t('barcode')} 
                         value={barcode}
                         onCopy={handleCopyBarcode}
                         copyState={barcodeCopied}
