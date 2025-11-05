@@ -1,16 +1,21 @@
 # Stage 1: Builder - Installs all dependencies, including dev, and builds the app
 FROM node:lts-alpine AS builder
 
-# Install necessary build tools for native modules (like node-gyp for canvas)
-RUN apk add --no-cache python3 make g++
+# Install necessary build tools and Python
+RUN apk add --no-cache python3 py3-pip make g++
 
 WORKDIR /usr/src/app
 
 # Copy package files
 COPY package.json ./
 
-# Install all dependencies
+# Install all Node.js dependencies
 RUN npm install
+
+# Install Python dependencies
+COPY api/services/parser.py ./api/services/parser.py
+# We can't use a requirements.txt, so we install directly
+RUN pip install PyMuPDF
 
 # Copy the rest of the application source code
 COPY . .
@@ -23,18 +28,25 @@ FROM node:lts-alpine
 
 WORKDIR /usr/src/app
 
-# Install pm2 globally
-RUN npm install -g pm2
+# Install pm2 globally and Python runtime
+RUN npm install -g pm2 && apk add --no-cache python3
 
 # Copy production dependencies from the builder stage
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 
+# Copy installed Python packages from the builder stage
+COPY --from=builder /usr/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
+COPY --from=builder /usr/bin/python3 /usr/bin/python3
+
 # Copy the compiled code from the builder stage
 COPY --from=builder /usr/src/app/dist ./dist
 
-# Copy other necessary files if any (e.g., config files not part of the build)
-# COPY --from=builder /usr/src/app/config ./config
+# Copy the Python script
+COPY --from=builder /usr/src/app/api/services/parser.py ./api/services/parser.py
+
+# Copy database schema if needed for volume mounts, etc.
+COPY --from=builder /usr/src/app/database/schema.txt ./database/schema.txt
 
 # Expose the port the app runs on
 EXPOSE 3001

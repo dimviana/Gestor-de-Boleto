@@ -1,21 +1,58 @@
 
 
-
-
-
-
-
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { extractBoletoInfo as extractWithAI } from '../services/geminiService';
-import { extractBoletoInfo as extractWithRegex } from '../services/regexService';
+import { spawn } from 'child_process';
+
+const extractWithPythonRegex = (pdfBuffer: Buffer): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        // Ensure the script path is correct relative to the execution directory
+        const scriptPath = 'api/services/parser.txt';
+        const pythonProcess = spawn('python3', [scriptPath]);
+
+        let stdoutData = '';
+        let stderrData = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+            stdoutData += data.toString();
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            stderrData += data.toString();
+        });
+
+        pythonProcess.on('close', (code) => {
+            if (code !== 0) {
+                console.error(`Python script exited with code ${code}`);
+                console.error('Python stderr:', stderrData);
+                return reject(new Error('Falha ao processar o PDF com o script Python. Verifique os logs do servidor.'));
+            }
+            try {
+                const result = JSON.parse(stdoutData);
+                resolve(result);
+            } catch (e) {
+                console.error('Failed to parse JSON from Python script:', stdoutData);
+                reject(new Error('Resposta inválida do script de processamento Python.'));
+            }
+        });
+        
+        pythonProcess.on('error', (err) => {
+            console.error('Failed to start Python process:', err);
+            reject(new Error('Não foi possível iniciar o serviço de processamento de PDF. Verifique se o Python está instalado no servidor.'));
+        });
+
+        pythonProcess.stdin.write(pdfBuffer);
+        pythonProcess.stdin.end();
+    });
+};
+
 
 // FIX: Correctly type res parameter.
-export const getBoletos = async (req: AuthRequest, res: Response) => {
+export const getBoletos = async (req: express.Request, res: express.Response) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -42,7 +79,7 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const getBoletoById = async (req: AuthRequest, res: Response) => {
+export const getBoletoById = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
 
@@ -72,21 +109,21 @@ export const getBoletoById = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const extractBoleto = async (req: AuthRequest, res: Response) => {
+export const extractBoleto = async (req: express.Request, res: express.Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
     const { method } = req.body;
 
     try {
-        const [settingsRows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = 'ai_settings'");
-        const aiSettings = settingsRows.length > 0 ? JSON.parse(settingsRows[0].setting_value) : {};
-        
         let extractedData;
         if (method === 'ai') {
+            const [settingsRows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = 'ai_settings'");
+            const aiSettings = settingsRows.length > 0 ? JSON.parse(settingsRows[0].setting_value) : {};
             extractedData = await extractWithAI(req.file.buffer, req.file.originalname, 'pt', aiSettings);
         } else {
-            extractedData = await extractWithRegex(req.file.buffer, req.file.originalname);
+            extractedData = await extractWithPythonRegex(req.file.buffer);
+            extractedData.fileName = req.file.originalname;
         }
 
         if (extractedData.amount === null || extractedData.amount === undefined) {
@@ -102,7 +139,7 @@ export const extractBoleto = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const saveBoleto = async (req: AuthRequest, res: Response) => {
+export const saveBoleto = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -176,7 +213,7 @@ export const saveBoleto = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
+export const updateBoletoStatus = async (req: express.Request, res: express.Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -223,7 +260,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
+export const updateBoletoComments = async (req: express.Request, res: express.Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -268,7 +305,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const deleteBoleto = async (req: AuthRequest, res: Response) => {
+export const deleteBoleto = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();

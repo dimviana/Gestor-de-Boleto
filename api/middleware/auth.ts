@@ -1,25 +1,25 @@
 
 
-
-
-
-
-
-import { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
 import 'multer';
 import { appConfig } from '../services/configService';
 
-// Ao estender Request do Express, AuthRequest herda propriedades padrão
-// como `headers`, `body`, `file`, etc., resolvendo erros de tipo nos controllers.
-// FIX: Reverted to interface to ensure proper type extension from express.Request.
-export interface AuthRequest extends Request {
-  user?: User;
+// By extending the Express Request interface via declaration merging, we can attach 
+// the user property to it and get full type support. This is the standard and
+// preferred way to augment Express types.
+declare global {
+    namespace Express {
+        export interface Request {
+            user?: User;
+        }
+    }
 }
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
+// FIX: Add types to middleware function parameters
+export const protect = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -43,7 +43,8 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+// FIX: Add types to middleware function parameters
+export const admin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -51,7 +52,8 @@ export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     }
 };
 
-export const editor = (req: AuthRequest, res: Response, next: NextFunction) => {
+// FIX: Add types to middleware function parameters
+export const editor = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {

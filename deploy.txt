@@ -34,8 +34,8 @@ install_dependencies() {
     echo -e "${YELLOW}Updating system package list...${NC}"
     sudo apt-get update -y
 
-    echo -e "${YELLOW}Installing essential packages (git, nginx, mysql, certbot...)${NC}"
-    sudo apt-get install -y git curl build-essential python3 nginx mysql-server certbot python3-certbot-nginx
+    echo -e "${YELLOW}Installing essential packages (git, nginx, mysql, python, certbot...)${NC}"
+    sudo apt-get install -y git curl build-essential python3 python3-pip nginx mysql-server certbot python3-certbot-nginx
 
     if ! command_exists node; then
         echo "Node.js not found. Installing Node.js LTS (20.x)..."
@@ -51,6 +51,9 @@ install_dependencies() {
     else
         echo -e "${GREEN}PM2 is already installed.${NC}"
     fi
+    
+    echo -e "${YELLOW}Installing Python dependencies...${NC}"
+    sudo pip3 install PyMuPDF
 
     echo -e "${GREEN}System dependencies are up to date.${NC}"
 }

@@ -9,7 +9,7 @@ Antes de iniciar, garanta que o seu servidor (preferencialmente um sistema opera
 - **Git:** Para clonar o repositório.
   ```bash
   sudo apt update
-  sudo apt install git
+  sudo apt install git -y
   ```
 - **Node.js e npm:** Para executar a aplicação backend e gerenciar pacotes. É recomendado usar uma versão LTS.
   ```bash
@@ -17,9 +17,13 @@ Antes de iniciar, garanta que o seu servidor (preferencialmente um sistema opera
   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
   sudo apt-get install -y nodejs
   ```
+- **Python e Pip:** Necessário para o serviço de extração de dados de PDF.
+  ```bash
+  sudo apt install python3 python3-pip -y
+  ```
 - **MySQL Server:** O banco de dados para armazenar todas as informações.
   ```bash
-  sudo apt install mysql-server
+  sudo apt install mysql-server -y
   sudo mysql_secure_installation # Siga as instruções para configurar a senha do root e proteger o DB
   ```
 - **PM2:** Um gerenciador de processos para manter a aplicação rodando em produção.
@@ -49,22 +53,17 @@ Inicie o script de implantação. Ele irá guiar você por todo o processo.
 ./deploy.sh
 ```
 
-O script irá solicitar as seguintes informações. Tenha-as em mãos:
-
-1.  **URL do Repositório Git:** A URL HTTPS do repositório do projeto.
-2.  **Nome da Pasta:** Um nome para a pasta onde o projeto será instalado (ex: `boleto-manager-ai`).
-3.  **URL de Acesso:** O endereço completo que será usado para acessar a aplicação (ex: `http://seu_dominio.com` ou `http://ip_do_servidor:3001`).
-4.  **Dados do Banco de Dados:** Host, usuário, senha e nome do banco de dados MySQL.
-5.  **Chave da API do Google Gemini:** Sua chave secreta para a API do Gemini.
-6.  **Segredo JWT:** Uma frase secreta longa e aleatória para a segurança da autenticação.
-
 O script irá automaticamente:
-- Clonar o repositório.
-- Criar o arquivo de configuração `.env` com as informações fornecidas.
-- Instalar as dependências do projeto.
-- Compilar o código (se for TypeScript).
-- Criar o banco de dados e as tabelas necessárias.
+- Instalar todas as dependências do sistema (Nginx, Node, Python, PM2, etc).
+- Configurar o MySQL e criar o banco de dados.
+- Clonar o repositório do projeto.
+- Criar o arquivo de configuração `.env` com as informações do seu ambiente.
+- Instalar as dependências do projeto (Node e Python).
+- Compilar o código TypeScript.
+- Configurar o banco de dados com o schema inicial.
+- Configurar o Nginx como um proxy reverso.
 - Iniciar a aplicação usando o PM2 para que ela continue rodando em segundo plano.
+- Obter um certificado SSL gratuito da Let's Encrypt para seu domínio.
 
 ## 3. Gerenciando a Aplicação com PM2
 
@@ -93,4 +92,4 @@ Após a instalação, a aplicação estará sendo gerenciada pelo PM2. Aqui est�
 
 ## 4. Acesso à Aplicação
 
-Após a conclusão do script, a aplicação estará acessível na URL que você forneceu durante a instalação.
+Após a conclusão do script, a aplicação estará acessível na URL do seu domínio, já configurada com HTTPS.
