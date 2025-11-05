@@ -195,20 +195,6 @@ const pt = {
     viewCalendar: 'Visão Calendário',
     previousMonth: 'Mês Anterior',
     nextMonth: 'Próximo Mês',
-    adminPanelUpdatesTab: 'Atualizações',
-    updatesTitle: 'Histórico de Atualizações do Sistema',
-    updatesDescription: 'Cada atualização de sistema bem-sucedida é registrada aqui, junto com um backup do banco de dados. Você pode reverter para uma versão anterior, o que restaurará o código e o banco de dados daquele ponto.',
-    version: 'Versão',
-    commitMessage: 'Mensagem',
-    deployedAt: 'Data',
-    actions: 'Ações',
-    revertButton: 'Reverter',
-    confirmRevertTitle: 'Confirmar Reversão',
-    confirmRevertMessage: 'Tem certeza que deseja reverter o sistema para a versão {{version}}? Esta ação é irreversível e irá restaurar o banco de dados para o estado em que estava em {{date}}. A aplicação será reiniciada.',
-    reverting: 'Revertendo...',
-    revertSuccess: 'Sistema revertido com sucesso. A página será recarregada.',
-    revertError: 'Falha ao reverter o sistema.',
-    revertLog: 'Log da Reversão',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
         Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos. A imagem ajuda a entender o layout e a corrigir erros do OCR.
@@ -422,20 +408,6 @@ const en: typeof pt = {
     viewCalendar: 'Calendar View',
     previousMonth: 'Previous Month',
     nextMonth: 'Next Month',
-    adminPanelUpdatesTab: 'Updates',
-    updatesTitle: 'System Update History',
-    updatesDescription: 'Each successful system update is logged here, along with a database backup. You can revert to a previous version, which will restore the code and database from that point.',
-    version: 'Version',
-    commitMessage: 'Message',
-    deployedAt: 'Date',
-    actions: 'Actions',
-    revertButton: 'Revert',
-    confirmRevertTitle: 'Confirm Revert',
-    confirmRevertMessage: 'Are you sure you want to revert the system to version {{version}}? This action is irreversible and will restore the database to its state on {{date}}. The application will be restarted.',
-    reverting: 'Reverting...',
-    revertSuccess: 'System reverted successfully. The page will now reload.',
-    revertError: 'Failed to revert system.',
-    revertLog: 'Revert Log',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
         Your task is to analyze the provided OCR-EXTRACTED TEXT and the IMAGE. The image helps understand the layout and correct OCR errors.

@@ -93,18 +93,6 @@ export interface AiSettings {
   topP: number;
 }
 
-// FIX: Added missing VpsSettings type
-// New types for VPS management
-export interface VpsSettings {
-    id: string;
-    company_id: string;
-    hostname: string;
-    username: string;
-    password: string;
-    ssh_port: number;
-    project_path: string;
-}
-
 // New types for SSL management
 export interface SslSettings {
     domain: string;
@@ -115,13 +103,4 @@ export interface SslStatus {
     expiresAt: string | null;
     issuedAt: string | null;
     error?: string;
-}
-
-// New type for the update/rollback system
-export interface Deployment {
-    id: string;
-    commit_sha: string;
-    commit_message: string;
-    db_backup_filename: string;
-    deployed_at: string; // ISO string
 }

@@ -1,5 +1,6 @@
 
 
+
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -14,8 +15,6 @@ import userRoutes from './routes/users';
 import logRoutes from './routes/logs';
 import settingsRoutes from './routes/settings';
 import sslRoutes from './routes/ssl';
-import vpsRoutes from './routes/vps';
-import updateRoutes from './routes/updates';
 
 
 declare const __dirname: string;
@@ -40,8 +39,6 @@ apiRouter.use('/users', userRoutes);
 apiRouter.use('/logs', logRoutes);
 apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/ssl', sslRoutes);
-apiRouter.use('/vps', vpsRoutes);
-apiRouter.use('/updates', updateRoutes);
 
 // Health check for the API router itself
 // FIX: Correctly type req and res parameters.

@@ -1,4 +1,4 @@
-import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus, VpsSettings, ProcessingMethod, Deployment } from '../types';
+import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus, ProcessingMethod } from '../types';
 
 const API_BASE_URL = '/api'; // Use relative URL to proxy to the backend
 
@@ -224,24 +224,6 @@ export const updateAllSettings = (settings: Record<string, any>): Promise<{ mess
     });
 };
 
-// FIX: Added missing VPS API functions
-// --- VPS Update API ---
-export const fetchVpsSettings = (): Promise<VpsSettings> => apiFetch('/vps');
-
-export const saveVpsSettings = (settings: Partial<VpsSettings>): Promise<{ message: string }> => {
-    return apiFetch('/vps', {
-        method: 'POST',
-        body: JSON.stringify(settings),
-    });
-};
-
-export const triggerVpsUpdate = (): Promise<{ output: string }> => {
-    return apiFetch('/vps/update', {
-        method: 'POST',
-    });
-};
-
-
 // --- SSL Settings API ---
 export const fetchSslSettings = (): Promise<SslSettings> => apiFetch('/ssl');
 
@@ -256,15 +238,5 @@ export const checkSslStatus = (domain: string): Promise<SslStatus> => {
     return apiFetch('/ssl/check', {
         method: 'POST',
         body: JSON.stringify({ domain }),
-    });
-};
-
-// --- Updates API ---
-export const fetchUpdateHistory = (): Promise<Deployment[]> => apiFetch('/updates/history');
-
-export const triggerRollback = (deploymentId: string): Promise<{ message: string; log: string; }> => {
-    return apiFetch('/updates/rollback', {
-        method: 'POST',
-        body: JSON.stringify({ deploymentId }),
     });
 };
