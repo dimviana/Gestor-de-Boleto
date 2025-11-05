@@ -3,7 +3,6 @@ import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
 import * as pdfjs from 'pdfjs-dist';
 import { createCanvas, Canvas } from 'canvas';
-import Tesseract from 'tesseract.js';
 import { Buffer } from 'buffer';
 import { appConfig } from './configService';
 
@@ -20,36 +19,6 @@ const renderPdfPageToCanvas = async (pdfBuffer: Buffer): Promise<Canvas> => {
     return canvas;
 };
 
-const preprocessCanvasForOcr = (canvas: Canvas): Canvas => {
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    const contrast = 64;
-    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i], g = data[i + 1], b = data[i + 2];
-        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        gray = factor * (gray - 128) + 128;
-        gray = Math.max(0, Math.min(255, gray));
-        const value = gray < 128 ? 0 : 255;
-        data[i] = data[i + 1] = data[i + 2] = value;
-    }
-    ctx.putImageData(imageData, 0, 0);
-    return canvas;
-};
-
-const performOcr = async (canvas: Canvas): Promise<string> => {
-    try {
-        const preprocessedCanvas = preprocessCanvasForOcr(canvas);
-        const { data: { text } } = await Tesseract.recognize(preprocessedCanvas.toBuffer('image/png'), 'por');
-        return text;
-    } catch (error) {
-        console.error("Server-side OCR failed:", error);
-        return ""; 
-    }
-};
-
 export const extractBoletoInfo = async (
     pdfBuffer: Buffer, 
     fileName: string, 
@@ -64,8 +33,6 @@ export const extractBoletoInfo = async (
         const ai = new GoogleGenAI({ apiKey: appConfig.API_KEY });
         
         const canvas = await renderPdfPageToCanvas(pdfBuffer);
-        const ocrText = await performOcr(canvas);
-
         const imageAsBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
         
         const imagePart = {
@@ -73,11 +40,10 @@ export const extractBoletoInfo = async (
         };
 
         const prompt = translations[lang].geminiPrompt;
-        const fullPromptWithOcr = `${prompt}\n\n--- TEXTO EXTRAÍDO VIA OCR ---\n${ocrText}\n--- FIM DO TEXTO EXTRAÍDO ---`;
 
         const response = await ai.models.generateContent({
             model: aiSettings.model,
-            contents: { parts: [{ text: fullPromptWithOcr }, imagePart] },
+            contents: { parts: [{ text: prompt }, imagePart] },
             config: {
                 temperature: aiSettings.temperature,
                 topK: aiSettings.topK,

@@ -4,7 +4,8 @@
 
 
 
-import express from 'express';
+
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -24,7 +25,7 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
 };
 
 // FIX: Correctly type req and res parameters.
-export const registerUser = async (req: express.Request, res: express.Response) => {
+export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -51,7 +52,7 @@ export const registerUser = async (req: express.Request, res: express.Response) 
 };
 
 // FIX: Correctly type req and res parameters.
-export const loginUser = async (req: express.Request, res: express.Response) => {
+export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {

@@ -197,7 +197,7 @@ const pt = {
     nextMonth: 'Próximo Mês',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
-        Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos. A imagem ajuda a entender o layout e a corrigir erros do OCR.
+        Sua tarefa é analisar a IMAGEM de um boleto fornecida. Use suas capacidades de visão para ler todo o texto e extrair os dados solicitados.
         Retorne um objeto JSON com as seguintes informações. Se um campo não for encontrado, retorne null para ele.
         Datas devem estar no formato AAAA-MM-DD. Valores monetários devem ser números.
 
@@ -412,7 +412,7 @@ const en: typeof pt = {
     nextMonth: 'Next Month',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
-        Your task is to analyze the provided OCR-EXTRACTED TEXT and the IMAGE. The image helps understand the layout and correct OCR errors.
+        Your task is to analyze the provided IMAGE of a boleto. Use your vision capabilities to read all text and extract the requested data.
         Return a JSON object with the following information. If a field is not found, return null for it.
         Dates must be in YYYY-MM-DD format. Monetary values must be numbers.
 

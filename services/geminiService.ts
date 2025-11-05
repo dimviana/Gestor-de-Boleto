@@ -3,7 +3,6 @@ import { Boleto, BoletoStatus, AiSettings } from '../types';
 import { translations } from '../translations';
 
 declare const pdfjsLib: any;
-declare const Tesseract: any;
 
 /**
  * Helper function to get the API key.
@@ -53,58 +52,6 @@ const renderPdfPageToCanvas = async (file: File): Promise<HTMLCanvasElement> => 
     return canvas;
 };
 
-/**
- * Pre-processes a canvas image to improve OCR accuracy.
- * Applies grayscale, contrast adjustment, and binarization (thresholding) filters.
- * @param canvas The canvas to process.
- * @returns The processed canvas.
- */
-const preprocessCanvasForOcr = (canvas: HTMLCanvasElement): HTMLCanvasElement => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-        throw new Error("Could not get canvas context for preprocessing");
-    }
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    const contrast = 64; // Value between -255 and 255. Higher is more contrast.
-    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-
-
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        
-        // 1. Grayscale
-        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-
-        // 2. Contrast Adjustment
-        gray = factor * (gray - 128) + 128;
-
-        // Clamp value to 0-255
-        gray = Math.max(0, Math.min(255, gray));
-
-        // 3. Binarization (Thresholding)
-        const value = gray < 128 ? 0 : 255;
-        data[i] = data[i + 1] = data[i + 2] = value;
-    }
-    
-    ctx.putImageData(imageData, 0, 0);
-    return canvas;
-};
-
-
-const performOcr = async (canvas: HTMLCanvasElement): Promise<string> => {
-    try {
-        const preprocessedCanvas = preprocessCanvasForOcr(canvas);
-        const { data: { text } } = await Tesseract.recognize(preprocessedCanvas, 'por');
-        return text;
-    } catch (error) {
-        console.error("Client-side OCR failed:", error);
-        return ""; // Return empty string on failure
-    }
-};
-
 export const processBoletoPDF = async (
     file: File,
     lang: 'pt' | 'en',
@@ -119,18 +66,15 @@ export const processBoletoPDF = async (
             convertFileToBase64(file),
         ]);
 
-        const ocrText = await performOcr(canvas);
-
         const imagePart = {
             inlineData: { mimeType: 'image/jpeg', data: canvas.toDataURL('image/jpeg').split(',')[1] },
         };
 
         const prompt = translations[lang].geminiPrompt;
-        const fullPromptWithOcr = `${prompt}\n\n--- TEXTO EXTRAÍDO VIA OCR ---\n${ocrText}\n--- FIM DO TEXTO EXTRAÍDO ---`;
         
         const response = await ai.models.generateContent({
             model: aiSettings.model,
-            contents: { parts: [{ text: fullPromptWithOcr }, imagePart] },
+            contents: { parts: [{ text: prompt }, imagePart] },
             config: {
                 temperature: aiSettings.temperature,
                 topK: aiSettings.topK,
