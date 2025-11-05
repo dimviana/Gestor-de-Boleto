@@ -91,7 +91,7 @@ export const extractBoletoInfo = async (
                         documentDate: { type: Type.STRING, description: 'The document creation date (Data do Documento) in YYYY-MM-DD format. Should be null if not found.' },
                         dueDate: { type: Type.STRING, description: 'The main due date (Vencimento) in YYYY-MM-DD format.' },
                         documentAmount: { type: Type.NUMBER, description: 'The original document value (Valor do Documento), distinct from the final payment amount.' },
-                        amount: { type: Type.NUMBER, description: "The final payment amount. First, search for '(=) Valor Cobrado'. If not found, search for '(=) Valor do Documento'. As a fallback, use any field clearly labeled 'Valor Total' or similar that specifies the final payment value. The value should NEVER be zero if a document value is present." },
+                        amount: { type: Type.NUMBER, description: "The final payment amount, which is a required field. First, search for '(=) Valor Cobrado'. If not found, you MUST use '(=) Valor do Documento'. Analyze the image to locate this value. It should not be null if a value is visible on the document." },
                         barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável), with all spaces, dots, and other non-numeric formatting removed. It must contain only numbers and be 47 or 48 digits long.' },
                         guideNumber: { type: Type.STRING, description: 'The document number. Give maximum priority to the field labeled "Nº Documento" or "Nº do Documento". If absent, look for "Nosso Número". Should be null if not found.' },
                         pixQrCodeText: { type: Type.STRING, description: 'The full text content of the PIX QR Code (Copia e Cola). Should be null if not found.' },
@@ -101,6 +101,7 @@ export const extractBoletoInfo = async (
             },
         });
         
+        // FIX: Correctly access the text from the Gemini response.
         const responseText = response.text;
         if (!responseText) {
             console.error("Gemini API returned an empty or invalid response object:", response);

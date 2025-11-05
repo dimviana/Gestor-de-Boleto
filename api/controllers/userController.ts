@@ -1,6 +1,8 @@
 
 
-import { Response as ExpressResponse } from 'express';
+
+
+import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -9,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
 // FIX: Correctly type res parameter.
-export const getUsers = async (req: AuthRequest, res: ExpressResponse) => {
+export const getUsers = async (req: AuthRequest, res: Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -27,7 +29,7 @@ export const getUsers = async (req: AuthRequest, res: ExpressResponse) => {
 };
 
 // FIX: Correctly type res parameter.
-export const createUser = async (req: AuthRequest, res: ExpressResponse) => {
+export const createUser = async (req: AuthRequest, res: Response) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -83,7 +85,7 @@ export const createUser = async (req: AuthRequest, res: ExpressResponse) => {
 };
 
 // FIX: Correctly type res parameter.
-export const updateUser = async (req: AuthRequest, res: ExpressResponse) => {
+export const updateUser = async (req: AuthRequest, res: Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -135,7 +137,7 @@ export const updateUser = async (req: AuthRequest, res: ExpressResponse) => {
 };
 
 // FIX: Correctly type res parameter.
-export const deleteUser = async (req: AuthRequest, res: ExpressResponse) => {
+export const deleteUser = async (req: AuthRequest, res: Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();

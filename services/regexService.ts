@@ -177,9 +177,9 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     
     // Enhanced patterns based on the specific PDF structure
     const patterns = {
-        // Amount patterns
-        amountValorDocumento: /(?:\(=\)\s*Valor do Documento)[\s:\n]*R?\$?\s*([\d.,]+)/i,
-        amountValorCobrado: /(?:\(=\)\s*Valor Cobrado)[\s:\n]*R?\$?\s*([\d.,]+)/i,
+        // Amount patterns: More robust to handle variations in spacing and layout
+        amountValorDocumento: /(?:\(=\))?\s*Valor do Documento[^\d\r\n]*?([\d.,]{3,})/i,
+        amountValorCobrado: /(?:\(=\))?\s*Valor Cobrado[^\d\r\n]*?([\d.,]{3,})/i,
         
         // Date patterns
         documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,

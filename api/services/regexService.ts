@@ -93,7 +93,7 @@ const parseCurrency = (value: string | null): number | null => {
     }
     
     const num = parseFloat(valueStr.replace(/[^\d.]/g, ''));
-    return isNaN(num) ? Math.round(num * 100) / 100 : null;
+    return isNaN(num) ? null : Math.round(num * 100) / 100;
 };
 
 const parseDate = (value: string | null): string | null => {
@@ -110,8 +110,8 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     const normalizedText = text.replace(/ +/g, ' ').trim();
 
     const patterns = {
-        amountValorDocumento: /(?:\(=\)\s*Valor do Documento)[\s:\n]*R?\$?\s*([\d.,]+)/i,
-        amountValorCobrado: /(?:\(=\)\s*Valor Cobrado)[\s:\n]*R?\$?\s*([\d.,]+)/i,
+        amountValorDocumento: /(?:\(=\))?\s*Valor do Documento[^\d\r\n]*?([\d.,]{3,})/i,
+        amountValorCobrado: /(?:\(=\))?\s*Valor Cobrado[^\d\r\n]*?([\d.,]{3,})/i,
         documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         dueDate: /(?:Vencimento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência)\b)/i,
