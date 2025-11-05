@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -7,10 +7,10 @@ import { appConfig } from '../services/configService';
 
 // Ao estender Request do Express, AuthRequest herda propriedades padrão
 // como `headers`, `body`, `file`, etc., resolvendo erros de tipo nos controllers.
-// FIX: Changed from interface to type intersection to resolve type ambiguity issues.
-export type AuthRequest = express.Request & {
+// FIX: Reverted to interface to ensure proper type extension from express.Request.
+export interface AuthRequest extends Request {
   user?: User;
-};
+}
 
 export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token;

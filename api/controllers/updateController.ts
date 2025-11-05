@@ -1,4 +1,4 @@
-import express from 'express';
+import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -12,7 +12,8 @@ const PROJECT_PATH = process.env.PROJECT_PATH || path.join(process.env.HOME || '
 const BACKUP_PATH = process.env.BACKUP_PATH || path.join(process.env.HOME || '~', 'db_backups');
 const APP_NAME = process.env.APP_NAME || 'boleto-manager-ai';
 
-export const getUpdateHistory = async (req: AuthRequest, res: express.Response) => {
+// FIX: Correctly type res parameter.
+export const getUpdateHistory = async (req: AuthRequest, res: Response) => {
     try {
         const [history] = await pool.query<RowDataPacket[]>('SELECT * FROM deployments ORDER BY deployed_at DESC');
         res.json(history);
@@ -22,7 +23,8 @@ export const getUpdateHistory = async (req: AuthRequest, res: express.Response) 
     }
 };
 
-export const triggerRollback = async (req: AuthRequest, res: express.Response) => {
+// FIX: Correctly type res parameter.
+export const triggerRollback = async (req: AuthRequest, res: Response) => {
     const { deploymentId } = req.body;
     if (!deploymentId) {
         return res.status(400).json({ message: "Deployment ID is required." });
@@ -58,41 +60,46 @@ export const triggerRollback = async (req: AuthRequest, res: express.Response) =
         // 1. Restore Database
         log(`[1/5] Restoring database from backup: ${db_backup_filename}...`);
         const restoreCommand = `mysql -h ${dbConfig.host} -u ${dbConfig.user} -p'${dbConfig.password}' ${dbConfig.database} < ${backupFilePath}`;
-        const { stdout: restoreStdout, stderr: restoreStderr } = await execPromise(restoreCommand);
+        const { stderr: restoreStderr } = await execPromise(restoreCommand);
         if (restoreStderr) log(`DB Restore (stderr): ${restoreStderr}`);
         log('Database restored successfully.');
 
         // 2. Git Checkout to previous commit
         log(`[2/5] Reverting code to commit ${commit_sha}...`);
-        const gitCommand = `cd ${PROJECT_PATH} && git checkout ${commit_sha}`;
-        const { stdout: gitStdout, stderr: gitStderr } = await execPromise(gitCommand);
+        const gitCommand = `cd ${PROJECT_PATH} && git checkout -f ${commit_sha}`;
+        const { stderr: gitStderr } = await execPromise(gitCommand);
         if (gitStderr) log(`Git Checkout (stderr): ${gitStderr}`);
         log('Code reverted successfully.');
 
         // 3. Reinstall dependencies
         log('[3/5] Reinstalling dependencies (npm install)...');
         const npmCommand = `cd ${PROJECT_PATH} && npm install`;
-        const { stdout: npmStdout, stderr: npmStderr } = await execPromise(npmCommand);
+        const { stderr: npmStderr } = await execPromise(npmCommand);
         if (npmStderr) log(`NPM Install (stderr): ${npmStderr}`);
         log('Dependencies installed successfully.');
 
         // 4. Rebuild project
         log('[4/5] Rebuilding project (npm run build)...');
         const buildCommand = `cd ${PROJECT_PATH} && npm run build`;
-        const { stdout: buildStdout, stderr: buildStderr } = await execPromise(buildCommand);
+        const { stderr: buildStderr } = await execPromise(buildCommand);
         if (buildStderr) log(`Build (stderr): ${buildStderr}`);
         log('Project rebuilt successfully.');
 
         // 5. Restart application with PM2
-        log(`[5/5] Restarting application '${APP_NAME}' with PM2...`);
+        log(`[5/5] Initiating application restart with PM2...`);
         const pm2Command = `pm2 restart ${APP_NAME}`;
-        const { stdout: pm2Stdout, stderr: pm2Stderr } = await execPromise(pm2Command);
-        if (pm2Stderr) log(`PM2 Restart (stderr): ${pm2Stderr}`);
-        log('Application restarted.');
         
-        log('--- Rollback Complete ---');
+        // Fire and forget. We don't await this because it will kill the current process.
+        exec(pm2Command, (error, stdout, stderr) => {
+            if (error) log(`Error initiating PM2 restart: ${error.message}`);
+            if (stderr) log(`PM2 restart stderr: ${stderr}`);
+            if (stdout) log(`PM2 restart stdout: ${stdout}`);
+        });
 
-        res.status(200).json({ message: "Rollback successful!", log: logOutput });
+        log('--- Rollback process finished. Server is restarting. ---');
+
+        // Send response immediately before the server goes down for restart.
+        res.status(200).json({ message: "Rollback initiated. The application is restarting.", log: logOutput });
 
     } catch (error: any) {
         console.error("Rollback failed:", error);
