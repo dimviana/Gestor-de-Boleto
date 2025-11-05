@@ -177,23 +177,21 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     
     // Enhanced patterns based on the specific PDF structure
     const patterns = {
-        // Improved amount patterns for this specific boleto type
-        amountValorDocumento: /(?:\(=\)\s*Valor do Documento)[\s:\n]*RS?\s*([\d.,]+)/i,
-        amountTotal: /(?:Total)[\s:\n]*RS?\s*([\d.,]+)/i,
-        amountValorCobrado: /(?:Valor Cobrado)[\s:\n]*RS?\s*([\d.,]+)/i,
+        // Amount patterns
+        amountValorDocumento: /(?:\(=\)\s*Valor do Documento)[\s:\n]*R?\$?\s*([\d.,]+)/i,
+        amountValorCobrado: /(?:\(=\)\s*Valor Cobrado)[\s:\n]*R?\$?\s*([\d.,]+)/i,
         
         // Date patterns
         documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         dueDate: /(?:Vencimento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         
         // Entity patterns
-        recipient: /(?:Cedente|Beneficiário)[\s:\n]*([^\n\r]*?(?:\n[^\n\r]*?)?)(?=\s*(?:Data|Nº|Sacado|Instruções))/is,
-        drawee: /(?:Sacado|Pagador)[\s:\n]*([^\n\r]*?(?:\n[^\n\r]*?)?)(?=\s*(?:Instruções|Descrição|Autorificação))/is,
+        recipient: /(?:Cedente|Beneficiário)[\s:\n]*([^\n\r]*?(?:\n[^\n\r]*?)?)(?=\s*(?:Data|Nº|Sacado|Instruções|Agência))/is,
+        drawee: /(?:Sacado|Pagador)[\s:\n]*([^\n\r]*?(?:\n[^\n\r]*?)?)(?=\s*(?:Instruções|Descrição|Autorização|Autenticação Mecânica))/is,
         
         // Document number patterns
-        guideNumberDoc: /(?:Nº Documento\/Gua)[\s:\n]*(\S+)/i,
+        guideNumberDoc: /(?:N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?)[\s.:\n]*?(\S+)/i,
         guideNumberNosso: /(?:Nosso Número)[\s:\n]*(\S+)/i,
-        documentNumber: /(?:Nº Documento)[\s:\n]*(\d+)/i,
         
         // PIX QR Code
         pixQrCodeText: /(000201\S{100,})/i,
@@ -202,18 +200,18 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     // Extract barcode
     const barcode = extractBarcode(normalizedText);
     
-    // Extract amounts with priority
-    let amountMatch = normalizedText.match(patterns.amountValorDocumento);
-    let amount = parseCurrency(amountMatch ? amountMatch[1] : null);
-    
-    if (!amount) {
-        const totalMatch = normalizedText.match(patterns.amountTotal);
-        amount = parseCurrency(totalMatch ? totalMatch[1] : null);
-    }
-    
-    if (!amount) {
-        const valorCobradoMatch = normalizedText.match(patterns.amountValorCobrado);
-        amount = parseCurrency(valorCobradoMatch ? valorCobradoMatch[1] : null);
+    // --- Refactored Amount Extraction ---
+    // Extract Document Amount (Valor do Documento)
+    const documentAmountMatch = normalizedText.match(patterns.amountValorDocumento);
+    const documentAmount = parseCurrency(documentAmountMatch ? documentAmountMatch[1] : null);
+
+    // Extract Amount Charged (Valor Cobrado)
+    const valorCobradoMatch = normalizedText.match(patterns.amountValorCobrado);
+    let amount = parseCurrency(valorCobradoMatch ? valorCobradoMatch[1] : null);
+
+    // Fallback logic: if Valor Cobrado is not found or is zero, use Valor do Documento as the final amount.
+    if (amount === null || amount === 0) {
+        amount = documentAmount;
     }
     
     // Extract dates
@@ -231,7 +229,7 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
             .trim()
             .replace(/\s*\n\s*/g, ' / ')
             .replace(/\s{2,}/g, ' ')
-            .replace(/[_-]+/g, '')
+            .replace(/[-_]+/g, ' ')
             .trim();
     };
     
@@ -241,13 +239,10 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     const draweeMatch = normalizedText.match(patterns.drawee);
     const drawee = extractEntity(draweeMatch);
     
-    // Extract guide number with multiple attempts
+    // Extract guide number with multiple attempts, now with corrected regex
     let guideNumberMatch = normalizedText.match(patterns.guideNumberDoc);
     if (!guideNumberMatch) {
         guideNumberMatch = normalizedText.match(patterns.guideNumberNosso);
-    }
-    if (!guideNumberMatch) {
-        guideNumberMatch = normalizedText.match(patterns.documentNumber);
     }
     
     const guideNumber = guideNumberMatch ? guideNumberMatch[1].trim() : null;
@@ -257,16 +252,16 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     const pixQrCodeText = pixQrCodeTextMatch ? pixQrCodeTextMatch[0].trim() : null;
 
     return {
-        recipient: recipient || 'Tribunal de Justiça de Pernambuco / 2333 - Ofício do Registro Civil das Pessoas Naturais - Sede - Bonito',
-        drawee: drawee || 'teste',
+        recipient,
+        drawee,
         documentDate,
         dueDate,
-        documentAmount: amount,
+        documentAmount,
         amount,
         discount: null,
         interestAndFines: null,
         barcode,
-        guideNumber: guideNumber || '0023677480',
+        guideNumber,
         pixQrCodeText,
         fileName: file.name,
     };

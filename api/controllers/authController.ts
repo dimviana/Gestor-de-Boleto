@@ -1,5 +1,6 @@
 
-import { Request, Response } from 'express';
+
+import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -19,7 +20,7 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
 };
 
 // FIX: Correctly type req and res parameters.
-export const registerUser = async (req: Request, res: Response) => {
+export const registerUser = async (req: ExpressRequest, res: ExpressResponse) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -46,7 +47,7 @@ export const registerUser = async (req: Request, res: Response) => {
 };
 
 // FIX: Correctly type req and res parameters.
-export const loginUser = async (req: Request, res: Response) => {
+export const loginUser = async (req: ExpressRequest, res: ExpressResponse) => {
   const { username, password } = req.body;
 
   if (!username || !password) {

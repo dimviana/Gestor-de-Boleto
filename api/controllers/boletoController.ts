@@ -1,5 +1,6 @@
 
-import { Response } from 'express';
+
+import { Response as ExpressResponse } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -9,7 +10,7 @@ import { extractBoletoInfo as extractWithAI } from '../services/geminiService';
 import { extractBoletoInfo as extractWithRegex } from '../services/regexService';
 
 // FIX: Correctly type res parameter.
-export const getBoletos = async (req: AuthRequest, res: Response) => {
+export const getBoletos = async (req: AuthRequest, res: ExpressResponse) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -36,7 +37,7 @@ export const getBoletos = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const getBoletoById = async (req: AuthRequest, res: Response) => {
+export const getBoletoById = async (req: AuthRequest, res: ExpressResponse) => {
     const user = req.user!;
     const boletoId = req.params.id;
 
@@ -66,7 +67,7 @@ export const getBoletoById = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const extractBoleto = async (req: AuthRequest, res: Response) => {
+export const extractBoleto = async (req: AuthRequest, res: ExpressResponse) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -96,7 +97,7 @@ export const extractBoleto = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const saveBoleto = async (req: AuthRequest, res: Response) => {
+export const saveBoleto = async (req: AuthRequest, res: ExpressResponse) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -170,7 +171,7 @@ export const saveBoleto = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
+export const updateBoletoStatus = async (req: AuthRequest, res: ExpressResponse) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -217,7 +218,7 @@ export const updateBoletoStatus = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
+export const updateBoletoComments = async (req: AuthRequest, res: ExpressResponse) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -262,7 +263,7 @@ export const updateBoletoComments = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const deleteBoleto = async (req: AuthRequest, res: Response) => {
+export const deleteBoleto = async (req: AuthRequest, res: ExpressResponse) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();

@@ -1,11 +1,12 @@
 
-import { Response } from 'express';
+
+import { Response as ExpressResponse } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
 // FIX: Correctly type res parameter.
-export const getLogs = async (req: AuthRequest, res: Response) => {
+export const getLogs = async (req: AuthRequest, res: ExpressResponse) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');
     res.json(logs);

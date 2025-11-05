@@ -1,12 +1,13 @@
 
-import { Response } from 'express';
+
+import { Response as ExpressResponse } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
 // FIX: Correctly type res parameter.
-export const getCompanies = async (req: AuthRequest, res: Response) => {
+export const getCompanies = async (req: AuthRequest, res: ExpressResponse) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
     res.json(companies);
@@ -17,7 +18,7 @@ export const getCompanies = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const createCompany = async (req: AuthRequest, res: Response) => {
+export const createCompany = async (req: AuthRequest, res: ExpressResponse) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -51,7 +52,7 @@ export const createCompany = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const updateCompany = async (req: AuthRequest, res: Response) => {
+export const updateCompany = async (req: AuthRequest, res: ExpressResponse) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -88,7 +89,7 @@ export const updateCompany = async (req: AuthRequest, res: Response) => {
 };
 
 // FIX: Correctly type res parameter.
-export const deleteCompany = async (req: AuthRequest, res: Response) => {
+export const deleteCompany = async (req: AuthRequest, res: ExpressResponse) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();
