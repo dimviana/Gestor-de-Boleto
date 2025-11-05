@@ -83,12 +83,11 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
 
     const patterns = {
         barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
-        amountValorCobrado: /(?:Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        amountValorCobrado: /(?:(?:\(=\)\s*)?Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         amountValorDocumento: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         amountGeneric: /(?:Valor Total|Valor a ser Pago|Valor a Pagar|Valor L[íi]quido)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
-        guideNumber: /(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero|Guia)[\s.:\n]*?([^\s\n][^\n]*?)(?=\s{2,}|[\r\n]|$)/i,
         recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\n.*(?:Agência|CNPJ|CPF|Nosso Número|Vencimento)\b|Data (?:do )?Documento)/i,
         drawee: /(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\n.*(?:Nosso Número|Vencimento|Valor)\b|Data (?:do )?Documento)/i,
         pixQrCodeText: /(000201\S{100,})/i,
@@ -108,7 +107,6 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     
     const dueDateMatch = normalizedText.match(patterns.dueDate);
     const documentDateMatch = normalizedText.match(patterns.documentDate);
-    const guideNumberMatch = normalizedText.match(patterns.guideNumber);
     const recipientMatch = normalizedText.match(patterns.recipient);
     const draweeMatch = normalizedText.match(patterns.drawee);
     const pixQrCodeTextMatch = normalizedText.match(patterns.pixQrCodeText);
@@ -172,9 +170,16 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
 
     const recipient = getMatchValue(recipientMatch);
     const drawee = getMatchValue(draweeMatch);
-    // Use a simpler regex for guide number as the complex one might fail
-    const simpleGuideNumberMatch = normalizedText.match(/(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero|Guia)[\s.:\n]*?(\S+)/i);
-    const guideNumber = getMatchValue(simpleGuideNumberMatch);
+    
+    // Prioritized search for Document Number
+    const guideNumberPatternDoc = /(?:N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?)[\s.:\n]*?(\S+)/i;
+    const guideNumberPatternNosso = /(?:Nosso\sN[úu]mero)[\s.:\n]*?(\S+)/i;
+
+    let guideNumberMatch = normalizedText.match(guideNumberPatternDoc);
+    if (!guideNumberMatch) {
+        guideNumberMatch = normalizedText.match(guideNumberPatternNosso);
+    }
+    const guideNumber = getMatchValue(guideNumberMatch);
 
     return {
         recipient,

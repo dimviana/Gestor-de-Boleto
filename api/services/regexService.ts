@@ -55,7 +55,7 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
 
     const patterns = {
         barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
-        amountValorCobrado: /(?:Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
+        amountValorCobrado: /(?:(?:\(=\)\s*)?Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         amountValorDocumento: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         amountGeneric: /(?:Valor Total|Valor a ser Pago|Valor a Pagar|Valor L[íi]quido)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
@@ -140,9 +140,17 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
 
     const recipient = getMatchValue(recipientMatch);
     const drawee = getMatchValue(draweeMatch);
-    // A simpler regex for guide number can be more reliable.
-    const guideNumberMatch = normalizedText.match(/(?:N[ºo\.]?\s?(?:do\s)?Documento|Nosso\sN[úu]mero|Guia)[\s.:\n]*?(\S+)/i);
+    
+    // Prioritized search for Document Number
+    const guideNumberPatternDoc = /(?:N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?)[\s.:\n]*?(\S+)/i;
+    const guideNumberPatternNosso = /(?:Nosso\sN[úu]mero)[\s.:\n]*?(\S+)/i;
+
+    let guideNumberMatch = normalizedText.match(guideNumberPatternDoc);
+    if (!guideNumberMatch) {
+        guideNumberMatch = normalizedText.match(guideNumberPatternNosso);
+    }
     const guideNumber = getMatchValue(guideNumberMatch);
+
 
     return {
         recipient,

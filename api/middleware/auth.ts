@@ -7,8 +7,8 @@ import { appConfig } from '../services/configService';
 
 // Ao estender Request do Express, AuthRequest herda propriedades padrão
 // como `headers`, `body`, `file`, etc., resolvendo erros de tipo nos controllers.
-// FIX: Changed from `express.Request` to `Request` to correctly extend the Express Request type.
-export interface AuthRequest extends Request {
+// FIX: Explicitly extend express.Request to avoid ambiguity with the global Request type.
+export interface AuthRequest extends express.Request {
   user?: User;
 }
 
