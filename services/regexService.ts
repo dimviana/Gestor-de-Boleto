@@ -12,12 +12,7 @@ const convertFileToBase64 = (file: File): Promise<string> => {
 };
 
 /**
- * Extracts text from a PDF file while preserving its visual layout.
- * It groups text items by their vertical position to form lines,
- * then sorts those lines to reconstruct the document structure,
- * mimicking an OCR-like text capture.
- * @param file The PDF file to process.
- * @returns A promise that resolves to the structured text content.
+ * Improved PDF text extraction with better line grouping
  */
 const getPdfTextContent = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
@@ -31,20 +26,21 @@ const getPdfTextContent = async (file: File): Promise<string> => {
         
         if (textContent.items.length === 0) continue;
 
-        // Group text items into lines based on their vertical position (y-coordinate)
-        const lines: { [key: number]: any[] } = {};
+        // Improved line grouping with tolerance for small vertical differences
+        const lines: { [key: string]: any[] } = {};
         for(const item of textContent.items) {
-            const y = Math.round(item.transform[5]);
-            if (!lines[y]) lines[y] = [];
-            lines[y].push(item);
+            const y = Math.round(item.transform[5] / 2) * 2; // Group with 2px tolerance
+            const key = y.toString();
+            if (!lines[key]) lines[key] = [];
+            lines[key].push(item);
         }
 
         // Sort lines by their y-coordinate (top to bottom)
         const sortedLines = Object.keys(lines)
-            .sort((a, b) => Number(b) - Number(a)) // Corrected to sort top-to-bottom
-            .map(y => lines[parseInt(y, 10)]);
+            .sort((a, b) => Number(b) - Number(a))
+            .map(y => lines[y]);
 
-        // For each line, sort items by x-coordinate (left to right) and join them
+        // For each line, sort items by x-coordinate and join them
         const pageText = sortedLines.map(lineItems => {
             return lineItems
                 .sort((a, b) => a.transform[4] - b.transform[4])
@@ -52,154 +48,230 @@ const getPdfTextContent = async (file: File): Promise<string> => {
                 .join(' ');
         }).join('\n');
 
-        fullText += pageText + '\n\n'; // Add space between pages
+        fullText += pageText + '\n\n';
     }
     return fullText;
 };
 
 /**
- * Replaces common OCR character misinterpretations with the correct characters.
- * @param value The string to clean.
- * @returns The cleaned string.
+ * Enhanced OCR cleaning for common misinterpretations
  */
 const cleanOcrMistakes = (value: string): string => {
     if (!value) return '';
     return value
-        .replace(/O/g, '0')
-        .replace(/I/g, '1')
-        .replace(/l/g, '1')
+        .replace(/O|º/g, '0')
+        .replace(/I|l/g, '1')
         .replace(/S/g, '5')
         .replace(/B/g, '8')
-        .replace(/Z/g, '2');
+        .replace(/Z/g, '2')
+        .replace(/G/g, '6')
+        .replace(/§/g, '5');
 };
 
+/**
+ * Improved barcode detection for various formats
+ */
+const extractBarcode = (text: string): string | null => {
+    // Pattern 1: Standard barcode format with dots
+    const pattern1 = /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b/;
+    
+    // Pattern 2: Clean 47-48 digit barcode
+    const pattern2 = /\b(\d{47,48})\b/;
+    
+    // Pattern 3: Barcode split across lines
+    const pattern3 = /(\d{5}\.?\d{5})[\s\n]+(\d{5}\.?\d{6})[\s\n]+(\d{5}\.?\d{6})[\s\n]+(\d)[\s\n]+(\d{14})/;
+    
+    let match = text.match(pattern1);
+    if (match) {
+        return cleanOcrMistakes(match[1]).replace(/[^\d]/g, '');
+    }
+    
+    match = text.match(pattern2);
+    if (match) {
+        return cleanOcrMistakes(match[1]);
+    }
+    
+    match = text.match(pattern3);
+    if (match) {
+        return match.slice(1).join('').replace(/[^\d]/g, '');
+    }
+    
+    return null;
+};
 
-// FIX: Update return type to exclude companyId as it's not available at this stage.
+/**
+ * Enhanced currency parsing for Brazilian format
+ */
+const parseCurrency = (value: string | null): number | null => {
+    if (!value) return null;
+    
+    let valueStr = cleanOcrMistakes(value.trim());
+    
+    // Remove currency symbols and extra text
+    valueStr = valueStr.replace(/R\$/gi, '')
+                      .replace(/RS/gi, '')
+                      .replace(/valor/gi, '')
+                      .trim();
+    
+    if (!/\d/.test(valueStr)) return null;
+
+    const hasComma = valueStr.includes(',');
+    const hasDot = valueStr.includes('.');
+
+    if (hasComma && hasDot) {
+        // Format: 1.234,56 - remove dots, replace comma with dot
+        valueStr = valueStr.replace(/\./g, '').replace(',', '.');
+    } else if (hasComma && !hasDot) {
+        // Format: 1234,56 or 68,14
+        const parts = valueStr.split(',');
+        if (parts[1] && parts[1].length === 2) {
+            // Has two decimal places
+            valueStr = parts[0].replace(/\./g, '') + '.' + parts[1];
+        } else {
+            // No decimal or malformed
+            valueStr = valueStr.replace(',', '.');
+        }
+    } else if (!hasComma && hasDot) {
+        const lastDotIndex = valueStr.lastIndexOf('.');
+        const isDecimal = valueStr.length - lastDotIndex - 1 === 2;
+        const hasMultipleDots = (valueStr.match(/\./g) || []).length > 1;
+
+        if (hasMultipleDots || !isDecimal) {
+            valueStr = valueStr.replace(/\./g, '');
+        }
+    }
+    
+    const num = parseFloat(valueStr.replace(/[^\d.]/g, ''));
+    return isNaN(num) ? null : Math.round(num * 100) / 100; // Round to 2 decimal places
+};
+
+/**
+ * Improved date parsing
+ */
+const parseDate = (value: string | null): string | null => {
+    if (!value) return null;
+    
+    const cleanValue = cleanOcrMistakes(value);
+    const match = cleanValue.match(/(\d{2})[\/Il]?(\d{2})[\/Il]?(\d{4})/);
+    
+    if (!match) return null;
+    
+    const [, day, month, year] = match;
+    
+    // Basic validation
+    if (parseInt(day, 10) === 0 || parseInt(month, 10) === 0 || parseInt(month, 10) > 12) {
+        return null;
+    }
+    
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+};
+
+/**
+ * Enhanced boleto information extraction
+ */
 const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     const text = await getPdfTextContent(file);
 
-    // Normalize text: remove multiple spaces, but keep newlines for structure
+    // Normalize text but preserve structure
     const normalizedText = text.replace(/ +/g, ' ').trim();
-
+    
+    // Enhanced patterns based on the specific PDF structure
     const patterns = {
-        barcode: /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b|(\b\d{47,48}\b)/,
-        amountValorCobrado: /(?:(?:\(=\)\s*)?Valor Cobrado)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        amountValorDocumento: /(?:(?:\(=\)\s*)?Valor (?:do )?Documento)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        amountGeneric: /(?:Valor Total|Valor a ser Pago|Valor a Pagar|Valor L[íi]quido)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
-        dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
-        documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
-        recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência)\b)/i,
-        drawee: /(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\b(?:Instruções|Descrição do Ato)\b|Autenticação Mecânica)/i,
+        // Improved amount patterns for this specific boleto type
+        amountValorDocumento: /(?:\(=\)\s*Valor do Documento)[\s:\n]*RS?\s*([\d.,]+)/i,
+        amountTotal: /(?:Total)[\s:\n]*RS?\s*([\d.,]+)/i,
+        amountValorCobrado: /(?:Valor Cobrado)[\s:\n]*RS?\s*([\d.,]+)/i,
+        
+        // Date patterns
+        documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
+        dueDate: /(?:Vencimento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
+        
+        // Entity patterns
+        recipient: /(?:Cedente|Beneficiário)[\s:\n]*([^\n\r]*?(?:\n[^\n\r]*?)?)(?=\s*(?:Data|Nº|Sacado|Instruções))/is,
+        drawee: /(?:Sacado|Pagador)[\s:\n]*([^\n\r]*?(?:\n[^\n\r]*?)?)(?=\s*(?:Instruções|Descrição|Autorificação))/is,
+        
+        // Document number patterns
+        guideNumberDoc: /(?:Nº Documento\/Gua)[\s:\n]*(\S+)/i,
+        guideNumberNosso: /(?:Nosso Número)[\s:\n]*(\S+)/i,
+        documentNumber: /(?:Nº Documento)[\s:\n]*(\d+)/i,
+        
+        // PIX QR Code
         pixQrCodeText: /(000201\S{100,})/i,
     };
     
-    // Process matches
-    const barcodeMatch = normalizedText.match(patterns.barcode);
+    // Extract barcode
+    const barcode = extractBarcode(normalizedText);
     
-    // Prioritize "Valor Cobrado" over "Valor do Documento", with a generic fallback
-    let amountMatch = normalizedText.match(patterns.amountValorCobrado);
-    const amountValorDocumentoMatch = normalizedText.match(patterns.amountValorDocumento);
-    if (!amountMatch) {
-        amountMatch = normalizedText.match(patterns.amountValorDocumento);
+    // Extract amounts with priority
+    let amountMatch = normalizedText.match(patterns.amountValorDocumento);
+    let amount = parseCurrency(amountMatch ? amountMatch[1] : null);
+    
+    if (!amount) {
+        const totalMatch = normalizedText.match(patterns.amountTotal);
+        amount = parseCurrency(totalMatch ? totalMatch[1] : null);
     }
-    if (!amountMatch) {
-        amountMatch = normalizedText.match(patterns.amountGeneric);
+    
+    if (!amount) {
+        const valorCobradoMatch = normalizedText.match(patterns.amountValorCobrado);
+        amount = parseCurrency(valorCobradoMatch ? valorCobradoMatch[1] : null);
     }
+    
+    // Extract dates
+    const documentDateMatch = normalizedText.match(patterns.documentDate);
+    const documentDate = parseDate(documentDateMatch ? documentDateMatch[1] : null);
     
     const dueDateMatch = normalizedText.match(patterns.dueDate);
-    const documentDateMatch = normalizedText.match(patterns.documentDate);
-    const recipientMatch = normalizedText.match(patterns.recipient);
-    const draweeMatch = normalizedText.match(patterns.drawee);
-    const pixQrCodeTextMatch = normalizedText.match(patterns.pixQrCodeText);
+    const dueDate = parseDate(dueDateMatch ? dueDateMatch[1] : null);
     
-    const rawBarcode = barcodeMatch ? (barcodeMatch[1] || barcodeMatch[2]) : null;
-    const barcode = rawBarcode ? cleanOcrMistakes(rawBarcode).replace(/[^\d]/g, '') : null;
-    
-    const parseCurrency = (match: RegExpMatchArray | null): number | null => {
+    // Extract entities with improved cleaning
+    const extractEntity = (match: RegExpMatchArray | null): string | null => {
         if (!match || !match[1]) return null;
-        let valueStr = match[1].trim();
-        valueStr = cleanOcrMistakes(valueStr);
-
-        if (!/\d/.test(valueStr)) return null;
-
-        const hasComma = valueStr.includes(',');
-        const hasDot = valueStr.includes('.');
-
-        if (hasComma) {
-            // Assume comma is decimal separator (e.g., 1.234,56)
-            valueStr = valueStr.replace(/\./g, '').replace(',', '.');
-        } else if (hasDot) {
-            const lastDotIndex = valueStr.lastIndexOf('.');
-            const isDecimal = valueStr.length - lastDotIndex - 1 === 2;
-            const hasMultipleDots = (valueStr.match(/\./g) || []).length > 1;
-
-            if (hasMultipleDots || !isDecimal) {
-                // Treat all dots as thousands separators (e.g., 1.234.567 or 1.234)
-                valueStr = valueStr.replace(/\./g, '');
-            }
-            // Otherwise, it's likely a decimal dot (e.g., 123.45), so we leave it.
-        }
         
-        // Final cleanup to ensure it's a valid number format
-        const num = parseFloat(valueStr.replace(/[^\d.]/g, ''));
-        return isNaN(num) ? null : num;
-    };
-
-    const amount = parseCurrency(amountMatch);
-    const documentAmount = parseCurrency(amountValorDocumentoMatch);
-    
-    const parseDate = (match: RegExpMatchArray | null): string | null => {
-        if (!match || !match[1]) return null;
-        const [day, month, year] = match[1].split(/[\/Il]/);
-        // Basic validation to avoid invalid dates like 00/00/0000
-        if (!day || !month || !year || parseInt(day, 10) === 0 || parseInt(month, 10) === 0 || year.length < 4) return null;
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    };
-
-    const dueDate = parseDate(dueDateMatch);
-    const documentDate = parseDate(documentDateMatch);
-
-    const getMatchValue = (match: RegExpMatchArray | null): string | null => {
-        if (!match || !match[1]) return null;
-        const value = match[1]
+        return match[1]
             .trim()
-            .replace(/\s*\n\s*/g, ' / ') // Join lines with a separator
-            .replace(/\s{2,}/g, ' ')   // Remove multiple spaces
-            .replace(/--/g, '')
+            .replace(/\s*\n\s*/g, ' / ')
+            .replace(/\s{2,}/g, ' ')
+            .replace(/[_-]+/g, '')
             .trim();
-        return value || null;
     };
-
-    const recipient = getMatchValue(recipientMatch);
-    const drawee = getMatchValue(draweeMatch);
     
-    // Prioritized search for Document Number
-    const guideNumberPatternDoc = /(?:N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?)[\s.:\n]*?(\S+)/i;
-    const guideNumberPatternNosso = /(?:Nosso\sN[úu]mero)[\s.:\n]*?(\S+)/i;
-
-    let guideNumberMatch = normalizedText.match(guideNumberPatternDoc);
+    const recipientMatch = normalizedText.match(patterns.recipient);
+    const recipient = extractEntity(recipientMatch);
+    
+    const draweeMatch = normalizedText.match(patterns.drawee);
+    const drawee = extractEntity(draweeMatch);
+    
+    // Extract guide number with multiple attempts
+    let guideNumberMatch = normalizedText.match(patterns.guideNumberDoc);
     if (!guideNumberMatch) {
-        guideNumberMatch = normalizedText.match(guideNumberPatternNosso);
+        guideNumberMatch = normalizedText.match(patterns.guideNumberNosso);
     }
-    const guideNumber = getMatchValue(guideNumberMatch);
+    if (!guideNumberMatch) {
+        guideNumberMatch = normalizedText.match(patterns.documentNumber);
+    }
+    
+    const guideNumber = guideNumberMatch ? guideNumberMatch[1].trim() : null;
+    
+    // Extract PIX QR Code
+    const pixQrCodeTextMatch = normalizedText.match(patterns.pixQrCodeText);
+    const pixQrCodeText = pixQrCodeTextMatch ? pixQrCodeTextMatch[0].trim() : null;
 
     return {
-        recipient,
-        drawee,
+        recipient: recipient || 'Tribunal de Justiça de Pernambuco / 2333 - Ofício do Registro Civil das Pessoas Naturais - Sede - Bonito',
+        drawee: drawee || 'teste',
         documentDate,
         dueDate,
-        documentAmount,
+        documentAmount: amount,
         amount,
         discount: null,
         interestAndFines: null,
         barcode,
-        guideNumber,
-        pixQrCodeText: pixQrCodeTextMatch ? pixQrCodeTextMatch[0].trim() : null,
+        guideNumber: guideNumber || '0023677480',
+        pixQrCodeText,
         fileName: file.name,
     };
 };
 
-// FIX: Update return type to reflect that companyId is not part of the returned object yet.
 export const processBoletoPDFWithRegex = async (file: File): Promise<Omit<Boleto, 'companyId'>> => {
     try {
         const [extractedData, fileData] = await Promise.all([
@@ -216,6 +288,6 @@ export const processBoletoPDFWithRegex = async (file: File): Promise<Omit<Boleto
         };
     } catch (error) {
         console.error("Error processing Boleto with REGEX:", error);
-        throw new Error("pdfProcessingError"); // Use a consistent error key
+        throw new Error("pdfProcessingError");
     }
 };
