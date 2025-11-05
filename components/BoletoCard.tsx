@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
 import { HashtagIcon, CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, ArrowDownIcon, ArrowUpIcon } from './icons/Icons';
@@ -18,7 +16,7 @@ interface BoletoCardProps {
 
 const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewPdf, userRole }) => {
   const { t, language } = useLanguage();
-  const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
+  const { id, recipient, drawee, documentDate, dueDate, documentAmount, amount, discount, interestAndFines, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
   const [pixCopied, setPixCopied] = useState(false);
   const [barcodeCopied, setBarcodeCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -261,8 +259,9 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
                 <DetailItem icon={<UserIcon />} label={`${t('drawee')}:`} value={drawee} />
             </Section>
 
-            {(discount || interestAndFines) ? (
+            {(documentAmount || discount || interestAndFines) ? (
                 <Section title={t('detailedValues')}>
+                    <DetailItem icon={<DollarSignIcon />} label={`${t('documentAmount')}:`} value={formatCurrency(documentAmount)} />
                     <DetailItem icon={<DollarSignIcon />} label={`${t('discount')}:`} value={formatCurrency(discount)} />
                     <DetailItem icon={<DollarSignIcon />} label={`${t('interestAndFines')}:`} value={formatCurrency(interestAndFines)} />
                 </Section>

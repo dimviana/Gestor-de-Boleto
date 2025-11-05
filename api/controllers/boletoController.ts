@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { pool } from '../../config/db';
@@ -15,7 +14,7 @@ export const getBoletos = async (req: AuthRequest, res: express.Response) => {
       return res.json([]);
     }
 
-    let query = 'SELECT id, recipient, drawee, document_date, due_date, amount, discount, interest_and_fines, barcode, guide_number, pix_qr_code_text, status, file_name, company_id, comments, created_at FROM boletos';
+    let query = 'SELECT id, recipient, drawee, document_date, due_date, document_amount, amount, discount, interest_and_fines, barcode, guide_number, pix_qr_code_text, status, file_name, company_id, comments, created_at FROM boletos';
     const params: (string | null)[] = [];
     if (user.role !== 'admin') {
       query += ' WHERE company_id = ?';
@@ -133,14 +132,14 @@ export const saveBoleto = async (req: AuthRequest, res: express.Response) => {
             companyId: targetCompanyId,
         };
         
-        const { id, recipient, drawee, documentDate, dueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments } = newBoleto;
+        const { id, recipient, drawee, documentDate, dueDate, documentAmount, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments } = newBoleto;
         
         const finalDocumentDate = documentDate === 'null' ? null : documentDate;
         const finalDueDate = dueDate === 'null' ? null : dueDate;
 
         await connection.query(
-            'INSERT INTO boletos (id, user_id, company_id, recipient, drawee, document_date, due_date, amount, discount, interest_and_fines, barcode, guide_number, pix_qr_code_text, status, file_name, file_data, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [id, user.id, companyId, recipient, drawee, finalDocumentDate, finalDueDate, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments]
+            'INSERT INTO boletos (id, user_id, company_id, recipient, drawee, document_date, due_date, document_amount, amount, discount, interest_and_fines, barcode, guide_number, pix_qr_code_text, status, file_name, file_data, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, user.id, companyId, recipient, drawee, finalDocumentDate, finalDueDate, documentAmount, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments]
         );
 
         await connection.query(

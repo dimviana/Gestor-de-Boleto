@@ -54,6 +54,7 @@ const BoletoConfirmationModal: React.FC<BoletoConfirmationModalProps> = ({ bolet
                 <DetailRow icon={<FileTextIcon className="w-5 h-5"/>} label={t('fileNameLabel')} value={boleto.fileName} />
                 <DetailRow icon={<UserIcon className="w-5 h-5"/>} label={t('recipient')} value={boleto.recipient} />
                 <DetailRow icon={<UserIcon className="w-5 h-5"/>} label={t('drawee')} value={boleto.drawee} />
+                <DetailRow icon={<DollarSignIcon className="w-5 h-5"/>} label={t('documentAmount')} value={formatCurrency(boleto.documentAmount)} />
                 <DetailRow icon={<DollarSignIcon className="w-5 h-5 text-green-500"/>} label={t('amount')} value={<span className="font-bold text-lg text-green-600 dark:text-green-400">{formatCurrency(boleto.amount)}</span>} />
                 <DetailRow icon={<CalendarIcon className="w-5 h-5 text-red-500"/>} label={t('dueDate')} value={<span className="font-bold text-lg text-red-600 dark:text-red-400">{formatDate(boleto.dueDate)}</span>} />
                 <DetailRow icon={<DollarSignIcon className="w-5 h-5"/>} label={t('discount')} value={formatCurrency(boleto.discount)} />

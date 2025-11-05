@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiSettings, Boleto } from "../../types";
 import { translations } from "../../translations";
@@ -92,6 +90,7 @@ export const extractBoletoInfo = async (
                         drawee: { type: Type.STRING, description: 'The name of the drawee/payer (Sacado/Pagador). Capture the full name, which is often found on a line below the label.' },
                         documentDate: { type: Type.STRING, description: 'The document creation date (Data do Documento) in YYYY-MM-DD format. Should be null if not found.' },
                         dueDate: { type: Type.STRING, description: 'The main due date (Vencimento) in YYYY-MM-DD format.' },
+                        documentAmount: { type: Type.NUMBER, description: 'The original document value (Valor do Documento), distinct from the final payment amount.' },
                         amount: { type: Type.NUMBER, description: "The final payment amount. First, search for '(=) Valor Cobrado'. If not found, search for '(=) Valor do Documento'. As a fallback, use any field clearly labeled 'Valor Total' or similar that specifies the final payment value. The value should NEVER be zero if a document value is present." },
                         barcode: { type: Type.STRING, description: 'The full digitable line (linha digitável), with all spaces, dots, and other non-numeric formatting removed. It must contain only numbers and be 47 or 48 digits long.' },
                         guideNumber: { type: Type.STRING, description: 'The document number. Give maximum priority to the field labeled "Nº Documento" or "Nº do Documento". If absent, look for "Nosso Número". Should be null if not found.' },
@@ -126,6 +125,7 @@ export const extractBoletoInfo = async (
             drawee: parsedJson.drawee || null,
             documentDate: parsedJson.documentDate || null,
             dueDate: parsedJson.dueDate || null,
+            documentAmount: parsedJson.documentAmount || null,
             amount: parsedJson.amount || null,
             discount: null,
             interestAndFines: null,

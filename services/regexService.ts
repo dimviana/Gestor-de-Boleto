@@ -98,6 +98,7 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     
     // Prioritize "Valor Cobrado" over "Valor do Documento", with a generic fallback
     let amountMatch = normalizedText.match(patterns.amountValorCobrado);
+    const amountValorDocumentoMatch = normalizedText.match(patterns.amountValorDocumento);
     if (!amountMatch) {
         amountMatch = normalizedText.match(patterns.amountValorDocumento);
     }
@@ -145,6 +146,7 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
     };
 
     const amount = parseCurrency(amountMatch);
+    const documentAmount = parseCurrency(amountValorDocumentoMatch);
     
     const parseDate = (match: RegExpMatchArray | null): string | null => {
         if (!match || !match[1]) return null;
@@ -186,6 +188,7 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
         drawee,
         documentDate,
         dueDate,
+        documentAmount,
         amount,
         discount: null,
         interestAndFines: null,

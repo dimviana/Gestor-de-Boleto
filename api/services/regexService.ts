@@ -68,6 +68,7 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     const barcodeMatch = normalizedText.match(patterns.barcode);
     // Prioritize Valor Cobrado, then Valor Documento, then a generic fallback
     let amountMatch = normalizedText.match(patterns.amountValorCobrado);
+    const amountValorDocumentoMatch = normalizedText.match(patterns.amountValorDocumento);
     if (!amountMatch) {
         amountMatch = normalizedText.match(patterns.amountValorDocumento);
     }
@@ -116,6 +117,7 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     };
 
     const amount = parseCurrency(amountMatch);
+    const documentAmount = parseCurrency(amountValorDocumentoMatch);
     
     const parseDate = (match: RegExpMatchArray | null): string | null => {
         if (!match || !match[1]) return null;
@@ -157,6 +159,7 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         drawee,
         documentDate,
         dueDate,
+        documentAmount,
         amount,
         discount: null,
         interestAndFines: null,

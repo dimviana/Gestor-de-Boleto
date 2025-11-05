@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS `boletos` (
   `drawee` VARCHAR(255) DEFAULT NULL,
   `document_date` DATE DEFAULT NULL,
   `due_date` DATE DEFAULT NULL,
+  `document_amount` DECIMAL(10,2) DEFAULT NULL,
   `amount` DECIMAL(10,2) DEFAULT NULL,
   `discount` DECIMAL(10,2) DEFAULT NULL,
   `interest_and_fines` DECIMAL(10,2) DEFAULT NULL,

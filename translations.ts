@@ -1,4 +1,3 @@
-
 export type Language = 'pt' | 'en';
 
 const pt = {
@@ -40,6 +39,7 @@ const pt = {
     dueDate: 'Vencimento',
     amount: 'Valor',
     discount: 'Desconto',
+    documentAmount: 'Valor do Documento',
     interestAndFines: 'Juros/Multa',
     barcode: 'Código de Barras',
     guideNumber: 'Nº do Documento',
@@ -215,6 +215,7 @@ const pt = {
         Retorne um objeto JSON com as seguintes informações. Se um campo não for encontrado, retorne null para ele.
         Datas devem estar no formato AAAA-MM-DD. Valores monetários devem ser números.
 
+        - documentAmount: O valor original do documento ("Valor do Documento").
         - recipient: O nome completo do beneficiário/cedente. Pode consistir em várias partes (ex: "Tribunal de Justiça / Ofício..."). Capture todo o texto associado a este campo, mesmo que ocupe várias linhas, até o início do próximo campo (como CNPJ ou Endereço).
         - drawee: O nome do sacado/pagador.
         - documentDate: A "Data do Documento".
@@ -265,6 +266,7 @@ const en: typeof pt = {
     dueDate: 'Due Date',
     amount: 'Amount',
     discount: 'Discount',
+    documentAmount: 'Document Amount',
     interestAndFines: 'Interest/Fines',
     barcode: 'Barcode',
     guideNumber: 'Document No',
@@ -440,6 +442,7 @@ const en: typeof pt = {
         Return a JSON object with the following information. If a field is not found, return null for it.
         Dates must be in YYYY-MM-DD format. Monetary values must be numbers.
 
+        - documentAmount: The original document value ("Valor do Documento").
         - recipient: The full name of the beneficiary/payee. It may consist of multiple parts (e.g., "Court of Justice / Notary Office..."). Capture all text associated with this field, even if it spans multiple lines, until the next field (like CNPJ or Address) begins.
         - drawee: The name of the drawee/payer (Sacado/Pagador).
         - documentDate: The "Data do Documento" (Document Date).

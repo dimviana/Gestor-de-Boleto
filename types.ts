@@ -18,6 +18,7 @@ export interface Boleto {
   documentDate: string | null;
   dueDate: string | null;
   amount: number | null;
+  documentAmount: number | null; // The original value of the document
   discount: number | null;
   interestAndFines: number | null;
   barcode: string | null;
