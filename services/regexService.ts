@@ -88,8 +88,8 @@ const extractBoletoInfoWithRegex = async (file: File): Promise<Omit<Boleto, 'id'
         amountGeneric: /(?:Valor Total|Valor a ser Pago|Valor a Pagar|Valor L[íi]quido)[\s.:\n]*?R?\$?\s*([\d.,]+)/i,
         dueDate: /(?:Vencimento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         documentDate: /(?:Data (?:do )?Documento)[\s.:\n]*?(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
-        recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\n.*(?:Agência|CNPJ|CPF|Nosso Número|Vencimento)\b|Data (?:do )?Documento)/i,
-        drawee: /(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\n.*(?:Nosso Número|Vencimento|Valor)\b|Data (?:do )?Documento)/i,
+        recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência)\b)/i,
+        drawee: /(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\b(?:Instruções|Descrição do Ato)\b|Autenticação Mecânica)/i,
         pixQrCodeText: /(000201\S{100,})/i,
     };
     
