@@ -201,11 +201,13 @@ const pt = {
         Retorne um objeto JSON com as seguintes informações. Se um campo não for encontrado, retorne null para ele.
         Datas devem estar no formato AAAA-MM-DD. Valores monetários devem ser números.
 
-        - documentAmount: O valor original do documento ("Valor do Documento").
         - recipient: O nome completo do beneficiário/cedente. Pode consistir em várias partes (ex: "Tribunal de Justiça / Ofício..."). Capture todo o texto associado a este campo, mesmo que ocupe várias linhas, até o início do próximo campo (como CNPJ ou Endereço).
         - drawee: O nome do sacado/pagador.
         - documentDate: A "Data do Documento".
         - dueDate: A data de vencimento ("Vencimento"). Se houver múltiplas datas de vencimento com valores diferentes, use a data principal.
+        - documentAmount: O valor original do documento ("Valor do Documento").
+        - discount: O valor de qualquer desconto, geralmente rotulado como "(-) Desconto / Abatimento". Se não encontrado, deve ser null.
+        - interestAndFines: O valor de juros ou multas, geralmente rotulado como "(+) Juros / Multa" ou "(+) Outros Acréscimos". Se não encontrado, deve ser null.
         - amount: O valor final a ser pago. É um campo obrigatório. Procure pelo valor associado à etiqueta "(=) Valor Cobrado". Se não existir, **obrigatoriamente** use o valor da etiqueta "(=) Valor do Documento". Analise a imagem e o texto para encontrar este valor. Se houver um valor de documento, o valor a ser pago não pode ser zero.
         - barcode: A linha digitável completa. Remova todos os pontos, espaços e outros caracteres, retornando apenas os números. O resultado deve ter 47 ou 48 dígitos.
         - guideNumber: O número do documento. **Dê prioridade máxima** ao campo rotulado como "Nº Documento" ou "Nº do Documento". Se este não existir, procure por "Nosso Número".
@@ -414,11 +416,13 @@ const en: typeof pt = {
         Return a JSON object with the following information. If a field is not found, return null for it.
         Dates must be in YYYY-MM-DD format. Monetary values must be numbers.
 
-        - documentAmount: The original document value ("Valor do Documento").
         - recipient: The full name of the beneficiary/payee. It may consist of multiple parts (e.g., "Court of Justice / Notary Office..."). Capture all text associated with this field, even if it spans multiple lines, until the next field (like CNPJ or Address) begins.
         - drawee: The name of the drawee/payer (Sacado/Pagador).
         - documentDate: The "Data do Documento" (Document Date).
         - dueDate: The due date ("Vencimento"). If there are multiple due dates with different values, use the primary one.
+        - documentAmount: The original document value ("Valor do Documento").
+        - discount: The value of any discount, usually labeled "(-) Desconto / Abatimento". Should be null if not found.
+        - interestAndFines: The value of any interest or fines, usually labeled "(+) Juros / Multa" or "(+) Outros Acréscimos". Should be null if not found.
         - amount: The final amount to be paid. This is a required field. Look for the value associated with the label "(=) Valor Cobrado". If it does not exist, you **must** use the value from the "(=) Valor do Documento" label. Analyze both the image and the text to find this value. If a document amount is present, the amount to be paid cannot be zero.
         - barcode: The complete digitable line. Remove all dots, spaces, and other characters, returning only the numbers. The result must have 47 or 48 digits.
         - guideNumber: The document number. **Give maximum priority** to the field labeled "Nº Documento" or "Nº do Documento". If this does not exist, look for "Nosso Número".

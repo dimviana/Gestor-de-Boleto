@@ -22,7 +22,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const [isDragging, setIsDragging] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(comments || '');
-  const [isDetailsOpen, setIsDetailsOpen] = useState(true);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
 
   const formatDate = (dateString: string | null) => {
@@ -35,12 +35,17 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     }
   };
 
-  const formatCurrency = (value: number | null) => {
+  const formatCurrency = (value: number | null, options: { color?: boolean } = {}) => {
     if (value === null || value === undefined) return t('notAvailable');
-    return value.toLocaleString('pt-BR', { 
+    const formatted = value.toLocaleString('pt-BR', { 
         style: 'currency', 
         currency: 'BRL'
     });
+    if (!options.color) return formatted;
+    
+    if (value > 0) return <span className="text-orange-600 dark:text-orange-400 font-semibold">{`+ ${formatted}`}</span>
+    if (value < 0) return <span className="text-red-600 dark:text-red-400 font-semibold">{`- ${formatted.replace("R$", "")}`}</span>
+    return formatted;
   };
 
   const handleDownloadPdf = (e: React.MouseEvent) => {
@@ -158,9 +163,8 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     }
   };
 
-  // FIX: Updated the type of 'value' to 'string | number | null' to resolve a TypeScript comparison error.
-  const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string | number | null; onCopy?: (e: React.MouseEvent) => void; copyState?: boolean; copyLabel?: string; }> = ({ icon, label, value, onCopy, copyState, copyLabel }) => {
-    if (!value && value !== 0) return null;
+  const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode; onCopy?: (e: React.MouseEvent) => void; copyState?: boolean; copyLabel?: string; }> = ({ icon, label, value, onCopy, copyState, copyLabel }) => {
+    if (value === null || value === undefined || value === '') return null;
     return (
       <div className="flex items-start">
         <div className="flex-shrink-0 w-5 h-5 text-gray-400 dark:text-gray-500">{icon}</div>
@@ -187,6 +191,16 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         </div>
     </div>
   );
+
+  const FinancialRow: React.FC<{ label: string, value: React.ReactNode }> = ({ label, value}) => {
+    if (value === null || value === undefined || value === t('notAvailable')) return null;
+    return (
+        <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-500 dark:text-gray-400">{label}</span>
+            <span className="text-gray-800 dark:text-gray-200">{value}</span>
+        </div>
+    );
+  };
 
   return (
     <>
@@ -229,23 +243,32 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-6 my-4 border-t border-gray-100 dark:border-slate-700 pt-4">
-          <div>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
-              <p className="text-2xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(amount)}</p>
-          </div>
-          <div>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
-              <p className="text-2xl font-extrabold text-blue-500 dark:text-blue-400">{formatDate(dueDate)}</p>
-          </div>
-      </div>
+       <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
+            <div className="flex justify-between items-baseline">
+                <div>
+                    <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
+                    <p className="text-2xl font-extrabold text-red-500 dark:text-red-400">{formatDate(dueDate)}</p>
+                </div>
+                 <div className="text-right">
+                    <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
+                    <p className="text-3xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(amount)}</p>
+                </div>
+            </div>
+            {(documentAmount || discount || interestAndFines) && (
+                <div className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-slate-600 space-y-1">
+                    <FinancialRow label={t('documentAmount')} value={formatCurrency(documentAmount)} />
+                    <FinancialRow label={t('discount')} value={formatCurrency(discount, { color: true })} />
+                    <FinancialRow label={t('interestAndFines')} value={formatCurrency(interestAndFines, { color: true })} />
+                </div>
+            )}
+        </div>
       
       <div 
         onClick={(e) => {
             e.stopPropagation();
             setIsDetailsOpen(!isDetailsOpen);
         }}
-        className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 cursor-pointer"
+        className="mt-4 pt-2 border-t border-gray-100 dark:border-slate-700 cursor-pointer"
       >
         <button className="w-full flex justify-center items-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
           {isDetailsOpen ? t('hideDetails') : t('showMoreDetails')}
@@ -259,15 +282,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
                 <DetailItem icon={<UserIcon />} label={t('recipient')} value={recipient} />
                 <DetailItem icon={<UserIcon />} label={t('drawee')} value={drawee} />
             </Section>
-
-            {(documentAmount || discount || interestAndFines) ? (
-                <Section title={t('detailedValues')}>
-                    <DetailItem icon={<DollarSignIcon />} label={t('documentAmount')} value={formatCurrency(documentAmount)} />
-                    <DetailItem icon={<DollarSignIcon />} label={t('discount')} value={formatCurrency(discount)} />
-                    <DetailItem icon={<DollarSignIcon />} label={t('interestAndFines')} value={formatCurrency(interestAndFines)} />
-                </Section>
-            ) : null}
-
+            
             <Section title={t('documentInfo')}>
                 <DetailItem icon={<CalendarIcon />} label={t('documentDate')} value={formatDate(documentDate)} />
                 <DetailItem icon={<IdIcon />} label={t('guideNumber')} value={guideNumber} />

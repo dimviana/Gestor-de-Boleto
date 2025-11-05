@@ -29,7 +29,7 @@ const BoletoConfirmationModal: React.FC<BoletoConfirmationModalProps> = ({ bolet
   };
 
   const DetailRow: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode; mono?: boolean }> = ({ icon, label, value, mono }) => {
-      if (!value) return null;
+      if (!value || value === t('notAvailable')) return null;
       return (
           <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
@@ -55,10 +55,10 @@ const BoletoConfirmationModal: React.FC<BoletoConfirmationModalProps> = ({ bolet
                 <DetailRow icon={<UserIcon className="w-5 h-5"/>} label={t('recipient')} value={boleto.recipient} />
                 <DetailRow icon={<UserIcon className="w-5 h-5"/>} label={t('drawee')} value={boleto.drawee} />
                 <DetailRow icon={<DollarSignIcon className="w-5 h-5"/>} label={t('documentAmount')} value={formatCurrency(boleto.documentAmount)} />
+                <DetailRow icon={<DollarSignIcon className="w-5 h-5 text-red-500"/>} label={t('discount')} value={formatCurrency(boleto.discount)} />
+                <DetailRow icon={<DollarSignIcon className="w-5 h-5 text-orange-500"/>} label={t('interestAndFines')} value={formatCurrency(boleto.interestAndFines)} />
                 <DetailRow icon={<DollarSignIcon className="w-5 h-5 text-green-500"/>} label={t('amount')} value={<span className="font-bold text-lg text-green-600 dark:text-green-400">{formatCurrency(boleto.amount)}</span>} />
                 <DetailRow icon={<CalendarIcon className="w-5 h-5 text-red-500"/>} label={t('dueDate')} value={<span className="font-bold text-lg text-red-600 dark:text-red-400">{formatDate(boleto.dueDate)}</span>} />
-                <DetailRow icon={<DollarSignIcon className="w-5 h-5"/>} label={t('discount')} value={formatCurrency(boleto.discount)} />
-                <DetailRow icon={<DollarSignIcon className="w-5 h-5"/>} label={t('interestAndFines')} value={formatCurrency(boleto.interestAndFines)} />
                 <DetailRow icon={<BarcodeIcon className="w-5 h-5"/>} label={t('barcode')} value={boleto.barcode} mono />
                 <DetailRow icon={<IdIcon className="w-5 h-5"/>} label={t('guideNumber')} value={boleto.guideNumber} />
                 <DetailRow icon={<CalendarIcon className="w-5 h-5"/>} label={t('documentDate')} value={formatDate(boleto.documentDate)} />

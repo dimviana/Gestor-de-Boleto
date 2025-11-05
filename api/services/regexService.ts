@@ -112,6 +112,8 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     const patterns = {
         amountValorDocumento: /(?:\(=\))?\s*Valor do Documento[^\d\r\n]*?([\d.,]{3,})/i,
         amountValorCobrado: /(?:\(=\))?\s*Valor Cobrado[^\d\r\n]*?([\d.,]{3,})/i,
+        discount: /(?:\(-\))?\s*(?:Desconto|Abatimento)[^\d\r\n]*?([\d.,]{3,})/i,
+        interestAndFines: /(?:\(\+\))?\s*(?:Juros|Multa|Outros Acréscimos)[^\d\r\n]*?([\d.,]{3,})/i,
         documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         dueDate: /(?:Vencimento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência)\b)/i,
@@ -132,6 +134,12 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     if (amount === null || amount === 0) {
         amount = documentAmount;
     }
+    
+    const discountMatch = normalizedText.match(patterns.discount);
+    const discount = parseCurrency(discountMatch ? discountMatch[1] : null);
+
+    const interestMatch = normalizedText.match(patterns.interestAndFines);
+    const interestAndFines = parseCurrency(interestMatch ? interestMatch[1] : null);
 
     const documentDate = parseDate(normalizedText.match(patterns.documentDate)?.[1] || null);
     const dueDate = parseDate(normalizedText.match(patterns.dueDate)?.[1] || null);
@@ -160,8 +168,8 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         dueDate,
         documentAmount,
         amount,
-        discount: null,
-        interestAndFines: null,
+        discount,
+        interestAndFines,
         barcode,
         guideNumber,
         pixQrCodeText,

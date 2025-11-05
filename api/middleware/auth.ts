@@ -2,7 +2,9 @@
 
 
 
-import { Request, Response, NextFunction } from 'express';
+
+
+import express, { NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -12,11 +14,11 @@ import { appConfig } from '../services/configService';
 // Ao estender Request do Express, AuthRequest herda propriedades padrão
 // como `headers`, `body`, `file`, etc., resolvendo erros de tipo nos controllers.
 // FIX: Reverted to interface to ensure proper type extension from express.Request.
-export interface AuthRequest extends Request {
+export interface AuthRequest extends express.Request {
   user?: User;
 }
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const protect = (req: AuthRequest, res: express.Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -40,7 +42,7 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const admin = (req: AuthRequest, res: express.Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -48,7 +50,7 @@ export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     }
 };
 
-export const editor = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const editor = (req: AuthRequest, res: express.Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {
