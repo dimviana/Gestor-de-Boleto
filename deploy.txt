@@ -34,9 +34,10 @@ install_dependencies() {
     echo -e "${YELLOW}Updating system package list...${NC}"
     sudo apt-get update -y
 
-    echo -e "${YELLOW}Installing essential packages (git, nginx, mysql, python, venv, certbot...)${NC}"
+    echo -e "${YELLOW}Installing essential packages (git, nginx, python, venv, certbot...)${NC}"
     # Use python3-venv to create virtual environments, which is the modern way to handle python dependencies.
-    sudo apt-get install -y git curl build-essential python3 python3-pip python3-venv nginx mysql-server certbot python3-certbot-nginx
+    # MySQL server is NOT installed by this script. It is a prerequisite.
+    sudo apt-get install -y git curl build-essential python3 python3-pip python3-venv nginx certbot python3-certbot-nginx
 
     if ! command_exists node; then
         echo "Node.js not found. Installing Node.js LTS (20.x)..."
@@ -54,17 +55,6 @@ install_dependencies() {
     fi
 
     echo -e "${GREEN}System dependencies are up to date.${NC}"
-}
-
-configure_mysql() {
-    echo -e "${YELLOW}Configuring MySQL...${NC}"
-    # Use a heredoc to pass commands to mysql securely
-    sudo mysql <<MYSQL_SCRIPT
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASSWORD}';
-FLUSH PRIVILEGES;
-CREATE DATABASE IF NOT EXISTS \`${DB_DATABASE}\`;
-MYSQL_SCRIPT
-    echo -e "${GREEN}MySQL configured and database created (if not exists).${NC}"
 }
 
 setup_repo() {
@@ -100,6 +90,11 @@ EOL
     ./venv/bin/pip install PyMuPDF
 
     echo -e "${YELLOW}Setting up database schema...${NC}"
+    # This command requires the mysql-client, which is usually installed. If not, the user needs it.
+    if ! command_exists mysql; then
+      echo -e "${YELLOW}mysql-client not found. Installing...${NC}"
+      sudo apt-get install -y mysql-client
+    fi
     mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" < database/schema.txt
 }
 
@@ -181,7 +176,6 @@ MYSQL_SCRIPT
 install_full() {
     echo -e "${GREEN}--- Starting Full System Installation ---${NC}"
     install_dependencies
-    configure_mysql
     setup_repo
     configure_nginx_http
     start_pm2

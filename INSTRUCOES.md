@@ -1,95 +1,108 @@
-# Guia de Instalação e Execução - Boleto Manager AI
+# Guia de Implantação Automatizada - Boleto Manager AI
 
-Este documento descreve o passo a passo para instalar e executar o sistema Boleto Manager AI em um ambiente de servidor.
+Este documento descreve como implantar o sistema Boleto Manager AI em um servidor Linux (Ubuntu recomendado) usando o script de automação.
 
-## 1. Pré-requisitos do Servidor
+## Pré-requisitos
 
-Antes de iniciar, garanta que o seu servidor (preferencialmente um sistema operacional baseado em Linux, como Ubuntu) tenha os seguintes softwares instalados:
+Antes de executar o script, você deve ter:
 
-- **Git:** Para clonar o repositório.
-  ```bash
-  sudo apt update
-  sudo apt install git -y
-  ```
-- **Node.js e npm:** Para executar a aplicação backend e gerenciar pacotes. É recomendado usar uma versão LTS.
-  ```bash
-  # Exemplo para Node.js 20.x
-  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-  sudo apt-get install -y nodejs
-  ```
-- **Python e Pip:** Necessário para o serviço de extração de dados de PDF.
-  ```bash
-  sudo apt install python3 python3-pip -y
-  ```
-- **MySQL Server:** O banco de dados para armazenar todas as informações.
-  ```bash
-  sudo apt install mysql-server -y
-  sudo mysql_secure_installation # Siga as instruções para configurar a senha do root e proteger o DB
-  ```
-- **PM2:** Um gerenciador de processos para manter a aplicação rodando em produção.
-  ```bash
-  sudo npm install -g pm2
-  ```
+1.  **Um servidor Linux (Ubuntu 20.04 ou superior recomendado).**
+2.  **Um banco de dados MySQL ou MariaDB já instalado e acessível.** O script **não** instalará o MySQL por você.
+3.  **Um banco de dados e um usuário MySQL criados** para a aplicação.
 
-## 2. Implantação Automatizada com Script
+Você pode criar o banco de dados e o usuário com os seguintes comandos SQL (substitua `'admin'` e `'sua_senha_forte'` pelos seus próprios valores):
 
-Para facilitar a instalação, foi criado um script que automatiza todo o processo de configuração.
+```sql
+CREATE DATABASE boleto_manager_ai;
+CREATE USER 'admin'@'localhost' IDENTIFIED BY 'sua_senha_forte';
+GRANT ALL PRIVILEGES ON boleto_manager_ai.* TO 'admin'@'localhost';
+FLUSH PRIVILEGES;
+```
 
-### Passo 1: Obter o script de deploy
+## Visão Geral
 
-Copie o conteúdo do arquivo `deploy.txt` para um novo arquivo no seu servidor chamado `deploy.sh`.
+O script `deploy.sh` foi projetado para automatizar a maior parte do processo de implantação:
+- Instalação de dependências do sistema (Nginx, Node.js, Python, etc.).
+- Clonagem do código-fonte mais recente.
+- Configuração do ambiente da aplicação (arquivo `.env`).
+- Populando o esquema do banco de dados na sua base MySQL pré-existente.
+- Build do projeto e instalação de dependências.
+- Configuração do Nginx como proxy reverso.
+- Obtenção de um certificado SSL (HTTPS) com Let's Encrypt.
+- Gerenciamento da aplicação com PM2 para garantir que ela permaneça online.
 
-### Passo 2: Tornar o script executável
+## Passos para a Implantação
 
-Dê permissão de execução para o arquivo que você acabou de criar:
+### Passo 1: Preparar o Script
+
+1.  Conecte-se ao seu servidor via SSH.
+2.  Copie o conteúdo do arquivo `deploy.txt` para um novo arquivo no seu servidor chamado `deploy.sh`.
+    ```bash
+    nano deploy.sh
+    # Cole o conteúdo do deploy.txt, depois salve e saia (Ctrl+X, Y, Enter)
+    ```
+
+### Passo 2: Configurar as Variáveis
+
+**Este é o passo mais importante.** Abra o script `deploy.sh` para edição e altere as variáveis de configuração no início do arquivo para corresponderem ao seu ambiente.
+
+```bash
+nano deploy.sh
+```
+
+Você **precisa** alterar os seguintes valores para corresponderem ao seu ambiente:
+- `DOMAIN`: O seu nome de domínio (ex: `meusboletos.com.br`).
+- `ADMIN_EMAIL`: O seu e-mail, usado para o registro do certificado SSL.
+- `DB_HOST`: `localhost` se o banco de dados estiver no mesmo servidor, ou o endereço do seu servidor de banco de dados.
+- `DB_USER`: O usuário MySQL que você criou (ex: `admin`).
+- `DB_PASSWORD`: A senha forte que você definiu para o usuário MySQL.
+- `DB_DATABASE`: O nome do banco de dados que você criou (ex: `boleto_manager_ai`).
+- `API_KEY`: A sua chave de API do Google Gemini.
+- `JWT_SECRET`: **Crie uma string longa e aleatória** para a segurança da autenticação.
+
+### Passo 3: Tornar o Script Executável
+
+Dê permissão de execução para o arquivo:
 ```bash
 chmod +x deploy.sh
 ```
 
-### Passo 3: Executar o script
+### Passo 4: Executar a Instalação
 
-Inicie o script de implantação. Ele irá guiar você por todo o processo.
+Execute o script e escolha a opção para uma instalação completa:
+```bash
+./deploy.sh
+```
+Selecione a **Opção 1) Full Installation**. O script cuidará do resto. Ao final, sua aplicação estará online e acessível em `https://seudominio.com.br`.
+
+## Gerenciando a Aplicação com PM2
+
+Após a instalação, a aplicação é gerenciada pelo PM2. Comandos úteis:
+
+- **Ver os logs da aplicação:**
+  ```bash
+  pm2 logs gerenciaboleto
+  ```
+- **Reiniciar a aplicação (após uma atualização, por exemplo):**
+  ```bash
+  pm2 restart gerenciaboleto
+  ```
+- **Listar processos gerenciados:**
+  ```bash
+  pm2 list
+  ```
+
+## Atualizando o Sistema
+
+Para atualizar a aplicação com o código mais recente do repositório Git, simplesmente execute o script novamente e escolha a **Opção 2) Update System**.
+
 ```bash
 ./deploy.sh
 ```
 
-O script irá automaticamente:
-- Instalar todas as dependências do sistema (Nginx, Node, Python, PM2, etc).
-- Configurar o MySQL e criar o banco de dados.
-- Clonar o repositório do projeto.
-- Criar o arquivo de configuração `.env` com as informações do seu ambiente.
-- Instalar as dependências do projeto (Node e Python).
-- Compilar o código TypeScript.
-- Configurar o banco de dados com o schema inicial.
-- Configurar o Nginx como um proxy reverso.
-- Iniciar a aplicação usando o PM2 para que ela continue rodando em segundo plano.
-- Obter um certificado SSL gratuito da Let's Encrypt para seu domínio.
+## Desinstalando o Sistema
 
-## 3. Gerenciando a Aplicação com PM2
-
-Após a instalação, a aplicação estará sendo gerenciada pelo PM2. Aqui estão alguns comandos úteis:
-
-- **Listar todas as aplicações:**
-  ```bash
-  pm2 list
-  ```
-- **Ver os logs da aplicação em tempo real:**
-  ```bash
-  pm2 logs gerenciaboleto
-  ```
-- **Parar a aplicação:**
-  ```bash
-  pm2 stop gerenciaboleto
-  ```
-- **Reiniciar a aplicação:**
-  ```bash
-  pm2 restart gerenciaboleto
-  ```
-- **Remover a aplicação do PM2:**
-  ```bash
-  pm2 delete gerenciaboleto
-  ```
-
-## 4. Acesso à Aplicação
-
-Após a conclusão do script, a aplicação estará acessível na URL do seu domínio, já configurada com HTTPS.
+Para remover completamente a aplicação, o banco de dados e as configurações, execute o script e escolha a **Opção 3) Uninstall System**.
+```bash
+./deploy.sh
+```
