@@ -180,7 +180,7 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
 
         await connection.query(
             'INSERT INTO boletos (id, user_id, company_id, recipient, drawee, document_date, due_date, document_amount, amount, discount, interest_and_fines, barcode, guide_number, pix_qr_code_text, status, file_name, file_data, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [id, user.id, companyId, recipient, drawee, finalDocumentDate, finalDueDate, documentAmount, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments]
+            [id, user.id, targetCompanyId, recipient, drawee, finalDocumentDate, finalDueDate, documentAmount, amount, discount, interestAndFines, barcode, guideNumber, pixQrCodeText, status, fileName, fileData, comments]
         );
 
         await connection.query(

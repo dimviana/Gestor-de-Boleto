@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification, Role } from '../types';
@@ -20,7 +21,6 @@ import UploadProgress, { UploadStatus } from './UploadProgress';
 import FloatingMenu from './FloatingMenu';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
 import PdfViewerModal from './PdfViewerModal';
-import BoletoConfirmationModal from './BoletoConfirmationModal';
 import CalendarView from './CalendarView';
 
 
@@ -41,7 +41,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingPdfBoleto, setViewingPdfBoleto] = useState<Boleto | null>(null);
-  const [boletoForConfirmation, setBoletoForConfirmation] = useState<Omit<Boleto, 'companyId' | 'id' | 'status' | 'comments'> | null>(null);
   const [currentView, setCurrentView] = useState<'kanban' | 'calendar'>('kanban');
 
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -55,6 +54,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: 'Enviando e extraindo...', progress: 0 }, ...prev]);
 
     const onProgress = (progress: number) => {
+        // The callback from api.extractBoletoData handles the first 90% of progress
         setUploadStatuses(prev => prev.map(up =>
             up.id === uploadId
             ? { ...up, progress: progress }
@@ -69,16 +69,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         const errorKey = user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText';
         throw new Error(errorKey);
       }
-
+      
+      // 1. Extract data from the PDF
       const extractedData = await api.extractBoletoData(file, targetCompanyId, onProgress);
-
+      
+      // 2. Update status to saving
       setUploadStatuses(prev => prev.map(up => 
-            up.id === uploadId 
-            ? { ...up, status: 'success', message: 'Extração concluída. Aguardando confirmação.', progress: 100 } 
-            : up
+        up.id === uploadId 
+        ? { ...up, status: 'processing', message: 'Salvando no banco de dados...', progress: 95 } 
+        : up
+      ));
+
+      // 3. Save the boleto automatically
+      await api.saveBoleto(extractedData, targetCompanyId);
+
+      // 4. Update status to success
+      setUploadStatuses(prev => prev.map(up => 
+        up.id === uploadId 
+        ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } 
+        : up
       ));
       
-      setBoletoForConfirmation(extractedData);
+      await fetchBoletos();
 
     } catch (error: any) {
       console.error("Upload failed:", error);
@@ -100,54 +112,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
             : up
       ));
     }
-  };
-  
-  const handleConfirmBoleto = async () => {
-    if (!boletoForConfirmation) return;
-
-    const uploadId = crypto.randomUUID();
-    setUploadStatuses(prev => [{ id: uploadId, fileName: boletoForConfirmation.fileName, status: 'processing', message: 'Salvando no banco de dados...', progress: 100 }, ...prev]);
-    
-    try {
-        const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
-        if (!targetCompanyId) {
-            throw new Error(user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText');
-        }
-
-        await api.saveBoleto(boletoForConfirmation, targetCompanyId);
-
-        setUploadStatuses(prev => prev.map(up => 
-            up.id === uploadId 
-            ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } 
-            : up
-        ));
-        
-        await fetchBoletos();
-        setBoletoForConfirmation(null);
-
-    } catch(error: any) {
-        console.error("Save failed:", error);
-        const messageFromServer = error.message || 'genericErrorText';
-        let errorMessage = '';
-        if (messageFromServer.startsWith('Duplicate barcode:')) {
-            const substitutions = { identifier: messageFromServer.split(': ')[1] || 'N/A' };
-            errorMessage = t('duplicateBarcodeErrorText', substitutions);
-        } else {
-            const isKnownKey = Object.keys(translations.pt).includes(messageFromServer);
-            errorMessage = t(isKnownKey ? messageFromServer as TranslationKey : 'genericErrorText');
-        }
-
-        setUploadStatuses(prev => prev.map(up => 
-            up.id === uploadId 
-            ? { ...up, status: 'error', message: errorMessage, progress: 0 } 
-            : up
-        ));
-        setBoletoForConfirmation(null); // Close modal on error too
-    }
-  };
-
-  const handleCancelConfirmation = () => {
-      setBoletoForConfirmation(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -431,14 +395,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
           boleto={viewingPdfBoleto}
           onClose={() => setViewingPdfBoleto(null)}
         />
-      )}
-
-      {boletoForConfirmation && (
-          <BoletoConfirmationModal
-            boleto={boletoForConfirmation}
-            onConfirm={handleConfirmBoleto}
-            onCancel={handleCancelConfirmation}
-          />
       )}
     </>
   );
