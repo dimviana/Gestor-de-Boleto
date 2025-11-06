@@ -1,20 +1,22 @@
 # Stage 1: Builder - Installs all dependencies, including dev, and builds the app
 FROM node:lts-alpine AS builder
 
-# Install necessary build tools and Python
-RUN apk add --no-cache python3 py3-pip make g++
+# Install necessary build tools and Python with venv support
+RUN apk add --no-cache python3 py3-pip py3-venv make g++
 
 WORKDIR /usr/src/app
+
+# Set up Python virtual environment
+RUN python3 -m venv /opt/venv
+# Make sure pip is up-to-date and install PyMuPDF inside the venv
+RUN /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install PyMuPDF
 
 # Copy package files
 COPY package.json ./
 
 # Install all Node.js dependencies
 RUN npm install
-
-# Install Python dependencies
-# We can't use a requirements.txt, so we install directly
-RUN pip install PyPDF2
 
 # Copy the rest of the application source code
 COPY . .
@@ -34,15 +36,12 @@ RUN npm install -g pm2 && apk add --no-cache python3
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 
-# Copy installed Python packages from the builder stage
-COPY --from=builder /usr/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
-COPY --from=builder /usr/bin/python3 /usr/bin/python3
-
 # Copy the compiled code from the builder stage
 COPY --from=builder /usr/src/app/dist ./dist
 
-# Copy the Python script
-COPY --from=builder /usr/src/app/api/services/parser.py ./api/services/parser.py
+# Copy the Python script and virtual environment
+COPY --from=builder /usr/src/app/api/services/parser.txt ./api/services/parser.txt
+COPY --from=builder /opt/venv /opt/venv
 
 # Copy database schema if needed for volume mounts, etc.
 COPY --from=builder /usr/src/app/database/schema.txt ./database/schema.txt

@@ -34,8 +34,9 @@ install_dependencies() {
     echo -e "${YELLOW}Updating system package list...${NC}"
     sudo apt-get update -y
 
-    echo -e "${YELLOW}Installing essential packages (git, nginx, mysql, python, certbot...)${NC}"
-    sudo apt-get install -y git curl build-essential python3 python3-pip nginx mysql-server certbot python3-certbot-nginx
+    echo -e "${YELLOW}Installing essential packages (git, nginx, mysql, python, venv, certbot...)${NC}"
+    # Use python3-venv to create virtual environments, which is the modern way to handle python dependencies.
+    sudo apt-get install -y git curl build-essential python3 python3-pip python3-venv nginx mysql-server certbot python3-certbot-nginx
 
     if ! command_exists node; then
         echo "Node.js not found. Installing Node.js LTS (20.x)..."
@@ -51,9 +52,6 @@ install_dependencies() {
     else
         echo -e "${GREEN}PM2 is already installed.${NC}"
     fi
-    
-    echo -e "${YELLOW}Installing Python dependencies...${NC}"
-    sudo pip3 install PyPDF2
 
     echo -e "${GREEN}System dependencies are up to date.${NC}"
 }
@@ -79,6 +77,7 @@ setup_repo() {
     cd "$PROJECT_PATH"
 
     echo -e "${YELLOW}Creating .env configuration file...${NC}"
+    PYTHON_PATH="${PROJECT_PATH}/venv/bin/python"
     cat > .env << EOL
 DB_HOST=${DB_HOST}
 DB_USER=${DB_USER}
@@ -87,6 +86,7 @@ DB_DATABASE=${DB_DATABASE}
 API_KEY=${API_KEY}
 PORT=${NODE_PORT}
 JWT_SECRET=${JWT_SECRET}
+PYTHON_PATH=${PYTHON_PATH}
 EOL
 
     echo -e "${YELLOW}Installing project dependencies (npm install)...${NC}"
@@ -95,6 +95,10 @@ EOL
     echo -e "${YELLOW}Compiling TypeScript project (npm run build)...${NC}"
     npm run build
     
+    echo -e "${YELLOW}Setting up Python virtual environment and installing dependencies...${NC}"
+    python3 -m venv venv
+    ./venv/bin/pip install PyMuPDF
+
     echo -e "${YELLOW}Setting up database schema...${NC}"
     mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" < database/schema.txt
 }
@@ -201,6 +205,9 @@ update_system() {
     echo -e "${YELLOW}Rebuilding project...${NC}"
     npm run build
     
+    echo -e "${YELLOW}Rebuilding Python virtual environment...${NC}"
+    ./venv/bin/pip install --upgrade PyMuPDF
+
     record_deployment
     
     echo -e "${YELLOW}Restarting application...${NC}"

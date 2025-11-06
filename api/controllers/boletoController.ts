@@ -1,7 +1,4 @@
 
-
-
-
 import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -13,9 +10,10 @@ import { Buffer } from 'buffer';
 
 const extractBoletoWithPython = (pdfBuffer: Buffer): Promise<any> => {
     return new Promise((resolve, reject) => {
-        // Ensure the script path is correct relative to the execution directory
-        const scriptPath = 'api/services/parser.py';
-        const pythonProcess = spawn('python3', [scriptPath]);
+        // Use python from venv if path is specified, otherwise fallback to system python3
+        const pythonExecutable = process.env.PYTHON_PATH || 'python3';
+        const scriptPath = 'api/services/parser.txt';
+        const pythonProcess = spawn(pythonExecutable, [scriptPath]);
 
         let stdoutData = '';
         let stderrData = '';
