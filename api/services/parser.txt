@@ -19,7 +19,8 @@ def extract_barcode(text):
     """Extracts the 47 or 48-digit barcode from text, trying multiple patterns."""
     # This regex is specific for the formatted barcode line (linha digitável)
     # e.g., 00190.00009 02864.346008 23677.478176 1 12650000006814
-    pattern_formatted = r'\b(\d{5}\.\d{5})\s+(\d{5}\.\d{6})\s+(\d{5}\.\d{6})\s+(\d)\s+(\d{14})\b'
+    # FIX: Made the digit count per block more flexible to support variations.
+    pattern_formatted = r'\b(\d{5}\.\d{5,})\s+(\d{5}\.\d{6,})\s+(\d{5}\.\d{6,})\s+(\d{1,})\s+(\d{14,})\b'
     # Pattern for a solid block of 47 or 48 digits, often without formatting
     pattern_solid = r'\b(\d{47,48})\b'
     
@@ -127,7 +128,8 @@ def main():
             'pixQrCodeText': r'(000201\S{100,})',
             # For multi-line fields, we capture everything between a start and end keyword.
             'recipient': r'(?:Benefici[áa]rio|Cedente)[\s.:\n]*([\s\S]*?)(?=\b(?:Data Process|Data (?:do )?Documento|Vencimento|Nosso Número|Ag.ncia)\b)',
-            'drawee': r'(?:Pagador|Sacado)[\s.:\n]*([\s\S]*?)(?=\b(?:Instruções|Descrição do Ato|Autenticaç)\b|Mora/Multa)',
+            # FIX: Added "Sacador / Avalista" as a stop word to prevent capturing labels.
+            'drawee': r'(?:Pagador|Sacado)[\s.:\n]*([\s\S]*?)(?=\b(?:Sacador\s\/\sAvalista|Instruções|Descrição do Ato|Autenticaç)\b|Mora/Multa)',
         }
         
         # --- DATA EXTRACTION ---
