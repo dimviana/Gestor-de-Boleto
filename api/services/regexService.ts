@@ -1,6 +1,6 @@
 import { Boleto } from '../../types';
-// FIX: Changed import to handle module correctly
-import pdfParse from 'pdf-parse';
+// FIX: Changed import to 'require' syntax to correctly handle the CommonJS module.
+import pdfParse = require('pdf-parse');
 import { Buffer } from 'buffer';
 
 const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
