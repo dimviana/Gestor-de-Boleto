@@ -4,50 +4,170 @@ import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
-import { spawn } from 'child_process';
 import { Buffer } from 'buffer';
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.js';
 
-const extractBoletoWithPython = (pdfBuffer: Buffer): Promise<any> => {
-    return new Promise((resolve, reject) => {
-        const pythonExecutable = process.env.PYTHON_PATH || 'python3';
-        const scriptPath = 'api/services/parser.txt';
-        const pythonProcess = spawn(pythonExecutable, [scriptPath]);
+// --- PDF Parsing and Data Extraction Logic (Node.js Implementation) ---
 
-        let stdoutData = '';
-        let stderrData = '';
+const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
+    const data = new Uint8Array(pdfBuffer);
+    // Use `worker: null` for Node.js environment
+    const pdf = await pdfjs.getDocument({ data, worker: null }).promise;
+    let fullText = '';
 
-        pythonProcess.stdout.on('data', (data) => {
-            stdoutData += data.toString();
-        });
-
-        pythonProcess.stderr.on('data', (data) => {
-            stderrData += data.toString();
-        });
-
-        pythonProcess.on('close', (code) => {
-            if (code !== 0) {
-                console.error(`Python script exited with code ${code}`);
-                console.error('Python stderr:', stderrData);
-                return reject(new Error('pdfProcessingError'));
-            }
-            try {
-                const result = JSON.parse(stdoutData);
-                resolve(result);
-            } catch (e) {
-                console.error('Failed to parse JSON from Python script:', stdoutData);
-                reject(new Error('pdfProcessingError'));
-            }
-        });
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
         
-        pythonProcess.on('error', (err) => {
-            console.error('Failed to start Python process:', err);
-            reject(new Error('pdfProcessingError'));
-        });
+        const lines: { [key: number]: any[] } = {};
+        for(const item of textContent.items) {
+            const y = Math.round((item as any).transform[5]);
+            if (!lines[y]) lines[y] = [];
+            lines[y].push(item);
+        }
 
-        pythonProcess.stdin.write(pdfBuffer);
-        pythonProcess.stdin.end();
-    });
+        const sortedLines = Object.keys(lines)
+            .sort((a, b) => Number(b) - Number(a))
+            .map(y => lines[parseInt(y, 10)]);
+
+        const pageText = sortedLines.map(lineItems => {
+            return lineItems
+                .sort((a, b) => (a as any).transform[4] - (b as any).transform[4])
+                .map(item => (item as any).str)
+                .join(' ');
+        }).join('\n');
+
+        fullText += pageText + '\n\n';
+    }
+    return fullText;
 };
+
+const cleanOcrMistakes = (value: string | null): string => {
+    if (!value) return '';
+    return value
+        .replace(/O|o|º/g, '0')
+        .replace(/I|l/g, '1')
+        .replace(/S|s|§/g, '5')
+        .replace(/B/g, '8')
+        .replace(/Z|z/g, '2')
+        .replace(/G/g, '6');
+};
+
+const extractBarcode = (text: string): string | null => {
+    const patternFormatted = /\b(\d{5}\.\d{5,})\s+(\d{5}\.\d{6,})\s+(\d{5}\.\d{6,})\s+?(\d{1,})\s+?(\d{14,})\b/;
+    const patternSolid = /\b(\d{47,48})\b/;
+    
+    const cleanedText = cleanOcrMistakes(text);
+
+    let match = cleanedText.match(patternFormatted);
+    if (match) {
+        return match.slice(1).join('').replace(/[^\d]/g, '');
+    }
+
+    match = cleanedText.match(patternSolid);
+    if (match) {
+        return match[1];
+    }
+    
+    return null;
+};
+
+const parseCurrency = (valueStr: string | null): number | null => {
+    if (!valueStr) return null;
+    
+    let cleanedStr = String(valueStr).trim().toUpperCase().replace('R$', '').replace('RS', '').trim();
+    
+    if (cleanedStr.includes(',') && cleanedStr.includes('.')) {
+        if (cleanedStr.lastIndexOf('.') < cleanedStr.lastIndexOf(',')) {
+             cleanedStr = cleanedStr.replace(/\./g, '').replace(',', '.');
+        } else {
+            cleanedStr = cleanedStr.replace(/,/g, '');
+        }
+    } else if (cleanedStr.includes(',')) {
+        cleanedStr = cleanedStr.replace(',', '.');
+    }
+
+    const numericPart = cleanedStr.replace(/[^\d.]/g, '');
+    if (!numericPart) return null;
+
+    const num = parseFloat(numericPart);
+    return isNaN(num) ? null : Math.round(num * 100) / 100;
+};
+
+const parseDate = (dateStr: string | null): string | null => {
+    if (!dateStr) return null;
+    const match = String(dateStr).match(/(\d{2})[/\sIl](\d{2})[/\sIl](\d{4})/);
+    if (match) {
+        const [_, day, month, year] = match;
+        if (parseInt(month, 10) > 0 && parseInt(month, 10) <= 12 && parseInt(day, 10) > 0 && parseInt(day, 10) <= 31 && parseInt(year, 10) > 1900) {
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+    }
+    return null;
+};
+
+const extractField = (text: string, pattern: RegExp): string | null => {
+    const match = text.match(pattern);
+    return match && match[1] ? match[1].trim() : null;
+};
+
+const extractMultilineField = (text: string, pattern: RegExp): string | null => {
+    const match = text.match(pattern);
+    if (!match || !match[1]) return null;
+    
+    let result = match[1].trim();
+    result = result.replace(/\s*\n\s*/g, ' / ');
+    result = result.replace(/\s{2,}/g, ' ');
+    result = result.replace(/[-_]+/g, ' ').trim();
+    return result || null;
+};
+
+const extractBoletoDataFromPdf = async (pdfBuffer: Buffer): Promise<any> => {
+    const fullText = await getPdfTextContent(pdfBuffer);
+    
+    const patterns = {
+        dueDate: /(?:Vencimento)[\s:.]*(\d{2}[/\sIl]\d{2}[/\sIl]\d{4})/i,
+        documentDate: /(?:Data\s(?:do\s)?Documento)[\s:.]*(\d{2}[/\sIl]\d{2}[/\sIl]\d{4})/i,
+        documentAmount: /(?:\(=\)\s*Valor\sdo\sDocumento|Valor\sdo\sDocumento)[\s\S]*?(\b[\d.,]+\b)/i,
+        amountCharged: /(?:\(=\)\s*Valor\sCobrado)[\s\S]*?(\b[\d.,]+\b)/i,
+        discount: /(?:\(-\)\s*Desconto\s*\/\s*Abatimento)[\s\S]*?(\b[\d.,]+\b)/i,
+        interestAndFines: /(?:\(\+\)\s*Juros\s*\/\s*Multa|\(\+\)\s*Outros\sAcr.scimos)[\s\S]*?(\b[\d.,]+\b)/i,
+        guideNumberDoc: /(?:N[ºo\.]?\s?Documento(?:[\/]?Guia)?)[\s.:\n]*?([^\s\n]+)/i,
+        guideNumberNosso: /(?:Nosso\sN[úu]mero)[\s.:\n]*?([^\s\n]+)/i,
+        pixQrCodeText: /(000201\S{100,})/i,
+        recipient: /(?:Benefici[áa]rio|Cedente)[\s.:\n]*([\s\S]*?)(?=\b(?:Data Process|Data (?:do )?Documento|Vencimento|Nosso Número|Ag.ncia)\b)/is,
+        drawee: /(?:Pagador|Sacado)[\s.:\n]*([\s\S]*?)(?=\b(?:Sacador\s\/\sAvalista|Instruções|Descrição do Ato|Autenticaç)\b|Mora\/Multa)/is,
+    };
+    
+    const data: any = {};
+
+    data.dueDate = parseDate(extractField(fullText, patterns.dueDate));
+    data.documentDate = parseDate(extractField(fullText, patterns.documentDate));
+    
+    data.documentAmount = parseCurrency(extractField(fullText, patterns.documentAmount));
+    data.discount = parseCurrency(extractField(fullText, patterns.discount));
+    data.interestAndFines = parseCurrency(extractField(fullText, patterns.interestAndFines));
+    
+    const amountCharged = parseCurrency(extractField(fullText, patterns.amountCharged));
+    data.amount = (amountCharged !== null && amountCharged > 0) ? amountCharged : data.documentAmount;
+
+    let guideNumber = extractField(fullText, patterns.guideNumberDoc);
+    if (!guideNumber) {
+        guideNumber = extractField(fullText, patterns.guideNumberNosso);
+    }
+    data.guideNumber = guideNumber;
+
+    data.recipient = extractMultilineField(fullText, patterns.recipient);
+    data.drawee = extractMultilineField(fullText, patterns.drawee);
+    
+    data.barcode = extractBarcode(fullText);
+    data.pixQrCodeText = extractField(fullText, patterns.pixQrCodeText);
+    
+    return data;
+};
+
+
+// --- Controller Functions ---
 
 // Helper to map database snake_case to frontend camelCase
 const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
@@ -139,7 +259,7 @@ export const extractBoleto = async (req: express.Request, res: express.Response)
         return res.status(400).json({ message: 'No file uploaded' });
     }
     try {
-        const extractedData = await extractBoletoWithPython(req.file.buffer);
+        const extractedData = await extractBoletoDataFromPdf(req.file.buffer);
         extractedData.fileName = req.file.originalname;
 
         if (extractedData.amount === null || extractedData.amount === undefined) {
@@ -149,7 +269,7 @@ export const extractBoleto = async (req: express.Request, res: express.Response)
         res.status(200).json({ ...extractedData, fileData: req.file.buffer.toString('base64') });
     } catch (error: any) {
         console.error("Error extracting boleto data:", error);
-        res.status(500).json({ message: error.message || 'Failed to process boleto' });
+        res.status(500).json({ message: 'pdfProcessingError' });
     }
 };
 
