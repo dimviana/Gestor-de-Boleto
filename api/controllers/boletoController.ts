@@ -11,8 +11,8 @@ import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.js';
 
 const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
     const data = new Uint8Array(pdfBuffer);
-    // Use `worker: null` for Node.js environment
-    const pdf = await pdfjs.getDocument({ data, worker: null }).promise;
+    // In a Node.js environment, the worker is not needed. pdfjs-dist should handle this automatically.
+    const pdf = await pdfjs.getDocument({ data }).promise;
     let fullText = '';
 
     for (let i = 1; i <= pdf.numPages; i++) {
