@@ -28,20 +28,20 @@ const extractBoletoWithPython = (pdfBuffer: Buffer): Promise<any> => {
             if (code !== 0) {
                 console.error(`Python script exited with code ${code}`);
                 console.error('Python stderr:', stderrData);
-                return reject(new Error('Falha ao processar o PDF com o script Python. Verifique os logs do servidor.'));
+                return reject(new Error('pdfProcessingError'));
             }
             try {
                 const result = JSON.parse(stdoutData);
                 resolve(result);
             } catch (e) {
                 console.error('Failed to parse JSON from Python script:', stdoutData);
-                reject(new Error('Resposta inválida do script de processamento Python.'));
+                reject(new Error('pdfProcessingError'));
             }
         });
         
         pythonProcess.on('error', (err) => {
             console.error('Failed to start Python process:', err);
-            reject(new Error('Não foi possível iniciar o serviço de processamento de PDF. Verifique se o Python está instalado no servidor.'));
+            reject(new Error('pdfProcessingError'));
         });
 
         pythonProcess.stdin.write(pdfBuffer);
