@@ -1,6 +1,8 @@
 
 
 
+
+// FIX: Add missing express types
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';

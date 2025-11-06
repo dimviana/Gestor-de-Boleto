@@ -1,12 +1,14 @@
 
+
+// FIX: Add missing express types
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
-// FIX: Changed import to handle CommonJS module correctly
-import pdfParse = require('pdf-parse');
+// FIX: Changed import to handle module correctly
+import pdfParse from 'pdf-parse';
 
 // --- PDF Parsing and Data Extraction Logic (Node.js Implementation) ---
 
@@ -297,6 +299,7 @@ export const saveBoleto = async (req: Request, res: Response) => {
             drawee: newBoleto.drawee || null,
             document_date: newBoleto.documentDate === 'null' ? null : newBoleto.documentDate,
             due_date: newBoleto.dueDate === 'null' ? null : newBoleto.dueDate,
+            document_amount: newBoleto.documentAmount || null,
             amount: newBoleto.amount || null,
             discount: newBoleto.discount || null,
             interest_and_fines: newBoleto.interestAndFines || null,
