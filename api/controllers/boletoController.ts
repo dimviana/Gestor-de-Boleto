@@ -194,23 +194,33 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
             companyId: targetCompanyId,
         };
         
-        const columns = [
-            'id', 'user_id', 'company_id', 'recipient', 'drawee', 
-            'document_date', 'due_date', 'document_amount', 'amount', 
-            'discount', 'interest_and_fines', 'barcode', 'guide_number', 
-            'pix_qr_code_text', 'status', 'file_name', 'file_data', 'comments'
-        ];
+        // Create an explicit object with snake_case keys matching the database schema
+        // This prevents any ambiguity and ensures undefined values are converted to null.
+        const dbInsertObject = {
+            id: newBoleto.id,
+            user_id: user.id,
+            company_id: newBoleto.companyId,
+            recipient: newBoleto.recipient || null,
+            drawee: newBoleto.drawee || null,
+            document_date: newBoleto.documentDate === 'null' ? null : newBoleto.documentDate,
+            due_date: newBoleto.dueDate === 'null' ? null : newBoleto.dueDate,
+            document_amount: newBoleto.documentAmount || null,
+            amount: newBoleto.amount || null,
+            discount: newBoleto.discount || null,
+            interest_and_fines: newBoleto.interestAndFines || null,
+            barcode: newBoleto.barcode || null,
+            guide_number: newBoleto.guideNumber || null,
+            pix_qr_code_text: newBoleto.pixQrCodeText || null,
+            status: newBoleto.status,
+            file_name: newBoleto.fileName,
+            file_data: newBoleto.fileData,
+            comments: newBoleto.comments || null
+        };
 
-        const values = [
-            newBoleto.id, user.id, newBoleto.companyId, newBoleto.recipient,
-            newBoleto.drawee, newBoleto.documentDate === 'null' ? null : newBoleto.documentDate,
-            newBoleto.dueDate === 'null' ? null : newBoleto.dueDate, newBoleto.documentAmount,
-            newBoleto.amount, newBoleto.discount, newBoleto.interestAndFines,
-            newBoleto.barcode, newBoleto.guideNumber, newBoleto.pixQrCodeText,
-            newBoleto.status, newBoleto.fileName, newBoleto.fileData, newBoleto.comments
-        ];
-
-        const sql = `INSERT INTO boletos (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`;
+        const columns = Object.keys(dbInsertObject);
+        const values = Object.values(dbInsertObject);
+        const placeholders = columns.map(() => '?').join(', ');
+        const sql = `INSERT INTO boletos (${columns.join(', ')}) VALUES (${placeholders})`;
         
         await connection.query(sql, values);
 
