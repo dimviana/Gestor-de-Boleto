@@ -75,19 +75,19 @@ Após a instalação, a aplicação estará sendo gerenciada pelo PM2. Aqui est�
   ```
 - **Ver os logs da aplicação em tempo real:**
   ```bash
-  pm2 logs boleto-manager-ai
+  pm2 logs gerenciaboleto
   ```
 - **Parar a aplicação:**
   ```bash
-  pm2 stop boleto-manager-ai
+  pm2 stop gerenciaboleto
   ```
 - **Reiniciar a aplicação:**
   ```bash
-  pm2 restart boleto-manager-ai
+  pm2 restart gerenciaboleto
   ```
 - **Remover a aplicação do PM2:**
   ```bash
-  pm2 delete boleto-manager-ai
+  pm2 delete gerenciaboleto
   ```
 
 ## 4. Acesso à Aplicação
