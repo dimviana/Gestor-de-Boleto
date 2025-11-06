@@ -206,6 +206,11 @@ update_system() {
     npm run build
     
     echo -e "${YELLOW}Rebuilding Python virtual environment...${NC}"
+    # Ensure the venv directory exists before trying to use it.
+    if [ ! -d "venv" ]; then
+        echo "Virtual environment not found. Recreating..."
+        python3 -m venv venv
+    fi
     ./venv/bin/pip install --upgrade PyMuPDF
 
     record_deployment
