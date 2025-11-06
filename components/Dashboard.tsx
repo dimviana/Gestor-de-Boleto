@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification, Role } from '../types';
@@ -9,13 +10,11 @@ import FileUpload from './FileUpload';
 import KanbanColumn from './KanbanColumn';
 import Spinner from './Spinner';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
 import { HourglassIcon, CheckCircleIcon, TrashIcon, PaymentTerminalIcon, KanbanIcon, CalendarIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
-import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
 import UploadProgress, { UploadStatus } from './UploadProgress';
 import FloatingMenu from './FloatingMenu';
@@ -37,7 +36,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const { t } = useLanguage();
-  const { method } = useProcessingMethod();
   
   const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
@@ -72,7 +70,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         throw new Error(errorKey);
       }
 
-      const extractedData = await api.extractBoletoData(file, targetCompanyId, method, onProgress);
+      const extractedData = await api.extractBoletoData(file, targetCompanyId, onProgress);
 
       setUploadStatuses(prev => prev.map(up => 
             up.id === uploadId 

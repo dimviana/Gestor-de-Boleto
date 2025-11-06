@@ -2,7 +2,7 @@ export type Language = 'pt' | 'en';
 
 const pt = {
     loginTitle: 'Boleto Manager AI',
-    loginSubtitle: 'Gerencie seus boletos com o poder da IA do Gemini',
+    loginSubtitle: 'Gerencie seus boletos com extração inteligente de dados',
     loginButton: 'Acessar o Painel',
     createAccountButton: 'Criar Conta',
     logoutButton: 'Sair',
@@ -55,25 +55,14 @@ const pt = {
     boletoDetailsTitle: 'Detalhes do Boleto',
     downloadPdf: 'Baixar Documentação em PDF',
     processingErrorTitle: 'Erro ao Processar',
-    processingStatus: 'Processando com IA',
-    processingStatusOcr: 'Processando com IA e OCR...',
-    processingStatusRegex: 'Extraindo dados localmente...',
-    processingErrorText: 'Ocorreu um erro ao tentar processar o arquivo PDF. Verifique o console para mais detalhes.',
     duplicateBarcodeErrorTitle: 'Boleto Duplicado',
     duplicateBarcodeErrorText: 'Um boleto com este código de barras (Doc Nº: {{identifier}}) já foi adicionado.',
     invalidBarcodeErrorTitle: 'Código de Barras Faltando',
     invalidBarcodeErrorText: 'Não foi possível extrair o código de barras (linha digitável) do PDF. Este é um campo essencial para o processamento do boleto.',
     genericErrorTitle: 'Ocorreu um Erro',
     genericErrorText: 'Ocorreu um erro inesperado. Por favor, tente novamente.',
+    // FIX: Add missing translation key
     pdfProcessingError: 'Ocorreu um erro ao processar o boleto com a IA.',
-    geminiErrorApiKey: 'Chave da API do Gemini inválida ou ausente. Verifique suas configurações no painel de admin.',
-    geminiErrorRateLimit: 'Limite de requisições da API atingido. Por favor, tente novamente mais tarde.',
-    geminiErrorSafety: 'A resposta foi bloqueada devido às configurações de segurança do Gemini. Tente um arquivo diferente.',
-    geminiErrorBadRequest: 'A requisição para a API de IA foi mal formatada. Verifique as configurações do modelo.',
-    geminiEmptyResponse: 'A API de IA retornou uma resposta vazia. Isso pode ser devido a filtros de segurança.',
-    geminiInvalidJson: 'A API de IA retornou um formato de dados inválido (não-JSON).',
-    geminiGenericError: 'Falha na comunicação com a API de IA. Verifique sua conexão e configurações.',
-    geminiNoApiKeyServer: 'A chave da API do Gemini não está configurada no servidor.',
     freeBoletoErrorTitle: 'Boleto de Ato Gratuito',
     freeBoletoErrorText: 'Este boleto tem valor zerado (ato gratuito) e não pode ser adicionado ao sistema.',
     amountNotFoundErrorText: 'Não foi possível determinar o valor do boleto. Verifique o PDF e tente novamente.',
@@ -104,11 +93,6 @@ const pt = {
     userUpdatedSuccess: 'Usuário atualizado com sucesso.',
     userDeletedSuccess: 'Usuário excluído com sucesso.',
     addUserErrorDuplicate: 'Já existe um usuário com este email.',
-    extractionMethodTitle: 'Método de Extração de Dados',
-    extractionMethodAI: 'IA (Gemini)',
-    extractionMethodAIDescription: 'Alta precisão usando IA para analisar a imagem do boleto. Requer conexão com a internet e uso da API.',
-    extractionMethodRegex: 'REGEX (Local)',
-    extractionMethodRegexDescription: 'Extração instantânea e offline baseada em texto. Mais rápido, mas pode falhar em layouts de boleto incomuns.',
     itemsSelected: '{{count}} itens selecionados',
     deselectAll: 'Desselecionar Todos',
     moveTo: 'Mover para {{status}}',
@@ -136,18 +120,6 @@ const pt = {
     themeLight: 'Claro',
     themeDark: 'Escuro',
     themeSystem: 'Sistema',
-    aiSettingsTitle: 'Configurações da IA (Gemini)',
-    aiSettingsDescription: 'Ajuste os parâmetros do modelo Gemini para otimizar a extração de dados.',
-    apiKeyNote: 'Nota: A chave da API é configurada de forma segura através de variáveis de ambiente e não pode ser alterada aqui.',
-    modelLabel: 'Nome do Modelo',
-    modelDescription: 'O modelo Gemini a ser usado para a extração.',
-    temperatureLabel: 'Temperatura',
-    temperatureDescription: 'Controla a aleatoriedade. Valores mais baixos para respostas mais diretas.',
-    topKLabel: 'Top-K',
-    topKDescription: 'Afeta a seleção de tokens. Não é recomendado alterar para extração de dados.',
-    topPLabel: 'Top-P',
-    topPDescription: 'Controla a diversidade. Use 1 para extração de dados focada.',
-    saveAiSettingsButton: 'Salvar Configurações da IA',
     userHasNoCompanyErrorTitle: 'Ação Bloqueada',
     userHasNoCompanyErrorText: 'Você precisa pertencer a uma empresa para adicionar boletos. Peça a um administrador para atribuí-lo a uma.',
     adminMustSelectCompanyErrorText: 'Administrador: Por favor, selecione uma empresa no filtro para poder adicionar um boleto.',
@@ -170,9 +142,6 @@ const pt = {
     companyDeleteError: 'Falha ao excluir a empresa.',
     searchPlaceholder: 'Pesquisar boletos...',
     credentialsAndSecurityTitle: 'Credenciais & Segurança',
-    geminiApiKeyLabel: 'Chave da API Gemini',
-    geminiApiKeyPlaceholder: 'Cole sua chave de API aqui',
-    geminiApiKeyDescription: 'Esta chave é usada para as chamadas à API do Gemini. É armazenada de forma segura no banco de dados.',
     jwtSecretLabel: 'Segredo do Token JWT',
     jwtSecretPlaceholder: 'Segredo para assinar tokens de usuário',
     jwtSecretDescription: 'Uma chave secreta longa e aleatória para a segurança da autenticação. Mudar isso irá invalidar todas as sessões de login atuais.',
@@ -188,36 +157,20 @@ const pt = {
     documentInfo: 'Informações do Documento',
     paymentCodes: 'Códigos de Pagamento',
     confirmExtractionTitle: 'Confirmar Dados Extraídos',
-    confirmExtractionMessage: 'Por favor, verifique os dados extraídos pela IA antes de salvar o boleto. Edições poderão ser feitas no card após a confirmação.',
+    confirmExtractionMessage: 'Por favor, verifique os dados extraídos do PDF antes de salvar o boleto. Edições poderão ser feitas no card após a confirmação.',
     fileNameLabel: 'Nome do Arquivo:',
     confirmAndSaveButton: 'Confirmar e Salvar',
     viewKanban: 'Visão Kanban',
     viewCalendar: 'Visão Calendário',
     previousMonth: 'Mês Anterior',
     nextMonth: 'Próximo Mês',
-    geminiPrompt: `
-        Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
-        Sua tarefa é analisar a IMAGEM de um boleto fornecida. Use suas capacidades de visão para ler todo o texto e extrair os dados solicitados.
-        Retorne um objeto JSON com as seguintes informações. Se um campo não for encontrado, retorne null para ele.
-        Datas devem estar no formato AAAA-MM-DD. Valores monetários devem ser números.
-
-        - recipient: O nome completo do beneficiário/cedente. Pode consistir em várias partes (ex: "Tribunal de Justiça / Ofício..."). Capture todo o texto associado a este campo, mesmo que ocupe várias linhas, até o início do próximo campo (como CNPJ ou Endereço).
-        - drawee: O nome do sacado/pagador.
-        - documentDate: A "Data do Documento".
-        - dueDate: A data de vencimento ("Vencimento"). Se houver múltiplas datas de vencimento com valores diferentes, use a data principal.
-        - documentAmount: O valor original do documento ("Valor do Documento").
-        - discount: O valor de qualquer desconto, geralmente rotulado como "(-) Desconto / Abatimento". Se não encontrado, deve ser null.
-        - interestAndFines: O valor de juros ou multas, geralmente rotulado como "(+) Juros / Multa" ou "(+) Outros Acréscimos". Se não encontrado, deve ser null.
-        - amount: O valor final a ser pago. É um campo obrigatório. Procure pelo valor associado à etiqueta "(=) Valor Cobrado". Se não existir, **obrigatoriamente** use o valor da etiqueta "(=) Valor do Documento". Analise a imagem e o texto para encontrar este valor. Se houver um valor de documento, o valor a ser pago não pode ser zero.
-        - barcode: A linha digitável completa. Remova todos os pontos, espaços e outros caracteres, retornando apenas os números. O resultado deve ter 47 ou 48 dígitos.
-        - guideNumber: O número do documento. **Dê prioridade máxima** ao campo rotulado como "Nº Documento" ou "Nº do Documento". Se este não existir, procure por "Nosso Número".
-        - pixQrCodeText: O conteúdo completo do QR Code PIX (Copia e Cola). Se não houver, deve ser null.
-    `,
+    // FIX: Add missing translation key
+    geminiPrompt: `Você é um assistente especialista em extrair informações de boletos bancários brasileiros. Sua tarefa é analisar a imagem de um boleto e retornar um objeto JSON conforme o schema solicitado. Se uma informação não for encontrada, retorne null para o campo correspondente. Datas devem estar no formato AAAA-MM-DD.`,
 };
 
 const en: typeof pt = {
     loginTitle: 'Boleto Manager AI',
-    loginSubtitle: 'Manage your payment slips with the power of Gemini AI',
+    loginSubtitle: 'Manage your payment slips with smart data extraction',
     loginButton: 'Access Dashboard',
     createAccountButton: 'Create Account',
     logoutButton: 'Logout',
@@ -270,25 +223,14 @@ const en: typeof pt = {
     boletoDetailsTitle: 'Boleto Details',
     downloadPdf: 'Download Documentation as PDF',
     processingErrorTitle: 'Processing Error',
-    processingStatus: 'Processing with AI',
-    processingStatusOcr: 'Processing with AI and OCR...',
-    processingStatusRegex: 'Extracting data locally...',
-    processingErrorText: 'An error occurred while trying to process the PDF file. Check the console for more details.',
     duplicateBarcodeErrorTitle: 'Duplicate Boleto',
     duplicateBarcodeErrorText: 'A boleto with this barcode (Doc No: {{identifier}}) already exists.',
     invalidBarcodeErrorTitle: 'Missing Barcode',
     invalidBarcodeErrorText: 'Could not extract the barcode (digitable line) from the PDF. This is a required field for boleto processing.',
     genericErrorTitle: 'An Error Occurred',
     genericErrorText: 'An unexpected error occurred. Please try again.',
+    // FIX: Add missing translation key
     pdfProcessingError: 'An error occurred while processing the boleto with the AI.',
-    geminiErrorApiKey: 'Invalid or missing Gemini API key. Please check your settings in the admin panel.',
-    geminiErrorRateLimit: 'API rate limit exceeded. Please try again later.',
-    geminiErrorSafety: 'The response was blocked due to Gemini\'s safety settings. Try a different file.',
-    geminiErrorBadRequest: 'The request to the AI API was malformed. Check the model settings.',
-    geminiEmptyResponse: 'The AI API returned an empty response. This may be due to safety filters.',
-    geminiInvalidJson: 'The AI API returned an invalid data format (non-JSON).',
-    geminiGenericError: 'Failed to communicate with the AI API. Check your connection and settings.',
-    geminiNoApiKeyServer: 'The Gemini API key is not configured on the server.',
     freeBoletoErrorTitle: 'Free Act Boleto',
     freeBoletoErrorText: 'This boleto has a zero amount (free act) and cannot be added to the system.',
     amountNotFoundErrorText: 'Could not determine the boleto amount. Please check the PDF and try again.',
@@ -319,11 +261,6 @@ const en: typeof pt = {
     userUpdatedSuccess: 'User updated successfully.',
     userDeletedSuccess: 'User deleted successfully.',
     addUserErrorDuplicate: 'A user with this email already exists.',
-    extractionMethodTitle: 'Data Extraction Method',
-    extractionMethodAI: 'AI (Gemini)',
-    extractionMethodAIDescription: 'High accuracy using AI to analyze the boleto image. Requires internet connection and API usage.',
-    extractionMethodRegex: 'REGEX (Local)',
-    extractionMethodRegexDescription: 'Instant, offline text-based extraction. Faster, but may fail on uncommon boleto layouts.',
     itemsSelected: '{{count}} items selected',
     deselectAll: 'Deselect All',
     moveTo: 'Move to {{status}}',
@@ -351,18 +288,6 @@ const en: typeof pt = {
     themeLight: 'Light',
     themeDark: 'Dark',
     themeSystem: 'System',
-    aiSettingsTitle: 'AI (Gemini) Settings',
-    aiSettingsDescription: 'Adjust the Gemini model parameters to optimize data extraction.',
-    apiKeyNote: 'Note: The API key is configured securely via environment variables and cannot be changed here.',
-    modelLabel: 'Model Name',
-    modelDescription: 'The Gemini model to be used for extraction.',
-    temperatureLabel: 'Temperature',
-    temperatureDescription: 'Controls randomness. Lower values for more direct responses.',
-    topKLabel: 'Top-K',
-    topKDescription: 'Affects token selection. Not recommended to change for data extraction.',
-    topPLabel: 'Top-P',
-    topPDescription: 'Controls diversity. Use 1 for focused data extraction.',
-    saveAiSettingsButton: 'Save AI Settings',
     userHasNoCompanyErrorTitle: 'Action Blocked',
     userHasNoCompanyErrorText: 'You must belong to a company to add boletos. Please ask an administrator to assign you to one.',
     adminMustSelectCompanyErrorText: 'Admin: Please select a company from the filter to be able to add a boleto.',
@@ -385,9 +310,6 @@ const en: typeof pt = {
     companyDeleteError: 'Failed to delete company.',
     searchPlaceholder: 'Search boletos...',
     credentialsAndSecurityTitle: 'Credentials & Security',
-    geminiApiKeyLabel: 'Gemini API Key',
-    geminiApiKeyPlaceholder: 'Paste your API key here',
-    geminiApiKeyDescription: 'This key is used for Gemini API calls. It is stored securely in the database.',
     jwtSecretLabel: 'JWT Token Secret',
     jwtSecretPlaceholder: 'Secret for signing user tokens',
     jwtSecretDescription: 'A long, random secret key for authentication security. Changing this will invalidate all current login sessions.',
@@ -403,31 +325,15 @@ const en: typeof pt = {
     documentInfo: 'Document Information',
     paymentCodes: 'Payment Codes',
     confirmExtractionTitle: 'Confirm Extracted Data',
-    confirmExtractionMessage: 'Please verify the data extracted by the AI before saving the boleto. Edits can be made on the card after confirmation.',
+    confirmExtractionMessage: 'Please verify the data extracted from the PDF before saving the boleto. Edits can be made on the card after confirmation.',
     fileNameLabel: 'File Name:',
     confirmAndSaveButton: 'Confirm and Save',
     viewKanban: 'Kanban View',
     viewCalendar: 'Calendar View',
     previousMonth: 'Previous Month',
     nextMonth: 'Next Month',
-    geminiPrompt: `
-        You are an expert assistant for extracting information from Brazilian bank slips (boletos).
-        Your task is to analyze the provided IMAGE of a boleto. Use your vision capabilities to read all text and extract the requested data.
-        Return a JSON object with the following information. If a field is not found, return null for it.
-        Dates must be in YYYY-MM-DD format. Monetary values must be numbers.
-
-        - recipient: The full name of the beneficiary/payee. It may consist of multiple parts (e.g., "Court of Justice / Notary Office..."). Capture all text associated with this field, even if it spans multiple lines, until the next field (like CNPJ or Address) begins.
-        - drawee: The name of the drawee/payer (Sacado/Pagador).
-        - documentDate: The "Data do Documento" (Document Date).
-        - dueDate: The due date ("Vencimento"). If there are multiple due dates with different values, use the primary one.
-        - documentAmount: The original document value ("Valor do Documento").
-        - discount: The value of any discount, usually labeled "(-) Desconto / Abatimento". Should be null if not found.
-        - interestAndFines: The value of any interest or fines, usually labeled "(+) Juros / Multa" or "(+) Outros Acréscimos". Should be null if not found.
-        - amount: The final amount to be paid. This is a required field. Look for the value associated with the label "(=) Valor Cobrado". If it does not exist, you **must** use the value from the "(=) Valor do Documento" label. Analyze both the image and the text to find this value. If a document amount is present, the amount to be paid cannot be zero.
-        - barcode: The complete digitable line. Remove all dots, spaces, and other characters, returning only the numbers. The result must have 47 or 48 digits.
-        - guideNumber: The document number. **Give maximum priority** to the field labeled "Nº Documento" or "Nº do Documento". If this does not exist, look for "Nosso Número".
-        - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code. If none, it must be null.
-    `,
+    // FIX: Add missing translation key
+    geminiPrompt: `You are an expert assistant for extracting information from Brazilian bank slips (boletos). Your task is to analyze the provided image of a boleto and return a JSON object according to the requested schema. If a piece of information is not found, return null for the corresponding field. Dates must be in YYYY-MM-DD format.`,
 };
 
 export const translations = { pt, en };

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import LoginScreen from './components/LoginScreen';
 import Dashboard from './components/Dashboard';
@@ -36,7 +35,7 @@ const App: React.FC = () => {
                 className="font-mono hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 title="Ver repositório no GitHub"
             >
-                v1.2.4
+                v1.2.5
             </a>
         </div>
       </footer>

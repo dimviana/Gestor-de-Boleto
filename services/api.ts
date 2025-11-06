@@ -1,4 +1,4 @@
-import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus, ProcessingMethod } from '../types';
+import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus } from '../types';
 
 const API_BASE_URL = '/api'; // Use relative URL to proxy to the backend
 
@@ -89,14 +89,12 @@ export const fetchBoletoById = (id: string): Promise<Boleto> => apiFetch(`/bolet
 export const extractBoletoData = (
     file: File, 
     companyId: string, 
-    method: ProcessingMethod,
     onProgress: (progress: number) => void
 ): Promise<Omit<Boleto, 'id' | 'status' | 'comments' | 'companyId'>> => {
     return new Promise((resolve, reject) => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('companyId', companyId);
-        formData.append('method', method);
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `${API_BASE_URL}/boletos/extract`);

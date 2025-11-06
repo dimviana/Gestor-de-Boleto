@@ -46,9 +46,17 @@ export interface RegisteredUser extends Omit<User, 'token'>{
   password?: string;
 }
 
+export type Theme = 'light' | 'dark' | 'system';
+
+// FIX: Add missing types that were causing import errors.
 export type ProcessingMethod = 'ai' | 'regex';
 
-export type Theme = 'light' | 'dark' | 'system';
+export interface AiSettings {
+  model: string;
+  temperature: number;
+  topK: number;
+  topP: number;
+}
 
 
 // New types for the logging system
@@ -84,14 +92,6 @@ export interface Notification {
 }
 
 export type AnyNotification = Notification;
-
-// New type for AI settings
-export interface AiSettings {
-  model: string;
-  temperature: number;
-  topK: number;
-  topP: number;
-}
 
 // New types for SSL management
 export interface SslSettings {

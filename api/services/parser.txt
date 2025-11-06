@@ -50,7 +50,7 @@ def parse_currency(value):
     
     # Remove thousand separators and replace comma decimal separator
     if '.' in value_str and ',' in value_str:
-        if value_str.rfind('.') > value_str.rfind(','): # Format: 1.234,56
+        if value_str.rfind('.') < value_str.rfind(','): # Format: 1.234,56
              value_str = value_str.replace('.', '').replace(',', '.')
         else: # Format: 1,234.56
             value_str = value_str.replace(',', '')

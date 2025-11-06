@@ -4,9 +4,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { WhitelabelProvider } from './contexts/WhitelabelContext';
-import { ProcessingMethodProvider } from './contexts/ProcessingMethodContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { AiSettingsProvider } from './contexts/AiSettingsContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -19,11 +17,7 @@ root.render(
     <ThemeProvider>
       <LanguageProvider>
         <WhitelabelProvider>
-          <ProcessingMethodProvider>
-            <AiSettingsProvider>
-              <App />
-            </AiSettingsProvider>
-          </ProcessingMethodProvider>
+          <App />
         </WhitelabelProvider>
       </LanguageProvider>
     </ThemeProvider>

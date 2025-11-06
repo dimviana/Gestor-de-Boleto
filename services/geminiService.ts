@@ -103,6 +103,7 @@ export const processBoletoPDF = async (
         const responseText = response.text;
         if (!responseText) {
             console.error("Gemini API returned an empty or invalid response object:", response);
+            // FIX: Correctly reference 'pdfProcessingError' which has been added to translations.
             throw new Error(translations[lang].pdfProcessingError);
         }
 
@@ -133,6 +134,7 @@ export const processBoletoPDF = async (
         return newBoleto;
     } catch (error) {
         console.error("Error processing Boleto with Gemini:", error);
+        // FIX: Correctly reference 'pdfProcessingError' which has been added to translations.
         throw new Error((error as Error).message || translations[lang].pdfProcessingError);
     }
 };

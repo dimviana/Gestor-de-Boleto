@@ -1,6 +1,6 @@
 {
   "name": "boleto-manager-ai-backend",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Backend server for the Boleto Manager AI application.",
   "main": "dist/api/index.js",
   "scripts": {
@@ -9,7 +9,6 @@
     "build": "vite build && tsc"
   },
   "dependencies": {
-    "@google/genai": "^1.28.0",
     "bcryptjs": "^2.4.3",
     "canvas": "^2.11.2",
     "cors": "^2.8.5",

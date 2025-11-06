@@ -53,7 +53,7 @@ install_dependencies() {
     fi
     
     echo -e "${YELLOW}Installing Python dependencies...${NC}"
-    sudo pip3 install PyMuPDF
+    sudo pip3 install PyPDF2
 
     echo -e "${GREEN}System dependencies are up to date.${NC}"
 }

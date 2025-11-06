@@ -1,17 +1,20 @@
 
 
+
+
 import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
-import { extractBoletoInfo as extractWithAI } from '../services/geminiService';
 import { spawn } from 'child_process';
+// FIX: Import Buffer to provide type definition in Node.js environment.
+import { Buffer } from 'buffer';
 
-const extractWithPythonRegex = (pdfBuffer: Buffer): Promise<any> => {
+const extractBoletoWithPython = (pdfBuffer: Buffer): Promise<any> => {
     return new Promise((resolve, reject) => {
         // Ensure the script path is correct relative to the execution directory
-        const scriptPath = 'api/services/parser.txt';
+        const scriptPath = 'api/services/parser.py';
         const pythonProcess = spawn('python3', [scriptPath]);
 
         let stdoutData = '';
@@ -113,18 +116,10 @@ export const extractBoleto = async (req: express.Request, res: express.Response)
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
-    const { method } = req.body;
 
     try {
-        let extractedData;
-        if (method === 'ai') {
-            const [settingsRows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = 'ai_settings'");
-            const aiSettings = settingsRows.length > 0 ? JSON.parse(settingsRows[0].setting_value) : {};
-            extractedData = await extractWithAI(req.file.buffer, req.file.originalname, 'pt', aiSettings);
-        } else {
-            extractedData = await extractWithPythonRegex(req.file.buffer);
-            extractedData.fileName = req.file.originalname;
-        }
+        const extractedData = await extractBoletoWithPython(req.file.buffer);
+        extractedData.fileName = req.file.originalname;
 
         if (extractedData.amount === null || extractedData.amount === undefined) {
              return res.status(400).json({ message: 'amountNotFoundErrorText' });

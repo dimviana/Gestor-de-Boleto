@@ -1,13 +1,12 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
-import { RegisteredUser, Role, User, LogEntry, ProcessingMethod, AiSettings, Company, SslStatus } from '../types';
+import { RegisteredUser, Role, User, LogEntry, Company, SslStatus } from '../types';
 import { TrashIcon, EditIcon, CheckCircleIcon, XCircleIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useProcessingMethod } from '../contexts/ProcessingMethodContext';
 import Modal from './Modal';
-import { useAiSettings } from '../contexts/AiSettingsContext';
 import * as api from '../services/api';
 import Spinner from './Spinner';
 import { TranslationKey } from '../translations';
@@ -65,14 +64,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
     
     const SettingsTab = () => {
         const { appName, logoUrl, setAppName, setLogoUrl } = useWhitelabel();
-        const { method, setMethod } = useProcessingMethod();
-        const { aiSettings, setAiSettings } = useAiSettings();
         
         // Local form states
         const [currentAppName, setCurrentAppName] = useState(appName);
         const [currentLogoUrl, setCurrentLogoUrl] = useState(logoUrl);
-        const [currentMethod, setCurrentMethod] = useState(method);
-        const [currentAiSettings, setCurrentAiSettings] = useState<AiSettings>(aiSettings);
         const [apiKey, setApiKey] = useState('');
         const [jwtSecret, setJwtSecret] = useState('');
         const [isLoading, setIsLoading] = useState(true);
@@ -84,8 +79,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                     const settings = await api.fetchAllSettings();
                     setCurrentAppName(settings.whitelabel_appName || appName);
                     setCurrentLogoUrl(settings.whitelabel_logoUrl || logoUrl);
-                    setCurrentMethod(settings.processing_method || method);
-                    setCurrentAiSettings(settings.ai_settings || aiSettings);
                     setApiKey(settings.API_KEY || '');
                     setJwtSecret(settings.JWT_SECRET || '');
                 } catch (error) {
@@ -96,7 +89,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 }
             };
             loadSettings();
-        }, [appName, logoUrl, method, aiSettings]);
+        }, [appName, logoUrl]);
         
         const handleGenerateJwt = () => {
             const array = new Uint8Array(32);
@@ -109,8 +102,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
             const settingsToSave = {
                 whitelabel_appName: currentAppName,
                 whitelabel_logoUrl: currentLogoUrl,
-                processing_method: currentMethod,
-                ai_settings: currentAiSettings,
                 API_KEY: apiKey,
                 JWT_SECRET: jwtSecret
             };
@@ -121,15 +112,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 // Update local contexts after successful save
                 setAppName(currentAppName);
                 setLogoUrl(currentLogoUrl);
-                setMethod(currentMethod, currentUser);
-                setAiSettings(currentAiSettings, currentUser);
                 
-                if (apiKey) {
-                    localStorage.setItem('gemini_api_key', apiKey);
-                } else {
-                    localStorage.removeItem('gemini_api_key');
-                }
-
                 showNotification(t('settingsSavedSuccess'), 'success');
             } catch (error: any) {
                 showNotification(t('settingsSaveError' as TranslationKey) || error.message, 'error');
@@ -155,60 +138,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                         </div>
                     </div>
                 </div>
-                 <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
-                 <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('extractionMethodTitle')}</h3>
-                    <fieldset className="mt-4"><div className="space-y-4">
-                        <div className="flex items-start">
-                            <div className="flex items-center h-5"><input id="method-ai" type="radio" checked={currentMethod === 'ai'} onChange={() => setCurrentMethod('ai')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/></div>
-                            <div className="ml-3 text-sm"><label htmlFor="method-ai" className="font-medium text-gray-800 dark:text-gray-200">{t('extractionMethodAI')}</label><p className="text-gray-500 dark:text-gray-400">{t('extractionMethodAIDescription')}</p></div>
-                        </div>
-                        <div className="flex items-start">
-                            <div className="flex items-center h-5"><input id="method-regex" type="radio" checked={currentMethod === 'regex'} onChange={() => setCurrentMethod('regex')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/></div>
-                            <div className="ml-3 text-sm"><label htmlFor="method-regex" className="font-medium text-gray-800 dark:text-gray-200">{t('extractionMethodRegex')}</label><p className="text-gray-500 dark:text-gray-400">{t('extractionMethodRegexDescription')}</p></div>
-                        </div>
-                    </div></fieldset>
-                </div>
-                 <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
-                <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('aiSettingsTitle')}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('aiSettingsDescription')}</p>
-                    <div className="mt-4 space-y-4">
-                        <div>
-                            <label htmlFor="ai-model" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('modelLabel')}</label>
-                            <input type="text" id="ai-model" value={currentAiSettings.model} onChange={(e) => setCurrentAiSettings({...currentAiSettings, model: e.target.value})} className="mt-1 block w-full input-field" />
-                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('modelDescription')}</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label htmlFor="ai-temp" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('temperatureLabel')} ({currentAiSettings.temperature})</label>
-                                <input type="range" id="ai-temp" min="0" max="1" step="0.1" value={currentAiSettings.temperature} onChange={(e) => setCurrentAiSettings({...currentAiSettings, temperature: parseFloat(e.target.value)})} className="mt-1 block w-full" />
-                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('temperatureDescription')}</p>
-                            </div>
-                            <div>
-                                <label htmlFor="ai-topk" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('topKLabel')}</label>
-                                <input type="number" id="ai-topk" min="1" value={currentAiSettings.topK} onChange={(e) => setCurrentAiSettings({...currentAiSettings, topK: parseInt(e.target.value, 10) || 1})} className="mt-1 block w-full input-field" />
-                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('topKDescription')}</p>
-                            </div>
-                            <div>
-                                <label htmlFor="ai-topp" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('topPLabel')} ({currentAiSettings.topP})</label>
-                                <input type="range" id="ai-topp" min="0" max="1" step="0.1" value={currentAiSettings.topP} onChange={(e) => setCurrentAiSettings({...currentAiSettings, topP: parseFloat(e.target.value)})} className="mt-1 block w-full" />
-                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('topPDescription')}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+                
                 <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
                 
                 <div>
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('credentialsAndSecurityTitle')}</h3>
                     <div className="mt-4 space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('geminiApiKeyLabel')}</label>
-                            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={t('geminiApiKeyPlaceholder')} className="mt-1 block w-full input-field" />
-                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('geminiApiKeyDescription')}</p>
-                        </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('jwtSecretLabel')}</label>
                             <div className="flex items-center space-x-2">
