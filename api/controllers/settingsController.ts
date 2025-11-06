@@ -1,12 +1,14 @@
 
 
-import express from 'express';
+
+
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
 // FIX: Correctly type res parameter.
-export const getSettings = async (req: express.Request, res: express.Response) => {
+export const getSettings = async (req: Request, res: Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -26,7 +28,7 @@ export const getSettings = async (req: express.Request, res: express.Response) =
 };
 
 // FIX: Correctly type res parameter.
-export const updateSettings = async (req: express.Request, res: express.Response) => {
+export const updateSettings = async (req: Request, res: Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {

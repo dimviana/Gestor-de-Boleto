@@ -1,11 +1,12 @@
 
-import express from 'express';
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
-import pdfParse from 'pdf-parse';
+// FIX: Changed import to handle CommonJS module correctly
+import pdfParse = require('pdf-parse');
 
 // --- PDF Parsing and Data Extraction Logic (Node.js Implementation) ---
 
@@ -154,7 +155,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
         drawee: dbBoleto.drawee,
         documentDate: dbBoleto.document_date,
         dueDate: dbBoleto.due_date,
-        documentAmount: dbBoleto.document_amount,
+        documentAmount: dbBoleto.document_amount || null,
         amount: dbBoleto.amount,
         discount: dbBoleto.discount,
         interestAndFines: dbBoleto.interest_and_fines,
@@ -169,7 +170,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-export const getBoletos = async (req: express.Request, res: express.Response) => {
+export const getBoletos = async (req: Request, res: Response) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -198,7 +199,7 @@ export const getBoletos = async (req: express.Request, res: express.Response) =>
   }
 };
 
-export const getBoletoById = async (req: express.Request, res: express.Response) => {
+export const getBoletoById = async (req: Request, res: Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -226,7 +227,7 @@ export const getBoletoById = async (req: express.Request, res: express.Response)
     }
 };
 
-export const extractBoleto = async (req: express.Request, res: express.Response) => {
+export const extractBoleto = async (req: Request, res: Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -245,7 +246,7 @@ export const extractBoleto = async (req: express.Request, res: express.Response)
     }
 };
 
-export const saveBoleto = async (req: express.Request, res: express.Response) => {
+export const saveBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -296,7 +297,6 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
             drawee: newBoleto.drawee || null,
             document_date: newBoleto.documentDate === 'null' ? null : newBoleto.documentDate,
             due_date: newBoleto.dueDate === 'null' ? null : newBoleto.dueDate,
-            document_amount: newBoleto.documentAmount || null,
             amount: newBoleto.amount || null,
             discount: newBoleto.discount || null,
             interest_and_fines: newBoleto.interestAndFines || null,
@@ -344,7 +344,7 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
     }
 };
 
-export const updateBoletoStatus = async (req: express.Request, res: express.Response) => {
+export const updateBoletoStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -390,7 +390,7 @@ export const updateBoletoStatus = async (req: express.Request, res: express.Resp
     }
 };
 
-export const updateBoletoComments = async (req: express.Request, res: express.Response) => {
+export const updateBoletoComments = async (req: Request, res: Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -434,7 +434,7 @@ export const updateBoletoComments = async (req: express.Request, res: express.Re
     }
 };
 
-export const deleteBoleto = async (req: express.Request, res: express.Response) => {
+export const deleteBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();
