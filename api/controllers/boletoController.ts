@@ -194,28 +194,25 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
             companyId: targetCompanyId,
         };
         
-        const insertData = {
-            id: newBoleto.id,
-            user_id: user.id,
-            company_id: newBoleto.companyId,
-            recipient: newBoleto.recipient,
-            drawee: newBoleto.drawee,
-            document_date: newBoleto.documentDate === 'null' ? null : newBoleto.documentDate,
-            due_date: newBoleto.dueDate === 'null' ? null : newBoleto.dueDate,
-            document_amount: newBoleto.documentAmount,
-            amount: newBoleto.amount,
-            discount: newBoleto.discount,
-            interest_and_fines: newBoleto.interestAndFines,
-            barcode: newBoleto.barcode,
-            guide_number: newBoleto.guideNumber,
-            pix_qr_code_text: newBoleto.pixQrCodeText,
-            status: newBoleto.status,
-            file_name: newBoleto.fileName,
-            file_data: newBoleto.fileData,
-            comments: newBoleto.comments,
-        };
+        const columns = [
+            'id', 'user_id', 'company_id', 'recipient', 'drawee', 
+            'document_date', 'due_date', 'document_amount', 'amount', 
+            'discount', 'interest_and_fines', 'barcode', 'guide_number', 
+            'pix_qr_code_text', 'status', 'file_name', 'file_data', 'comments'
+        ];
 
-        await connection.query('INSERT INTO boletos SET ?', [insertData]);
+        const values = [
+            newBoleto.id, user.id, newBoleto.companyId, newBoleto.recipient,
+            newBoleto.drawee, newBoleto.documentDate === 'null' ? null : newBoleto.documentDate,
+            newBoleto.dueDate === 'null' ? null : newBoleto.dueDate, newBoleto.documentAmount,
+            newBoleto.amount, newBoleto.discount, newBoleto.interestAndFines,
+            newBoleto.barcode, newBoleto.guideNumber, newBoleto.pixQrCodeText,
+            newBoleto.status, newBoleto.fileName, newBoleto.fileData, newBoleto.comments
+        ];
+
+        const sql = `INSERT INTO boletos (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`;
+        
+        await connection.query(sql, values);
 
         await connection.query(
             'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
@@ -229,7 +226,13 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
         );
 
         await connection.commit();
-        res.status(201).json(newBoleto);
+        
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM boletos WHERE id = ?', [newBoleto.id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Failed to retrieve saved boleto' });
+        }
+        res.status(201).json(mapDbBoletoToBoleto(rows[0]));
+
     } catch (error: any) {
         await connection.rollback();
         console.error("Error saving boleto:", error);
