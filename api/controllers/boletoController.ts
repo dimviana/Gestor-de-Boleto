@@ -5,41 +5,13 @@ import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.js';
+import pdfParse from 'pdf-parse';
 
 // --- PDF Parsing and Data Extraction Logic (Node.js Implementation) ---
 
 const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
-    const data = new Uint8Array(pdfBuffer);
-    // In a Node.js environment, the worker is not needed. pdfjs-dist should handle this automatically.
-    const pdf = await pdfjs.getDocument({ data }).promise;
-    let fullText = '';
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        
-        const lines: { [key: number]: any[] } = {};
-        for(const item of textContent.items) {
-            const y = Math.round((item as any).transform[5]);
-            if (!lines[y]) lines[y] = [];
-            lines[y].push(item);
-        }
-
-        const sortedLines = Object.keys(lines)
-            .sort((a, b) => Number(b) - Number(a))
-            .map(y => lines[parseInt(y, 10)]);
-
-        const pageText = sortedLines.map(lineItems => {
-            return lineItems
-                .sort((a, b) => (a as any).transform[4] - (b as any).transform[4])
-                .map(item => (item as any).str)
-                .join(' ');
-        }).join('\n');
-
-        fullText += pageText + '\n\n';
-    }
-    return fullText;
+    const data = await pdfParse(pdfBuffer);
+    return data.text;
 };
 
 const cleanOcrMistakes = (value: string | null): string => {

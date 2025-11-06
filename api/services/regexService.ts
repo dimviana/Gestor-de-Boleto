@@ -1,40 +1,10 @@
 import { Boleto } from '../../types';
-import * as pdfjs from 'pdfjs-dist';
+import pdfParse from 'pdf-parse';
 import { Buffer } from 'buffer';
 
 const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
-    const data = new Uint8Array(pdfBuffer);
-    const pdf = await pdfjs.getDocument(data).promise;
-    const numPages = pdf.numPages;
-    let fullText = '';
-
-    for (let i = 1; i <= numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        
-        if (textContent.items.length === 0) continue;
-
-        const lines: { [key: number]: any[] } = {};
-        for(const item of textContent.items) {
-            const y = Math.round((item as any).transform[5]);
-            if (!lines[y]) lines[y] = [];
-            lines[y].push(item);
-        }
-
-        const sortedLines = Object.keys(lines)
-            .sort((a, b) => Number(b) - Number(a))
-            .map(y => lines[parseInt(y, 10)]);
-
-        const pageText = sortedLines.map(lineItems => {
-            return lineItems
-                .sort((a, b) => (a as any).transform[4] - (b as any).transform[4])
-                .map(item => (item as any).str)
-                .join(' ');
-        }).join('\n');
-
-        fullText += pageText + '\n\n';
-    }
-    return fullText;
+    const data = await pdfParse(pdfBuffer);
+    return data.text;
 };
 
 const cleanOcrMistakes = (value: string): string => {
