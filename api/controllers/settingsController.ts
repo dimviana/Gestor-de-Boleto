@@ -1,11 +1,11 @@
 // FIX: Use explicit express types to avoid type conflicts with DOM types.
-import express from 'express';
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const getSettings = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const getSettings = async (req: Request, res: Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -24,8 +24,8 @@ export const getSettings = async (req: express.Request, res: express.Response) =
   }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const updateSettings = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const updateSettings = async (req: Request, res: Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {

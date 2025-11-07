@@ -1,13 +1,13 @@
 // FIX: Use explicit express types to avoid type conflicts with DOM types.
-import express from 'express';
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const getUsers = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const getUsers = async (req: Request, res: Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -24,8 +24,8 @@ export const getUsers = async (req: express.Request, res: express.Response) => {
   }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const createUser = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const createUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -80,8 +80,8 @@ export const createUser = async (req: express.Request, res: express.Response) =>
   }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const updateUser = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const updateUser = async (req: Request, res: Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -132,8 +132,8 @@ export const updateUser = async (req: express.Request, res: express.Response) =>
   }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const deleteUser = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const deleteUser = async (req: Request, res: Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();

@@ -1,5 +1,5 @@
 // FIX: Use explicit express types to avoid type conflicts with DOM types.
-import express from 'express';
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
@@ -9,6 +9,14 @@ import { extractBoletoInfo } from '../services/regexService';
 
 
 // --- Controller Functions ---
+
+// Helper to safely parse decimal strings from DB to numbers
+const parseDecimal = (value: string | null): number | null => {
+    if (value === null || value === undefined) return null;
+    const num = parseFloat(value);
+    return isNaN(num) ? null : num;
+};
+
 
 // Helper to map database snake_case to frontend camelCase
 const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
@@ -23,10 +31,10 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
         drawee: dbBoleto.drawee,
         documentDate: dbBoleto.document_date,
         dueDate: dbBoleto.due_date,
-        documentAmount: dbBoleto.document_amount || null,
-        amount: dbBoleto.amount,
-        discount: dbBoleto.discount,
-        interestAndFines: dbBoleto.interest_and_fines,
+        documentAmount: parseDecimal(dbBoleto.document_amount),
+        amount: parseDecimal(dbBoleto.amount),
+        discount: parseDecimal(dbBoleto.discount),
+        interestAndFines: parseDecimal(dbBoleto.interest_and_fines),
         barcode: dbBoleto.barcode,
         guideNumber: dbBoleto.guide_number,
         pixQrCodeText: dbBoleto.pix_qr_code_text,
@@ -39,8 +47,8 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const getBoletos = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const getBoletos = async (req: Request, res: Response) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -69,8 +77,8 @@ export const getBoletos = async (req: express.Request, res: express.Response) =>
   }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const getBoletoById = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const getBoletoById = async (req: Request, res: Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -98,8 +106,8 @@ export const getBoletoById = async (req: express.Request, res: express.Response)
     }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const extractBoleto = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const extractBoleto = async (req: Request, res: Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -127,8 +135,8 @@ export const extractBoleto = async (req: express.Request, res: express.Response)
     }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const saveBoleto = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const saveBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -228,8 +236,8 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
     }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const updateBoletoStatus = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const updateBoletoStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -275,8 +283,8 @@ export const updateBoletoStatus = async (req: express.Request, res: express.Resp
     }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const updateBoletoComments = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const updateBoletoComments = async (req: Request, res: Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -320,8 +328,8 @@ export const updateBoletoComments = async (req: express.Request, res: express.Re
     }
 };
 
-// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const deleteBoleto = async (req: express.Request, res: express.Response) => {
+// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
+export const deleteBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();
