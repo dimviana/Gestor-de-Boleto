@@ -12,7 +12,7 @@ const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
     }
 };
 
-const cleanText = (value: string): string => {
+const cleanText = (value: string | null): string => {
     if (!value) return '';
     return value
         .replace(/\s*\n\s*/g, ' / ')
