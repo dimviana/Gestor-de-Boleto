@@ -2,7 +2,7 @@ export type Language = 'pt' | 'en';
 
 const pt = {
     loginTitle: 'Boleto Manager AI',
-    loginSubtitle: 'Gerencie seus boletos com extração inteligente de dados',
+    loginSubtitle: 'Gerencie seus boletos com o poder da IA do Gemini',
     loginButton: 'Acessar o Painel',
     createAccountButton: 'Criar Conta',
     logoutButton: 'Sair',
@@ -61,8 +61,7 @@ const pt = {
     invalidBarcodeErrorText: 'Não foi possível extrair o código de barras (linha digitável) do PDF. Este é um campo essencial para o processamento do boleto.',
     genericErrorTitle: 'Ocorreu um Erro',
     genericErrorText: 'Ocorreu um erro inesperado. Por favor, tente novamente.',
-    // FIX: Add missing translation key
-    pdfProcessingError: 'Ocorreu um erro ao processar o boleto com a IA.',
+    pdfProcessingError: 'Ocorreu um erro ao processar o boleto. O arquivo pode estar corrompido ou ter um formato não suportado.',
     freeBoletoErrorTitle: 'Boleto de Ato Gratuito',
     freeBoletoErrorText: 'Este boleto tem valor zerado (ato gratuito) e não pode ser adicionado ao sistema.',
     amountNotFoundErrorText: 'Não foi possível determinar o valor do boleto. Verifique o PDF e tente novamente.',
@@ -165,13 +164,17 @@ const pt = {
     viewCalendar: 'Visão Calendário',
     previousMonth: 'Mês Anterior',
     nextMonth: 'Próximo Mês',
-    // FIX: Add missing translation key
-    geminiPrompt: `Você é um assistente especialista em extrair informações de boletos bancários brasileiros. Sua tarefa é analisar a imagem de um boleto e retornar um objeto JSON conforme o schema solicitado. Se uma informação não for encontrada, retorne null para o campo correspondente. Datas devem estar no formato AAAA-MM-DD.`,
+    geminiPrompt: `
+        Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
+        Sua tarefa é analisar a imagem de um boleto.
+        Retorne um objeto JSON estritamente com o schema fornecido. Se uma informação não for encontrada, retorne null para aquele campo.
+        Datas devem estar no formato AAAA-MM-DD. Valores monetários devem ser números.
+    `,
 };
 
 const en: typeof pt = {
     loginTitle: 'Boleto Manager AI',
-    loginSubtitle: 'Manage your payment slips with smart data extraction',
+    loginSubtitle: 'Manage your payment slips with the power of Gemini AI',
     loginButton: 'Access Dashboard',
     createAccountButton: 'Create Account',
     logoutButton: 'Logout',
@@ -230,8 +233,7 @@ const en: typeof pt = {
     invalidBarcodeErrorText: 'Could not extract the barcode (digitable line) from the PDF. This is a required field for boleto processing.',
     genericErrorTitle: 'An Error Occurred',
     genericErrorText: 'An unexpected error occurred. Please try again.',
-    // FIX: Add missing translation key
-    pdfProcessingError: 'An error occurred while processing the boleto with the AI.',
+    pdfProcessingError: 'An error occurred while processing the boleto. The file may be corrupt or in an unsupported format.',
     freeBoletoErrorTitle: 'Free Act Boleto',
     freeBoletoErrorText: 'This boleto has a zero amount (free act) and cannot be added to the system.',
     amountNotFoundErrorText: 'Could not determine the boleto amount. Please check the PDF and try again.',
@@ -334,8 +336,12 @@ const en: typeof pt = {
     viewCalendar: 'Calendar View',
     previousMonth: 'Previous Month',
     nextMonth: 'Next Month',
-    // FIX: Add missing translation key
-    geminiPrompt: `You are an expert assistant for extracting information from Brazilian bank slips (boletos). Your task is to analyze the provided image of a boleto and return a JSON object according to the requested schema. If a piece of information is not found, return null for the corresponding field. Dates must be in YYYY-MM-DD format.`,
+    geminiPrompt: `
+        You are an expert assistant for extracting information from Brazilian bank slips (boletos).
+        Your task is to analyze the image of a boleto.
+        Return a JSON object strictly following the provided schema. If a piece of information is not found, return null for that field.
+        Dates must be in YYYY-MM-DD format. Monetary values must be numbers.
+    `,
 };
 
 export const translations = { pt, en };
