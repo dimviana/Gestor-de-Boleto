@@ -1,6 +1,7 @@
 
 
-import express, { RequestHandler } from 'express';
+
+import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
@@ -40,8 +41,8 @@ apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/ssl', sslRoutes);
 
 // Health check for the API router itself
-// FIX: Correctly type the handler to ensure proper type inference for req and res.
-const healthCheckHandler: RequestHandler = (req, res) => {
+// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
+const healthCheckHandler = (req: Request, res: Response) => {
   res.send('Boleto Manager AI Backend is running!');
 };
 apiRouter.get('/', healthCheckHandler);
@@ -60,8 +61,8 @@ app.use(express.static(staticPath));
 
 // 2. SPA Fallback: For any GET request that doesn't match an API route or a static file,
 // serve the main index.html file. This is crucial for client-side routing.
-// FIX: Correctly type the handler to ensure proper type inference for req and res.
-const spaFallbackHandler: RequestHandler = (req, res) => {
+// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
+const spaFallbackHandler = (req: Request, res: Response) => {
   // This guard prevents the fallback from ever serving index.html for an API-like route.
   if (req.path.startsWith('/api/')) {
     return res.status(404).send('API endpoint not found.');

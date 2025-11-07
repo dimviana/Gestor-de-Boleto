@@ -1,8 +1,10 @@
 
 
 
-// FIX: Corrected Express types for middleware function parameters.
-import { RequestHandler } from 'express';
+
+
+// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -20,8 +22,8 @@ declare global {
     }
 }
 
-// FIX: Corrected Express types for middleware function parameters.
-export const protect: RequestHandler = (req, res, next) => {
+// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
+export const protect = (req: Request, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -45,8 +47,8 @@ export const protect: RequestHandler = (req, res, next) => {
   }
 };
 
-// FIX: Corrected Express types for middleware function parameters.
-export const admin: RequestHandler = (req, res, next) => {
+// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
+export const admin = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -54,8 +56,8 @@ export const admin: RequestHandler = (req, res, next) => {
     }
 };
 
-// FIX: Corrected Express types for middleware function parameters.
-export const editor: RequestHandler = (req, res, next) => {
+// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
+export const editor = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {

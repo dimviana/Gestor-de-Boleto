@@ -1,12 +1,15 @@
-
-// FIX: Corrected Express types for controller function parameters.
-import { RequestHandler } from 'express';
+// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
-import { extractBoletoInfo } from '../services/regexService';
+import { execFile } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+
 
 // --- Controller Functions ---
 
@@ -39,7 +42,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-export const getBoletos: RequestHandler = async (req, res) => {
+export const getBoletos = async (req: Request, res: Response) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -68,7 +71,7 @@ export const getBoletos: RequestHandler = async (req, res) => {
   }
 };
 
-export const getBoletoById: RequestHandler = async (req, res) => {
+export const getBoletoById = async (req: Request, res: Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -96,25 +99,59 @@ export const getBoletoById: RequestHandler = async (req, res) => {
     }
 };
 
-export const extractBoleto: RequestHandler = async (req, res) => {
+export const extractBoleto = async (req: Request, res: Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
+
+    const tempDir = os.tmpdir();
+    const tempFilePath = path.join(tempDir, `${uuidv4()}.pdf`);
+
     try {
-        const extractedData = await extractBoletoInfo(req.file.buffer, req.file.originalname);
+        await fs.promises.writeFile(tempFilePath, req.file.buffer);
 
-        if (extractedData.amount === null || extractedData.amount === undefined) {
-             return res.status(400).json({ message: 'amountNotFoundErrorText' });
+        const pythonExecutable = process.env.PYTHON_PATH || 'python3';
+        const scriptPath = path.resolve(__dirname, '..', 'services', 'parser.txt');
+
+        execFile(pythonExecutable, [scriptPath, tempFilePath], (error, stdout, stderr) => {
+            // Always clean up the temporary file
+            fs.promises.unlink(tempFilePath).catch(console.error);
+            
+            if (error) {
+                console.error(`Python script execution error: ${error.message}`);
+                console.error(`Python stderr: ${stderr}`);
+                return res.status(500).json({ message: 'pdfProcessingError', details: stderr || 'Python script failed' });
+            }
+
+            try {
+                const extractedData = JSON.parse(stdout);
+                if (extractedData.error) {
+                    return res.status(500).json({ message: 'pdfProcessingError', details: extractedData.error });
+                }
+
+                if (extractedData.amount === null || extractedData.amount === undefined) {
+                    return res.status(400).json({ message: 'amountNotFoundErrorText' });
+                }
+
+                res.status(200).json({ ...extractedData, fileData: req.file.buffer.toString('base64') });
+            } catch (parseError) {
+                console.error('Error parsing python script output:', parseError);
+                console.error('Python stdout:', stdout);
+                return res.status(500).json({ message: 'pdfProcessingError', details: 'Invalid JSON output from parser.' });
+            }
+        });
+
+    } catch (fileError) {
+        console.error("Error writing temp file for extraction:", fileError);
+        // Ensure temp file is cleaned up even on write error if it was created
+        if (fs.existsSync(tempFilePath)) {
+            fs.promises.unlink(tempFilePath).catch(console.error);
         }
-
-        res.status(200).json({ ...extractedData, fileData: req.file.buffer.toString('base64') });
-    } catch (error: any) {
-        console.error("Error extracting boleto data:", error);
-        res.status(500).json({ message: 'pdfProcessingError' });
+        return res.status(500).json({ message: 'Server error during file handling.' });
     }
 };
 
-export const saveBoleto: RequestHandler = async (req, res) => {
+export const saveBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -214,7 +251,7 @@ export const saveBoleto: RequestHandler = async (req, res) => {
     }
 };
 
-export const updateBoletoStatus: RequestHandler = async (req, res) => {
+export const updateBoletoStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -260,7 +297,7 @@ export const updateBoletoStatus: RequestHandler = async (req, res) => {
     }
 };
 
-export const updateBoletoComments: RequestHandler = async (req, res) => {
+export const updateBoletoComments = async (req: Request, res: Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -304,7 +341,7 @@ export const updateBoletoComments: RequestHandler = async (req, res) => {
     }
 };
 
-export const deleteBoleto: RequestHandler = async (req, res) => {
+export const deleteBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();
