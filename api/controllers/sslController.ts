@@ -1,6 +1,7 @@
 
-// Use Request, Response to correctly type Express handlers
-import { Request, Response } from 'express';
+
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts with global DOM types.
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { exec } from 'child_process';
@@ -8,8 +9,8 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-// Use Request, Response types for Express route handlers
-export const getSslSettings = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
+export const getSslSettings = async (req: express.Request, res: express.Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
         if (rows.length > 0) {
@@ -23,8 +24,8 @@ export const getSslSettings = async (req: Request, res: Response) => {
     }
 };
 
-// Use Request, Response types for Express route handlers
-export const saveSslSettings = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
+export const saveSslSettings = async (req: express.Request, res: express.Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
         return res.status(400).json({ message: 'Invalid domain specified.' });
@@ -43,8 +44,8 @@ export const saveSslSettings = async (req: Request, res: Response) => {
     }
 };
 
-// Use Request, Response types for Express route handlers
-export const checkSslStatus = (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
+export const checkSslStatus = (req: express.Request, res: express.Response) => {
     const { domain } = req.body;
     if (!domain) {
         return res.status(400).json({ message: 'Domain is required.' });

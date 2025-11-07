@@ -1,6 +1,7 @@
 
-// Use Request, Response to correctly type Express handlers
-import { Request, Response } from 'express';
+
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts with global DOM types.
+import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -19,8 +20,8 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
   });
 };
 
-// Use Request, Response types for Express route handlers
-export const registerUser = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts with global DOM types.
+export const registerUser = async (req: express.Request, res: express.Response) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -46,8 +47,8 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-// Use Request, Response types for Express route handlers
-export const loginUser = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts with global DOM types.
+export const loginUser = async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {

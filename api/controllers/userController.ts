@@ -1,14 +1,15 @@
 
-// Use Request, Response to correctly type Express handlers
-import { Request, Response } from 'express';
+
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts with global DOM types.
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-// Use Request, Response types for Express route handlers
-export const getUsers = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
+export const getUsers = async (req: express.Request, res: express.Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -25,8 +26,8 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-// Use Request, Response types for Express route handlers
-export const createUser = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
+export const createUser = async (req: express.Request, res: express.Response) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -81,8 +82,8 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-// Use Request, Response types for Express route handlers
-export const updateUser = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
+export const updateUser = async (req: express.Request, res: express.Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -133,8 +134,8 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-// Use Request, Response types for Express route handlers
-export const deleteUser = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
+export const deleteUser = async (req: express.Request, res: express.Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();

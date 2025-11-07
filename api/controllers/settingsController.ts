@@ -1,12 +1,13 @@
 
-// Use Request, Response to correctly type Express handlers
-import { Request, Response } from 'express';
+
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts with global DOM types.
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
-// Use Request, Response types for Express route handlers
-export const getSettings = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
+export const getSettings = async (req: express.Request, res: express.Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -25,8 +26,8 @@ export const getSettings = async (req: Request, res: Response) => {
   }
 };
 
-// Use Request, Response types for Express route handlers
-export const updateSettings = async (req: Request, res: Response) => {
+// FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
+export const updateSettings = async (req: express.Request, res: express.Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {

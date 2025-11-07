@@ -1,6 +1,7 @@
 
-// Use Request, Response, NextFunction to correctly type Express handlers
-import { Request, Response, NextFunction } from 'express';
+
+// FIX: Use `express.Request`, `express.Response`, `express.NextFunction` to avoid type conflicts.
+import express from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -18,8 +19,8 @@ declare global {
     }
 }
 
-// Use Request, Response, NextFunction types for Express route handlers
-export const protect = (req: Request, res: Response, next: NextFunction) => {
+// FIX: Use `express.Request`, `express.Response`, `express.NextFunction` to avoid type conflicts.
+export const protect = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -43,8 +44,8 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// Use Request, Response, NextFunction types for Express route handlers
-export const admin = (req: Request, res: Response, next: NextFunction) => {
+// FIX: Use `express.Request`, `express.Response`, `express.NextFunction` to avoid type conflicts.
+export const admin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -52,8 +53,8 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
-// Use Request, Response, NextFunction types for Express route handlers
-export const editor = (req: Request, res: Response, next: NextFunction) => {
+// FIX: Use `express.Request`, `express.Response`, `express.NextFunction` to avoid type conflicts.
+export const editor = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {
