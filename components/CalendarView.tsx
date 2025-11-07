@@ -19,11 +19,20 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos, onViewPdf }) => {
     const map = new Map<string, Boleto[]>();
     boletos.forEach(boleto => {
       if (boleto.dueDate) {
-        const dateKey = new Date(boleto.dueDate + 'T00:00:00').toISOString().split('T')[0];
-        if (!map.has(dateKey)) {
-          map.set(dateKey, []);
+        // The date string from the database is 'YYYY-MM-DD'.
+        // Appending T00:00:00 ensures it's parsed in the user's local timezone,
+        // preventing off-by-one-day errors that can occur when parsing 'YYYY-MM-DD' directly.
+        const date = new Date(`${boleto.dueDate}T00:00:00`);
+        // Check if the created date is valid before proceeding.
+        if (!isNaN(date.getTime())) {
+          const dateKey = date.toISOString().split('T')[0];
+          if (!map.has(dateKey)) {
+            map.set(dateKey, []);
+          }
+          map.get(dateKey)!.push(boleto);
+        } else {
+          console.warn(`Invalid dueDate format detected for boleto ID ${boleto.id}: ${boleto.dueDate}`);
         }
-        map.get(dateKey)!.push(boleto);
       }
     });
     return map;
@@ -87,7 +96,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos, onViewPdf }) => {
               </div>
               <div className="space-y-1 overflow-y-auto flex-1">
                 {boletosForDay.map(boleto => {
-                  const isOverdue = boleto.dueDate && new Date(boleto.dueDate + 'T00:00:00') < today && boleto.status !== BoletoStatus.PAID;
+                  let isOverdue = false;
+                  // Add a similar validity check here for robustness.
+                  if (boleto.dueDate) {
+                      const dueDateObj = new Date(`${boleto.dueDate}T00:00:00`);
+                      if (!isNaN(dueDateObj.getTime())) {
+                          isOverdue = dueDateObj < today && boleto.status !== BoletoStatus.PAID;
+                      }
+                  }
+                  
                   return (
                     <button 
                         key={boleto.id} 

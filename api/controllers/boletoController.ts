@@ -1,7 +1,3 @@
-
-
-
-
 // FIX: Corrected Express types for controller function parameters.
 import express from 'express';
 import { pool } from '../../config/db';
@@ -9,140 +5,7 @@ import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
-// FIX: Changed import to 'require' syntax to correctly handle the CommonJS module.
-import pdfParse = require('pdf-parse');
-
-// --- PDF Parsing and Data Extraction Logic (Node.js Implementation) ---
-
-const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
-    const data = await pdfParse(pdfBuffer);
-    return data.text;
-};
-
-const cleanOcrMistakes = (value: string | null): string => {
-    if (!value) return '';
-    return value
-        .replace(/O|o|º/g, '0')
-        .replace(/I|l/g, '1')
-        .replace(/S|s|§/g, '5')
-        .replace(/B/g, '8')
-        .replace(/Z|z/g, '2')
-        .replace(/G/g, '6');
-};
-
-const extractBarcode = (text: string): string | null => {
-    const patternFormatted = /\b(\d{5}\.\d{5,})\s+(\d{5}\.\d{6,})\s+(\d{5}\.\d{6,})\s+?(\d{1,})\s+?(\d{14,})\b/;
-    const patternSolid = /\b(\d{47,48})\b/;
-    
-    const cleanedText = cleanOcrMistakes(text);
-
-    let match = cleanedText.match(patternFormatted);
-    if (match) {
-        return match.slice(1).join('').replace(/[^\d]/g, '');
-    }
-
-    match = cleanedText.match(patternSolid);
-    if (match) {
-        return match[1];
-    }
-    
-    return null;
-};
-
-const parseCurrency = (valueStr: string | null): number | null => {
-    if (!valueStr) return null;
-    
-    let cleanedStr = String(valueStr).trim().toUpperCase().replace('R$', '').replace('RS', '').trim();
-    
-    if (cleanedStr.includes(',') && cleanedStr.includes('.')) {
-        if (cleanedStr.lastIndexOf('.') < cleanedStr.lastIndexOf(',')) {
-             cleanedStr = cleanedStr.replace(/\./g, '').replace(',', '.');
-        } else {
-            cleanedStr = cleanedStr.replace(/,/g, '');
-        }
-    } else if (cleanedStr.includes(',')) {
-        cleanedStr = cleanedStr.replace(',', '.');
-    }
-
-    const numericPart = cleanedStr.replace(/[^\d.]/g, '');
-    if (!numericPart) return null;
-
-    const num = parseFloat(numericPart);
-    return isNaN(num) ? null : Math.round(num * 100) / 100;
-};
-
-const parseDate = (dateStr: string | null): string | null => {
-    if (!dateStr) return null;
-    const match = String(dateStr).match(/(\d{2})[/\sIl](\d{2})[/\sIl](\d{4})/);
-    if (match) {
-        const [_, day, month, year] = match;
-        if (parseInt(month, 10) > 0 && parseInt(month, 10) <= 12 && parseInt(day, 10) > 0 && parseInt(day, 10) <= 31 && parseInt(year, 10) > 1900) {
-            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        }
-    }
-    return null;
-};
-
-const extractField = (text: string, pattern: RegExp): string | null => {
-    const match = text.match(pattern);
-    return match && match[1] ? match[1].trim() : null;
-};
-
-const extractMultilineField = (text: string, pattern: RegExp): string | null => {
-    const match = text.match(pattern);
-    if (!match || !match[1]) return null;
-    
-    let result = match[1].trim();
-    result = result.replace(/\s*\n\s*/g, ' / ');
-    result = result.replace(/\s{2,}/g, ' ');
-    result = result.replace(/[-_]+/g, ' ').trim();
-    return result || null;
-};
-
-const extractBoletoDataFromPdf = async (pdfBuffer: Buffer): Promise<any> => {
-    const fullText = await getPdfTextContent(pdfBuffer);
-    
-    const patterns = {
-        dueDate: /(?:Vencimento)[\s:.]*(\d{2}[/\sIl]\d{2}[/\sIl]\d{4})/i,
-        documentDate: /(?:Data\s(?:do\s)?Documento)[\s:.]*(\d{2}[/\sIl]\d{2}[/\sIl]\d{4})/i,
-        documentAmount: /(?:\(=\)\s*Valor\sdo\sDocumento|Valor\sdo\sDocumento)[\s\S]*?(\b[\d.,]+\b)/i,
-        amountCharged: /(?:\(=\)\s*Valor\sCobrado)[\s\S]*?(\b[\d.,]+\b)/i,
-        discount: /(?:\(-\)\s*Desconto\s*\/\s*Abatimento)[\s\S]*?(\b[\d.,]+\b)/i,
-        interestAndFines: /(?:\(\+\)\s*Juros\s*\/\s*Multa|\(\+\)\s*Outros\sAcr.scimos)[\s\S]*?(\b[\d.,]+\b)/i,
-        guideNumberDoc: /(?:N[ºo\.]?\s?Documento(?:[\/]?Guia)?)[\s.:\n]*?([^\s\n]+)/i,
-        guideNumberNosso: /(?:Nosso\sN[úu]mero)[\s.:\n]*?([^\s\n]+)/i,
-        pixQrCodeText: /(000201\S{100,})/i,
-        recipient: /(?:Benefici[áa]rio|Cedente)[\s.:\n]*([\s\S]*?)(?=\b(?:Data Process|Data (?:do )?Documento|Vencimento|Nosso Número|Ag.ncia)\b)/is,
-        drawee: /(?:Pagador|Sacado)[\s.:\n]*([\s\S]*?)(?=\b(?:Sacador\s\/\sAvalista|Instruções|Descrição do Ato|Autenticaç)\b|Mora\/Multa)/is,
-    };
-    
-    const data: any = {};
-
-    data.dueDate = parseDate(extractField(fullText, patterns.dueDate));
-    data.documentDate = parseDate(extractField(fullText, patterns.documentDate));
-    
-    data.documentAmount = parseCurrency(extractField(fullText, patterns.documentAmount));
-    data.discount = parseCurrency(extractField(fullText, patterns.discount));
-    data.interestAndFines = parseCurrency(extractField(fullText, patterns.interestAndFines));
-    
-    const amountCharged = parseCurrency(extractField(fullText, patterns.amountCharged));
-    data.amount = (amountCharged !== null && amountCharged > 0) ? amountCharged : data.documentAmount;
-
-    let guideNumber = extractField(fullText, patterns.guideNumberDoc);
-    if (!guideNumber) {
-        guideNumber = extractField(fullText, patterns.guideNumberNosso);
-    }
-    data.guideNumber = guideNumber;
-
-    data.recipient = extractMultilineField(fullText, patterns.recipient);
-    data.drawee = extractMultilineField(fullText, patterns.drawee);
-    
-    data.barcode = extractBarcode(fullText);
-    data.pixQrCodeText = extractField(fullText, patterns.pixQrCodeText);
-    
-    return data;
-};
-
+import { extractBoletoInfo } from '../services/regexService';
 
 // --- Controller Functions ---
 
@@ -236,8 +99,7 @@ export const extractBoleto = async (req: express.Request, res: express.Response)
         return res.status(400).json({ message: 'No file uploaded' });
     }
     try {
-        const extractedData = await extractBoletoDataFromPdf(req.file.buffer);
-        extractedData.fileName = req.file.originalname;
+        const extractedData = await extractBoletoInfo(req.file.buffer, req.file.originalname);
 
         if (extractedData.amount === null || extractedData.amount === undefined) {
              return res.status(400).json({ message: 'amountNotFoundErrorText' });

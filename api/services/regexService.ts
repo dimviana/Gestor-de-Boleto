@@ -1,5 +1,5 @@
 import { Boleto } from '../../types';
-// FIX: Changed import to 'require' syntax to correctly handle the CommonJS module.
+// FIX: Use `import = require()` for CommonJS modules that use `export =`. The `import...from` syntax may not work correctly without `esModuleInterop` enabled.
 import pdfParse = require('pdf-parse');
 import { Buffer } from 'buffer';
 

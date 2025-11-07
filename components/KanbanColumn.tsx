@@ -14,10 +14,11 @@ interface KanbanColumnProps {
   onToggleSelection: (id: string) => void;
   onToggleSelectAll: (boletos: Boleto[]) => void;
   onViewPdf: (boleto: Boleto) => void;
+  onViewDetails: (boleto: Boleto) => void;
   userRole: Role;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll, onViewPdf, userRole }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll, onViewPdf, onViewDetails, userRole }) => {
     const columnBoletoIds = useMemo(() => boletos.map(b => b.id), [boletos]);
     const selectedInColumn = useMemo(() => columnBoletoIds.filter(id => selectedBoletoIds.includes(id)), [columnBoletoIds, selectedBoletoIds]);
     const [isOver, setIsOver] = useState(false);
@@ -93,6 +94,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
                 isSelected={selectedBoletoIds.includes(boleto.id)}
                 onToggleSelection={onToggleSelection}
                 onViewPdf={onViewPdf}
+                onViewDetails={onViewDetails}
                 userRole={userRole}
               />
             ))

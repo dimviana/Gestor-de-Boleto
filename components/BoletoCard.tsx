@@ -11,10 +11,11 @@ interface BoletoCardProps {
   isSelected: boolean;
   onToggleSelection: (id: string) => void;
   onViewPdf: (boleto: Boleto) => void;
+  onViewDetails: (boleto: Boleto) => void;
   userRole: Role;
 }
 
-const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewPdf, userRole }) => {
+const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewPdf, onViewDetails, userRole }) => {
   const { t, language } = useLanguage();
   const { id, recipient, drawee, documentDate, dueDate, documentAmount, amount, discount, interestAndFines, barcode, status, fileName, guideNumber, fileData, pixQrCodeText, comments } = boleto;
   const [pixCopied, setPixCopied] = useState(false);
@@ -22,8 +23,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const [isDragging, setIsDragging] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(comments || '');
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t('notAvailable');
@@ -66,26 +65,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(fileURL);
-  };
-
-  const handleCopyPix = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (pixQrCodeText) {
-        navigator.clipboard.writeText(pixQrCodeText).then(() => {
-            setPixCopied(true);
-            setTimeout(() => setPixCopied(false), 2000);
-        });
-    }
-  };
-
-  const handleCopyBarcode = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (barcode) {
-        navigator.clipboard.writeText(barcode).then(() => {
-            setBarcodeCopied(true);
-            setTimeout(() => setBarcodeCopied(false), 2000);
-        });
-    }
   };
   
   const handleDragStart = (e: React.DragEvent) => {
@@ -163,35 +142,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     }
   };
 
-  const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode; onCopy?: (e: React.MouseEvent) => void; copyState?: boolean; copyLabel?: string; }> = ({ icon, label, value, onCopy, copyState, copyLabel }) => {
-    if (value === null || value === undefined || value === '') return null;
-    return (
-      <div className="flex items-start">
-        <div className="flex-shrink-0 w-5 h-5 text-gray-400 dark:text-gray-500">{icon}</div>
-        <div className="ml-3 flex-1 min-w-0">
-            <p className="text-sm text-gray-600 dark:text-gray-300 break-words">
-                <span className="font-medium">{label} </span>
-                <span className={`${label.toLowerCase().includes('barras') ? 'font-mono text-xs' : ''}`}>{value}</span>
-            </p>
-        </div>
-        {onCopy && (
-            <button onClick={onCopy} title={copyLabel} className="ml-2 p-1 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex-shrink-0 rounded-md">
-                {copyState ? <CheckIcon className="w-4 h-4 text-green-500" /> : <CopyIcon className="w-4 h-4" />}
-            </button>
-        )}
-      </div>
-    );
-  };
-
-  const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="mt-4">
-        <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{title}</h4>
-        <div className="space-y-3 p-3 bg-gray-50 dark:bg-slate-900/50 rounded-md border border-gray-200 dark:border-slate-700/50">
-            {children}
-        </div>
-    </div>
-  );
-
   const FinancialRow: React.FC<{ label: string, value: React.ReactNode }> = ({ label, value}) => {
     if (value === null || value === undefined || value === t('notAvailable')) return null;
     return (
@@ -263,66 +213,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             )}
         </div>
       
-      <div 
-        onClick={(e) => {
-            e.stopPropagation();
-            setIsDetailsOpen(!isDetailsOpen);
-        }}
-        className="mt-4 pt-2 border-t border-gray-100 dark:border-slate-700 cursor-pointer"
-      >
-        <button className="w-full flex justify-center items-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-          {isDetailsOpen ? t('hideDetails') : t('showMoreDetails')}
-          {isDetailsOpen ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />}
-        </button>
-      </div>
-
-      {isDetailsOpen && (
-        <div className="animate-fade-in-up-fast mt-2">
-            <Section title={t('parties')}>
-                <DetailItem icon={<UserIcon />} label={t('recipient')} value={recipient} />
-                <DetailItem icon={<UserIcon />} label={t('drawee')} value={drawee} />
-            </Section>
-            
-            <Section title={t('documentInfo')}>
-                <DetailItem icon={<CalendarIcon />} label={t('documentDate')} value={formatDate(documentDate)} />
-                <DetailItem icon={<IdIcon />} label={t('guideNumber')} value={guideNumber} />
-            </Section>
-
-            {(barcode || pixQrCodeText) && (
-                 <Section title={t('paymentCodes')}>
-                    <DetailItem 
-                        icon={<BarcodeIcon />} 
-                        label={t('barcode')} 
-                        value={barcode}
-                        onCopy={handleCopyBarcode}
-                        copyState={barcodeCopied}
-                        copyLabel={t('copyBarcode')}
-                    />
-                    {pixQrCodeText && (
-                        <div className="flex items-start">
-                            <div className="flex-shrink-0 w-5 h-5 text-gray-400 dark:text-gray-500"><QrCodeIcon /></div>
-                            <div className="ml-3 flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('pixQrCode')}</p>
-                                <div className="relative mt-1 p-3 bg-gray-100 dark:bg-slate-900 rounded-md">
-                                    <p className="text-xs text-gray-600 dark:text-gray-300 font-mono break-all pr-10 leading-relaxed">
-                                        {pixQrCodeText}
-                                    </p>
-                                    <button
-                                        onClick={handleCopyPix}
-                                        title={t('copyPixCode')}
-                                        className="absolute top-2 right-2 p-1.5 text-gray-500 hover:text-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        {pixCopied ? <CheckIcon className="w-5 h-5 text-green-500" /> : <CopyIcon className="w-5 h-5" />}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </Section>
-            )}
-        </div>
-      )}
-
       <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 space-y-3">
         <div className="flex items-center space-x-2">
             <div className="flex-1">
@@ -340,8 +230,18 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
               </button>
             )}
         </div>
-        <div className="flex items-center justify-center space-x-6">
-             <button
+        <div className="flex items-center justify-center space-x-4">
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDetails(boleto);
+                }}
+                className="flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline"
+            >
+                <IdIcon className="w-4 h-4 mr-1.5" />
+                <span>{t('viewDetails')}</span>
+            </button>
+            <button
                 onClick={(e) => {
                     e.stopPropagation();
                     onViewPdf(boleto);
