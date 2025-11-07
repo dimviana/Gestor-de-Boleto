@@ -1,11 +1,13 @@
 
+
+
 // FIX: Corrected Express types for controller function parameters.
-import { Request, Response } from 'express';
+import { RequestHandler } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
 // FIX: Corrected Express types for controller function parameters.
-export const getLogs = async (req: Request, res: Response) => {
+export const getLogs: RequestHandler = async (req, res) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');
     res.json(logs);

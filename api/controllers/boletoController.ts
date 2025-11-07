@@ -1,5 +1,6 @@
+
 // FIX: Corrected Express types for controller function parameters.
-import { Request, Response } from 'express';
+import { RequestHandler } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
@@ -38,7 +39,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-export const getBoletos = async (req: Request, res: Response) => {
+export const getBoletos: RequestHandler = async (req, res) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -67,7 +68,7 @@ export const getBoletos = async (req: Request, res: Response) => {
   }
 };
 
-export const getBoletoById = async (req: Request, res: Response) => {
+export const getBoletoById: RequestHandler = async (req, res) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -95,7 +96,7 @@ export const getBoletoById = async (req: Request, res: Response) => {
     }
 };
 
-export const extractBoleto = async (req: Request, res: Response) => {
+export const extractBoleto: RequestHandler = async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -113,7 +114,7 @@ export const extractBoleto = async (req: Request, res: Response) => {
     }
 };
 
-export const saveBoleto = async (req: Request, res: Response) => {
+export const saveBoleto: RequestHandler = async (req, res) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -213,7 +214,7 @@ export const saveBoleto = async (req: Request, res: Response) => {
     }
 };
 
-export const updateBoletoStatus = async (req: Request, res: Response) => {
+export const updateBoletoStatus: RequestHandler = async (req, res) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -259,7 +260,7 @@ export const updateBoletoStatus = async (req: Request, res: Response) => {
     }
 };
 
-export const updateBoletoComments = async (req: Request, res: Response) => {
+export const updateBoletoComments: RequestHandler = async (req, res) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -303,7 +304,7 @@ export const updateBoletoComments = async (req: Request, res: Response) => {
     }
 };
 
-export const deleteBoleto = async (req: Request, res: Response) => {
+export const deleteBoleto: RequestHandler = async (req, res) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();

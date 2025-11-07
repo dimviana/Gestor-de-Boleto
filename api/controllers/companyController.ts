@@ -1,12 +1,14 @@
 
+
+
 // FIX: Corrected Express types for controller function parameters.
-import { Request, Response } from 'express';
+import { RequestHandler } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
 // FIX: Corrected Express types for controller function parameters.
-export const getCompanies = async (req: Request, res: Response) => {
+export const getCompanies: RequestHandler = async (req, res) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
     res.json(companies);
@@ -17,7 +19,7 @@ export const getCompanies = async (req: Request, res: Response) => {
 };
 
 // FIX: Corrected Express types for controller function parameters.
-export const createCompany = async (req: Request, res: Response) => {
+export const createCompany: RequestHandler = async (req, res) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -51,7 +53,7 @@ export const createCompany = async (req: Request, res: Response) => {
 };
 
 // FIX: Corrected Express types for controller function parameters.
-export const updateCompany = async (req: Request, res: Response) => {
+export const updateCompany: RequestHandler = async (req, res) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -88,7 +90,7 @@ export const updateCompany = async (req: Request, res: Response) => {
 };
 
 // FIX: Corrected Express types for controller function parameters.
-export const deleteCompany = async (req: Request, res: Response) => {
+export const deleteCompany: RequestHandler = async (req, res) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();
