@@ -1,6 +1,6 @@
 
-// Use RequestHandler to correctly type Express handlers
-import { RequestHandler } from 'express';
+// Use Request, Response to correctly type Express handlers
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { exec } from 'child_process';
@@ -8,8 +8,8 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-// Use RequestHandler type for Express route handlers
-export const getSslSettings: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const getSslSettings = async (req: Request, res: Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
         if (rows.length > 0) {
@@ -23,8 +23,8 @@ export const getSslSettings: RequestHandler = async (req, res) => {
     }
 };
 
-// Use RequestHandler type for Express route handlers
-export const saveSslSettings: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const saveSslSettings = async (req: Request, res: Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
         return res.status(400).json({ message: 'Invalid domain specified.' });
@@ -43,8 +43,8 @@ export const saveSslSettings: RequestHandler = async (req, res) => {
     }
 };
 
-// Use RequestHandler type for Express route handlers
-export const checkSslStatus: RequestHandler = (req, res) => {
+// Use Request, Response types for Express route handlers
+export const checkSslStatus = (req: Request, res: Response) => {
     const { domain } = req.body;
     if (!domain) {
         return res.status(400).json({ message: 'Domain is required.' });

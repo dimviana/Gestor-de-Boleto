@@ -55,10 +55,8 @@ def extract_barcode(text):
     pattern_48_digits_with_spaces = r'\b\d{11,12}\s*[-]?\s*\d\s*\d{11,12}\s*[-]?\s*\d\s*\d{11,12}\s*[-]?\s*\d\s*\d{11,12}\s*[-]?\s*\d\b'
     # Regex for standard 47-digit bank slips
     pattern_47_digits_with_spaces = r'\b\d{5}\.\d{5}\s+\d{5}\.\d{6}\s+\d{5}\.\d{6}\s+\d\s+\d{14}\b'
-    # Regex for the digitable line of the provided example
-    pattern_example_specific = r'\b(\d{5}\.\d{5}\s+\d{5}\.\d{6}\s+\d{5}\.\d{6}\s+\d\s+\d{14})\b'
     
-    for pattern in [pattern_example_specific, pattern_47_digits_with_spaces, pattern_48_digits_with_spaces]:
+    for pattern in [pattern_47_digits_with_spaces, pattern_48_digits_with_spaces]:
         match = re.search(pattern, text)
         if match:
             return re.sub(r'[^0-9]', '', match.group(0))
@@ -80,15 +78,22 @@ def extract_boleto_info(pdf_path):
         print(json.dumps({"error": f"Failed to open or read PDF with PyMuPDF: {str(e)}"}))
         sys.exit(1)
 
-    # --- Data Extraction using Regex ---
-    recipient = find_value_after_label(text_content, r'Cedente', r'Data (do )?Documento|Vencimento|Agência / Código do Cedente')
-    drawee = find_value_after_label(text_content, r'Sacado', r'Instruções|Descrição do Ato|Autenticação Mecânica')
+    # --- Data Extraction using more robust Regex ---
+    recipient = find_value_after_label(text_content, r'(?:Beneficiário|Cedente)', r'Data (do )?Documento|Vencimento|Agência / Código do Cedente')
+    drawee = find_value_after_label(text_content, r'(?:Pagador|Sacado)', r'Instruções|Descrição do Ato|Autenticação Mecânica')
     
-    due_date_str = (re.search(r'Vencimento\s*(\d{2}/\d{2}/\d{4})', text_content, re.IGNORECASE) or [None, None])[1]
-    doc_date_str = (re.search(r'Data do Documento\s*(\d{2}/\d{2}/\d{4})', text_content, re.IGNORECASE) or [None, None])[1]
+    # This greedy regex pattern finds the label, consumes text until the end, then backtracks to find the last valid value.
+    # This is effective for layouts where the value is aligned to the right.
+    date_pattern = r'(\d{2}/\d{2}/\d{4})'
+    currency_pattern = r'([\d,.]+)'
     
-    doc_amount_str = (re.search(r'Valor do Documento\s*R\$\s*([\d,.]+)', text_content, re.IGNORECASE) or [None, None])[1]
-    amount_str = (re.search(r'Valor Cobrado\s*R\$\s*([\d,.]+)', text_content, re.IGNORECASE) or [None, None])[1]
+    due_date_str = (re.search(fr'Vencimento[\s\S]*{date_pattern}', text_content, re.IGNORECASE) or [None, None])[1]
+    doc_date_str = (re.search(fr'Data do Documento[\s\S]*{date_pattern}', text_content, re.IGNORECASE) or [None, None])[1]
+    
+    doc_amount_str = (re.search(fr'Valor do Documento[\s\S]*{currency_pattern}', text_content, re.IGNORECASE) or [None, None])[1]
+    amount_str = (re.search(fr'Valor Cobrado[\s\S]*{currency_pattern}', text_content, re.IGNORECASE) or [None, None])[1]
+    discount_str = (re.search(fr'(?:Desconto / Abatimento)[\s\S]*{currency_pattern}', text_content, re.IGNORECASE) or [None, None])[1]
+    interest_str = (re.search(fr'(?:Juros / Multa)[\s\S]*{currency_pattern}', text_content, re.IGNORECASE) or [None, None])[1]
 
     doc_amount = parse_currency(doc_amount_str)
     amount = parse_currency(amount_str)
@@ -113,8 +118,8 @@ def extract_boleto_info(pdf_path):
         "dueDate": parse_date(due_date_str),
         "documentAmount": doc_amount,
         "amount": amount,
-        "discount": parse_currency((re.search(r'(?:Desconto / Abatimento)\s*R\$\s*([\d,.]+)', text_content, re.IGNORECASE) or [None, None])[1]),
-        "interestAndFines": parse_currency((re.search(r'(?:Juros / Multa)\s*R\$\s*([\d,.]+)', text_content, re.IGNORECASE) or [None, None])[1]),
+        "discount": parse_currency(discount_str),
+        "interestAndFines": parse_currency(interest_str),
         "barcode": barcode,
         "guideNumber": guide_number.strip() if guide_number else None,
         "pixQrCodeText": pix_qr_code.strip() if pix_qr_code else None

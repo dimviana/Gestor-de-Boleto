@@ -1,6 +1,6 @@
 
-// Use RequestHandler to correctly type Express handlers
-import { RequestHandler } from 'express';
+// Use Request, Response to correctly type Express handlers
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -19,8 +19,8 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
   });
 };
 
-// Use RequestHandler type for Express route handlers
-export const registerUser: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -46,8 +46,8 @@ export const registerUser: RequestHandler = async (req, res) => {
   }
 };
 
-// Use RequestHandler type for Express route handlers
-export const loginUser: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {

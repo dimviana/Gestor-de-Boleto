@@ -1,12 +1,12 @@
 
-// Use RequestHandler to correctly type Express handlers
-import { RequestHandler } from 'express';
+// Use Request, Response to correctly type Express handlers
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-// Use RequestHandler type for Express route handlers
-export const getCompanies: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const getCompanies = async (req: Request, res: Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
     res.json(companies);
@@ -16,8 +16,8 @@ export const getCompanies: RequestHandler = async (req, res) => {
   }
 };
 
-// Use RequestHandler type for Express route handlers
-export const createCompany: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const createCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -50,8 +50,8 @@ export const createCompany: RequestHandler = async (req, res) => {
   }
 };
 
-// Use RequestHandler type for Express route handlers
-export const updateCompany: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const updateCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -87,8 +87,8 @@ export const updateCompany: RequestHandler = async (req, res) => {
   }
 };
 
-// Use RequestHandler type for Express route handlers
-export const deleteCompany: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const deleteCompany = async (req: Request, res: Response) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();

@@ -1,12 +1,12 @@
 
-// Use RequestHandler to correctly type Express handlers
-import { RequestHandler } from 'express';
+// Use Request, Response to correctly type Express handlers
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
-// Use RequestHandler type for Express route handlers
-export const getSettings: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const getSettings = async (req: Request, res: Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -25,8 +25,8 @@ export const getSettings: RequestHandler = async (req, res) => {
   }
 };
 
-// Use RequestHandler type for Express route handlers
-export const updateSettings: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const updateSettings = async (req: Request, res: Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {

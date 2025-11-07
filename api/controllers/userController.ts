@@ -1,14 +1,14 @@
 
-// Use RequestHandler to correctly type Express handlers
-import { RequestHandler } from 'express';
+// Use Request, Response to correctly type Express handlers
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-// Use RequestHandler type for Express route handlers
-export const getUsers: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const getUsers = async (req: Request, res: Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -25,8 +25,8 @@ export const getUsers: RequestHandler = async (req, res) => {
   }
 };
 
-// Use RequestHandler type for Express route handlers
-export const createUser: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const createUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -81,8 +81,8 @@ export const createUser: RequestHandler = async (req, res) => {
   }
 };
 
-// Use RequestHandler type for Express route handlers
-export const updateUser: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const updateUser = async (req: Request, res: Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -133,8 +133,8 @@ export const updateUser: RequestHandler = async (req, res) => {
   }
 };
 
-// Use RequestHandler type for Express route handlers
-export const deleteUser: RequestHandler = async (req, res) => {
+// Use Request, Response types for Express route handlers
+export const deleteUser = async (req: Request, res: Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
