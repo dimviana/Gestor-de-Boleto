@@ -1,14 +1,17 @@
 import { Boleto } from '../../types';
-// FIX: The 'import = require(...)' syntax is not compatible with ES Modules.
-// Switched to the standard 'import from' syntax.
 import pdfParse from 'pdf-parse';
 import { Buffer } from 'buffer';
 
 const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
-    // FIX: The type definitions for 'pdf-parse' can cause a type error when used
-    // in an ES module context. Casting to 'any' bypasses the incorrect type check.
-    const data = await (pdfParse as any)(pdfBuffer);
-    return data.text;
+    try {
+        // The type definitions for 'pdf-parse' can cause a type error in some TS configurations.
+        // Casting to 'any' bypasses this potential issue.
+        const data = await (pdfParse as any)(pdfBuffer);
+        return data.text;
+    } catch (error) {
+        console.error("Error parsing PDF with pdf-parse:", error);
+        throw new Error("Could not read text content from PDF file.");
+    }
 };
 
 const cleanOcrMistakes = (value: string): string => {
@@ -24,8 +27,11 @@ const cleanOcrMistakes = (value: string): string => {
 };
 
 const extractBarcode = (text: string): string | null => {
+    // Pattern for standard boleto barcode format with spaces and dots
     const pattern1 = /\b(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})\b/;
+    // Pattern for a raw string of 47 or 48 digits
     const pattern2 = /\b(\d{47,48})\b/;
+    // Pattern for barcode split across multiple lines
     const pattern3 = /(\d{5}\.?\d{5})[\s\n]+(\d{5}\.?\d{6})[\s\n]+(\d{5}\.?\d{6})[\s\n]+(\d)[\s\n]+(\d{14})/;
     
     let match = text.match(pattern1);
@@ -48,19 +54,26 @@ const parseCurrency = (value: string | null): number | null => {
     const hasComma = valueStr.includes(',');
     const hasDot = valueStr.includes('.');
 
+    // Standard Brazilian format: 1.234,56
     if (hasComma && hasDot) {
         valueStr = valueStr.replace(/\./g, '').replace(',', '.');
-    } else if (hasComma && !hasDot) {
+    } 
+    // Format without dots: 1234,56
+    else if (hasComma && !hasDot) {
         const parts = valueStr.split(',');
+        // Ensure the comma is for decimals
         if (parts[1] && parts[1].length === 2) {
             valueStr = parts[0].replace(/\./g, '') + '.' + parts[1];
         } else {
-            valueStr = valueStr.replace(',', '.');
+             valueStr = valueStr.replace(',', '.');
         }
-    } else if (!hasComma && hasDot) {
+    }
+    // Format with only dots: 1234.56 or 1.234
+    else if (!hasComma && hasDot) {
         const lastDotIndex = valueStr.lastIndexOf('.');
         const isDecimal = valueStr.length - lastDotIndex - 1 === 2;
         const hasMultipleDots = (valueStr.match(/\./g) || []).length > 1;
+        // If it has multiple dots (1.234.567) or isn't a decimal (1.234), remove dots
         if (hasMultipleDots || !isDecimal) {
             valueStr = valueStr.replace(/\./g, '');
         }
@@ -79,6 +92,7 @@ const parseDate = (value: string | null): string | null => {
     const dayInt = parseInt(day, 10);
     const monthInt = parseInt(month, 10);
 
+    // Basic date validation
     if (dayInt === 0 || dayInt > 31 || monthInt === 0 || monthInt > 12) {
         return null;
     }
@@ -90,12 +104,11 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     const normalizedText = text.replace(/ +/g, ' ').trim();
 
     const patterns = {
-        // FIX: Regexes are now greedy and multiline-aware to find the last valid number after the label.
-        amountValorDocumento: /(?:\(=\))?\s*Valor do Documento[\s\S]*(\b[\d.,]{3,}\b)/i,
-        amountValorCobrado: /(?:\(=\))?\s*Valor Cobrado[\s\S]*(\b[\d.,]{3,}\b)/i,
-        discount: /(?:\(-\))?\s*(?:Desconto|Abatimento)[\s\S]*(\b[\d.,]{3,}\b)/i,
-        interestAndFines: /(?:\(\+\))?\s*(?:Juros|Multa|Outros Acréscimos)[\s\S]*(\b[\d.,]{3,}\b)/i,
-        // FIX: Allow '.' as a date separator and make separators optional.
+        // Regexes are multiline-aware and look for the last valid number after the label.
+        amountValorDocumento: /(?:\(=\))?\s*Valor do Documento[\s\S]*?(\b[\d.,\s]+\b)/gi,
+        amountValorCobrado: /(?:\(=\))?\s*Valor Cobrado[\s\S]*?(\b[\d.,\s]+\b)/gi,
+        discount: /(?:\(-\))?\s*(?:Desconto|Abatimento)[\s\S]*?(\b[\d.,\s]+\b)/gi,
+        interestAndFines: /(?:\(\+\))?\s*(?:Juros|Multa|Outros Acréscimos)[\s\S]*?(\b[\d.,\s]+\b)/gi,
         documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}[\/Il.]?\d{2}[\/Il.]?\d{4})/i,
         dueDate: /(?:Vencimento)[\s:\n]*(\d{2}[\/Il.]?\d{2}[\/Il.]?\d{4})/i,
         recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência)\b)/i,
@@ -105,23 +118,29 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         pixQrCodeText: /(000201\S{100,})/i,
     };
     
+    const findLastValidMatch = (regex: RegExp) => {
+        const matches = [...normalizedText.matchAll(regex)];
+        return matches.length > 0 ? matches[matches.length - 1][1] : null;
+    }
+    
     const barcode = extractBarcode(normalizedText);
 
-    const documentAmountMatch = normalizedText.match(patterns.amountValorDocumento);
-    const documentAmount = parseCurrency(documentAmountMatch ? documentAmountMatch[1] : null);
+    const documentAmountStr = findLastValidMatch(patterns.amountValorDocumento);
+    const documentAmount = parseCurrency(documentAmountStr);
 
-    const valorCobradoMatch = normalizedText.match(patterns.amountValorCobrado);
-    let amount = parseCurrency(valorCobradoMatch ? valorCobradoMatch[1] : null);
+    const valorCobradoStr = findLastValidMatch(patterns.amountValorCobrado);
+    let amount = parseCurrency(valorCobradoStr);
 
+    // Fallback to document amount if charged amount is not found or is zero
     if (amount === null || amount === 0) {
         amount = documentAmount;
     }
     
-    const discountMatch = normalizedText.match(patterns.discount);
-    const discount = parseCurrency(discountMatch ? discountMatch[1] : null);
+    const discountStr = findLastValidMatch(patterns.discount);
+    const discount = parseCurrency(discountStr);
 
-    const interestMatch = normalizedText.match(patterns.interestAndFines);
-    const interestAndFines = parseCurrency(interestMatch ? interestMatch[1] : null);
+    const interestStr = findLastValidMatch(patterns.interestAndFines);
+    const interestAndFines = parseCurrency(interestStr);
 
     const documentDate = parseDate(normalizedText.match(patterns.documentDate)?.[1] || null);
     const dueDate = parseDate(normalizedText.match(patterns.dueDate)?.[1] || null);
@@ -156,5 +175,6 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         guideNumber,
         pixQrCodeText,
         fileName,
+        extractedData: { /* Store raw values if needed in future */ },
     };
 };

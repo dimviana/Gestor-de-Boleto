@@ -1,16 +1,11 @@
-
-
 // FIX: Use `express.Request` and `express.Response` to avoid type conflicts with global DOM types.
-import express from 'express';
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
-import { execFile } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+import { extractBoletoInfo } from '../services/regexService';
 
 
 // --- Controller Functions ---
@@ -45,7 +40,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
 };
 
 // FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const getBoletos = async (req: express.Request, res: express.Response) => {
+export const getBoletos = async (req: Request, res: Response) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -75,7 +70,7 @@ export const getBoletos = async (req: express.Request, res: express.Response) =>
 };
 
 // FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const getBoletoById = async (req: express.Request, res: express.Response) => {
+export const getBoletoById = async (req: Request, res: Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -104,61 +99,36 @@ export const getBoletoById = async (req: express.Request, res: express.Response)
 };
 
 // FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const extractBoleto = async (req: express.Request, res: express.Response) => {
+export const extractBoleto = async (req: Request, res: Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const uploadedFile = req.file;
-    const tempDir = os.tmpdir();
-    const tempFilePath = path.join(tempDir, `${uuidv4()}.pdf`);
-
     try {
-        await fs.promises.writeFile(tempFilePath, uploadedFile.buffer);
-
-        const pythonExecutable = process.env.PYTHON_PATH || 'python3';
-        const scriptPath = path.resolve(__dirname, '..', 'services', 'parser.txt');
-
-        execFile(pythonExecutable, [scriptPath, tempFilePath], (error, stdout, stderr) => {
-            // Always clean up the temporary file
-            fs.promises.unlink(tempFilePath).catch(console.error);
-            
-            if (error) {
-                console.error(`Python script execution error: ${error.message}`);
-                console.error(`Python stderr: ${stderr}`);
-                return res.status(500).json({ message: 'pdfProcessingError', details: stderr || 'Python script failed' });
-            }
-
-            try {
-                const extractedData = JSON.parse(stdout);
-                if (extractedData.error) {
-                    return res.status(500).json({ message: 'pdfProcessingError', details: extractedData.error });
-                }
-
-                if (extractedData.amount === null || extractedData.amount === undefined) {
-                    return res.status(400).json({ message: 'amountNotFoundErrorText' });
-                }
-
-                res.status(200).json({ ...extractedData, fileData: uploadedFile.buffer.toString('base64') });
-            } catch (parseError) {
-                console.error('Error parsing python script output:', parseError);
-                console.error('Python stdout:', stdout);
-                return res.status(500).json({ message: 'pdfProcessingError', details: 'Invalid JSON output from parser.' });
-            }
-        });
-
-    } catch (fileError) {
-        console.error("Error writing temp file for extraction:", fileError);
-        // Ensure temp file is cleaned up even on write error if it was created
-        if (fs.existsSync(tempFilePath)) {
-            fs.promises.unlink(tempFilePath).catch(console.error);
+        const extractedData = await extractBoletoInfo(req.file.buffer, req.file.originalname);
+        
+        if (extractedData.amount === null || extractedData.amount === undefined) {
+            return res.status(400).json({ message: 'amountNotFoundErrorText' });
         }
-        return res.status(500).json({ message: 'Server error during file handling.' });
+
+        if (extractedData.amount === 0) {
+             return res.status(400).json({ message: 'freeBoletoErrorText' });
+        }
+        
+        if (!extractedData.barcode) {
+            return res.status(400).json({ message: 'invalidBarcodeErrorText' });
+        }
+
+        res.status(200).json({ ...extractedData, fileData: req.file.buffer.toString('base64') });
+
+    } catch (error: any) {
+        console.error("Error extracting boleto data with regexService:", error);
+        return res.status(500).json({ message: 'pdfProcessingError', details: error.message || 'Failed to parse PDF content.' });
     }
 };
 
 // FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const saveBoleto = async (req: express.Request, res: express.Response) => {
+export const saveBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -259,7 +229,7 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
 };
 
 // FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const updateBoletoStatus = async (req: express.Request, res: express.Response) => {
+export const updateBoletoStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -306,7 +276,7 @@ export const updateBoletoStatus = async (req: express.Request, res: express.Resp
 };
 
 // FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const updateBoletoComments = async (req: express.Request, res: express.Response) => {
+export const updateBoletoComments = async (req: Request, res: Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -351,7 +321,7 @@ export const updateBoletoComments = async (req: express.Request, res: express.Re
 };
 
 // FIX: Use `express.Request` and `express.Response` to avoid type conflicts.
-export const deleteBoleto = async (req: express.Request, res: express.Response) => {
+export const deleteBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();
