@@ -1,10 +1,6 @@
 
-
-
-
-
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-import { Request, Response } from 'express';
+// Use RequestHandler to correctly type Express handlers
+import { RequestHandler } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -23,8 +19,8 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
   });
 };
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const registerUser = async (req: Request, res: Response) => {
+// Use RequestHandler type for Express route handlers
+export const registerUser: RequestHandler = async (req, res) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -50,8 +46,8 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const loginUser = async (req: Request, res: Response) => {
+// Use RequestHandler type for Express route handlers
+export const loginUser: RequestHandler = async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {

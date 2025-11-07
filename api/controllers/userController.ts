@@ -1,18 +1,14 @@
 
-
-
-
-
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-import { Request, Response } from 'express';
+// Use RequestHandler to correctly type Express handlers
+import { RequestHandler } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const getUsers = async (req: Request, res: Response) => {
+// Use RequestHandler type for Express route handlers
+export const getUsers: RequestHandler = async (req, res) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -29,8 +25,8 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const createUser = async (req: Request, res: Response) => {
+// Use RequestHandler type for Express route handlers
+export const createUser: RequestHandler = async (req, res) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -85,8 +81,8 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const updateUser = async (req: Request, res: Response) => {
+// Use RequestHandler type for Express route handlers
+export const updateUser: RequestHandler = async (req, res) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -137,8 +133,8 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const deleteUser = async (req: Request, res: Response) => {
+// Use RequestHandler type for Express route handlers
+export const deleteUser: RequestHandler = async (req, res) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();

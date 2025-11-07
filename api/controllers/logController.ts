@@ -1,15 +1,11 @@
 
-
-
-
-
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-import { Request, Response } from 'express';
+// Use RequestHandler to correctly type Express handlers
+import { RequestHandler } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const getLogs = async (req: Request, res: Response) => {
+// Use RequestHandler type for Express route handlers
+export const getLogs: RequestHandler = async (req, res) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');
     res.json(logs);

@@ -1,10 +1,6 @@
 
-
-
-
-
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-import { Request, Response, NextFunction } from 'express';
+// Use RequestHandler to correctly type Express handlers
+import { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -22,8 +18,8 @@ declare global {
     }
 }
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const protect = (req: Request, res: Response, next: NextFunction) => {
+// Use RequestHandler type for Express route handlers
+export const protect: RequestHandler = (req, res, next) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -47,8 +43,8 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const admin = (req: Request, res: Response, next: NextFunction) => {
+// Use RequestHandler type for Express route handlers
+export const admin: RequestHandler = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -56,8 +52,8 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
-// FIX: Switched to explicit parameter typing for Express handlers to resolve type conflicts.
-export const editor = (req: Request, res: Response, next: NextFunction) => {
+// Use RequestHandler type for Express route handlers
+export const editor: RequestHandler = (req, res, next) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {
