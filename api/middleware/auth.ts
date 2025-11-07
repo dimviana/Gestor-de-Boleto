@@ -1,5 +1,5 @@
 // FIX: Use explicit express types to avoid type conflicts with DOM types.
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -17,7 +17,6 @@ declare global {
     }
 }
 
-// FIX: Use `Request`, `Response`, `NextFunction` from 'express' to avoid type conflicts.
 export const protect = (req: Request, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -42,7 +41,6 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// FIX: Use `Request`, `Response`, `NextFunction` from 'express' to avoid type conflicts.
 export const admin = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -51,7 +49,6 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
-// FIX: Use `Request`, `Response`, `NextFunction` from 'express' to avoid type conflicts.
 export const editor = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();

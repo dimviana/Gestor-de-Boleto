@@ -1,5 +1,5 @@
 // FIX: Use explicit express types to avoid type conflicts with DOM types.
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
@@ -47,7 +47,6 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const getBoletos = async (req: Request, res: Response) => {
   const user = req.user!;
   try {
@@ -77,7 +76,6 @@ export const getBoletos = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const getBoletoById = async (req: Request, res: Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
@@ -106,7 +104,6 @@ export const getBoletoById = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const extractBoleto = async (req: Request, res: Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -135,7 +132,6 @@ export const extractBoleto = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const saveBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
@@ -236,7 +232,6 @@ export const saveBoleto = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const updateBoletoStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     const { id } = req.params;
@@ -283,7 +278,6 @@ export const updateBoletoStatus = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const updateBoletoComments = async (req: Request, res: Response) => {
     const { comments } = req.body;
     const { id } = req.params;
@@ -328,7 +322,6 @@ export const updateBoletoComments = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const deleteBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { id } = req.params;

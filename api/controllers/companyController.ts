@@ -1,10 +1,9 @@
 // FIX: Use explicit express types to avoid type conflicts with DOM types.
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const getCompanies = async (req: Request, res: Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
@@ -15,7 +14,6 @@ export const getCompanies = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const createCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
@@ -49,7 +47,6 @@ export const createCompany = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const updateCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
@@ -86,7 +83,6 @@ export const updateCompany = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts.
 export const deleteCompany = async (req: Request, res: Response) => {
   const user = req.user!;
   const companyId = req.params.id;

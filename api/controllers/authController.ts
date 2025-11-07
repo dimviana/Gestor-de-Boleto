@@ -1,5 +1,5 @@
 // FIX: Use explicit express types to avoid type conflicts with DOM types.
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -18,7 +18,6 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
   });
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts with global DOM types.
 export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
@@ -45,7 +44,6 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Use `Request` and `Response` from 'express' to avoid type conflicts with global DOM types.
 export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
