@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS `boletos` (
   `file_name` VARCHAR(255) NOT NULL,
   `file_data` MEDIUMTEXT NOT NULL COMMENT 'Base64 encoded PDF data',
   `comments` TEXT DEFAULT NULL,
+  `extracted_data` JSON DEFAULT NULL COMMENT 'JSON object with all raw extracted data',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

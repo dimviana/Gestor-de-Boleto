@@ -167,6 +167,12 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             <h3 className="font-extrabold text-lg text-gray-800 dark:text-gray-100 break-words">
               {drawee || recipient || t('recipientNotFound')}
             </h3>
+            {guideNumber && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono flex items-center">
+                    <HashtagIcon className="w-3 h-3 mr-1.5" />
+                    <span>Nº Doc: {guideNumber}</span>
+                </p>
+            )}
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={fileName}>{fileName}</p>
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">

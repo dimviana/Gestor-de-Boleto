@@ -29,6 +29,7 @@ export interface Boleto {
   fileData: string;
   companyId: string; // Added for multi-tenancy
   comments: string | null;
+  extractedData?: Record<string, any> | null;
 }
 
 export type Role = 'viewer' | 'editor' | 'admin';
