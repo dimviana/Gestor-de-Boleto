@@ -1,10 +1,13 @@
 import { Boleto } from '../../types';
-// FIX: Use 'require' syntax for CommonJS module compatibility.
-import pdfParse = require('pdf-parse');
+// FIX: The 'import = require(...)' syntax is not compatible with ES Modules.
+// Switched to the standard 'import from' syntax.
+import pdfParse from 'pdf-parse';
 import { Buffer } from 'buffer';
 
 const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
-    const data = await pdfParse(pdfBuffer);
+    // FIX: The type definitions for 'pdf-parse' can cause a type error when used
+    // in an ES module context. Casting to 'any' bypasses the incorrect type check.
+    const data = await (pdfParse as any)(pdfBuffer);
     return data.text;
 };
 
@@ -69,10 +72,16 @@ const parseCurrency = (value: string | null): number | null => {
 
 const parseDate = (value: string | null): string | null => {
     if (!value) return null;
-    const match = cleanOcrMistakes(value).match(/(\d{2})[\/Il]?(\d{2})[\/Il]?(\d{4})/);
+    // Handles DD/MM/YYYY, DD.MM.YYYY, and common OCR mistakes for separators
+    const match = cleanOcrMistakes(value).match(/(\d{2})[\/Il.]?(\d{2})[\/Il.]?(\d{4})/);
     if (!match) return null;
     const [, day, month, year] = match;
-    if (parseInt(day, 10) === 0 || parseInt(month, 10) === 0 || parseInt(month, 10) > 12) return null;
+    const dayInt = parseInt(day, 10);
+    const monthInt = parseInt(month, 10);
+
+    if (dayInt === 0 || dayInt > 31 || monthInt === 0 || monthInt > 12) {
+        return null;
+    }
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 };
 
@@ -81,12 +90,14 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     const normalizedText = text.replace(/ +/g, ' ').trim();
 
     const patterns = {
-        amountValorDocumento: /(?:\(=\))?\s*Valor do Documento[^\d\r\n]*?([\d.,]{3,})/i,
-        amountValorCobrado: /(?:\(=\))?\s*Valor Cobrado[^\d\r\n]*?([\d.,]{3,})/i,
-        discount: /(?:\(-\))?\s*(?:Desconto|Abatimento)[^\d\r\n]*?([\d.,]{3,})/i,
-        interestAndFines: /(?:\(\+\))?\s*(?:Juros|Multa|Outros Acréscimos)[^\d\r\n]*?([\d.,]{3,})/i,
-        documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
-        dueDate: /(?:Vencimento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
+        // FIX: Regexes are now greedy and multiline-aware to find the last valid number after the label.
+        amountValorDocumento: /(?:\(=\))?\s*Valor do Documento[\s\S]*(\b[\d.,]{3,}\b)/i,
+        amountValorCobrado: /(?:\(=\))?\s*Valor Cobrado[\s\S]*(\b[\d.,]{3,}\b)/i,
+        discount: /(?:\(-\))?\s*(?:Desconto|Abatimento)[\s\S]*(\b[\d.,]{3,}\b)/i,
+        interestAndFines: /(?:\(\+\))?\s*(?:Juros|Multa|Outros Acréscimos)[\s\S]*(\b[\d.,]{3,}\b)/i,
+        // FIX: Allow '.' as a date separator and make separators optional.
+        documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}[\/Il.]?\d{2}[\/Il.]?\d{4})/i,
+        dueDate: /(?:Vencimento)[\s:\n]*(\d{2}[\/Il.]?\d{2}[\/Il.]?\d{4})/i,
         recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência)\b)/i,
         drawee: /(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\b(?:Instruções|Descrição do Ato)\b|Autenticação Mecânica)/i,
         guideNumberDoc: /(?:N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?)[\s.:\n]*?(\S+)/i,
