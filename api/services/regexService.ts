@@ -1,10 +1,11 @@
 import { Boleto } from '../../types';
-// FIX: Use `import = require()` for CommonJS modules that use `export =`. The `import...from` syntax may not work correctly without `esModuleInterop` enabled.
-import pdfParse = require('pdf-parse');
+// FIX: Changed import to use standard ES module syntax for `pdf-parse`, as the project targets ES modules.
+import pdf from 'pdf-parse';
 import { Buffer } from 'buffer';
 
 const getPdfTextContent = async (pdfBuffer: Buffer): Promise<string> => {
-    const data = await pdfParse(pdfBuffer);
+    // FIX: Changed to call the default export from `pdf-parse`.
+    const data = await pdf(pdfBuffer);
     return data.text;
 };
 
@@ -81,10 +82,11 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
     const normalizedText = text.replace(/ +/g, ' ').trim();
 
     const patterns = {
-        amountValorDocumento: /(?:\(=\))?\s*Valor do Documento[^\d\r\n]*?([\d.,]{3,})/i,
-        amountValorCobrado: /(?:\(=\))?\s*Valor Cobrado[^\d\r\n]*?([\d.,]{3,})/i,
-        discount: /(?:\(-\))?\s*(?:Desconto|Abatimento)[^\d\r\n]*?([\d.,]{3,})/i,
-        interestAndFines: /(?:\(\+\))?\s*(?:Juros|Multa|Outros Acréscimos)[^\d\r\n]*?([\d.,]{3,})/i,
+        amountValorDocumento: /(?:\(=\))?\s*Valor do Documento[^\d]*?([\d.,]{3,})/i,
+        amountValorCobrado: /(?:\(=\))?\s*Valor Cobrado[^\d]*?([\d.,]{3,})/i,
+        amountValor: /(?<!\w)Valor(?:[^\d\w]|\s)*([\d.,]{3,})/i,
+        discount: /(?:\(-\))?\s*(?:Desconto|Abatimento)[^\d]*?([\d.,]{3,})/i,
+        interestAndFines: /(?:\(\+\))?\s*(?:Juros|Multa|Outros Acréscimos)[^\d]*?([\d.,]{3,})/i,
         documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         dueDate: /(?:Vencimento)[\s:\n]*(\d{2}[\/Il]\d{2}[\/Il]\d{4})/i,
         recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência)\b)/i,
@@ -104,6 +106,12 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
 
     if (amount === null || amount === 0) {
         amount = documentAmount;
+    }
+
+    if (amount === null || amount === 0) {
+        const valorMatch = normalizedText.match(patterns.amountValor);
+        const genericAmount = parseCurrency(valorMatch ? valorMatch[1] : null);
+        amount = genericAmount;
     }
     
     const discountMatch = normalizedText.match(patterns.discount);
