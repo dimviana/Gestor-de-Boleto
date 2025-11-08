@@ -2,6 +2,8 @@
 
 
 
+
+
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { RegisteredUser, Role, User, LogEntry, Company, SslStatus } from '../types';
@@ -22,7 +24,7 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser, getLogs }) => {
     const { t, language } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl'>('settings');
+    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl' | 'pdfdv'>('settings');
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     
@@ -43,7 +45,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         loadLogs();
     }, [activeTab, getLogs]);
     
-    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl', label: string}> = ({ tabId, label}) => (
+    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl' | 'pdfdv', label: string}> = ({ tabId, label}) => (
          <button
             onClick={() => setActiveTab(tabId)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -505,6 +507,17 @@ sudo certbot renew --dry-run</code></pre>
         );
     };
 
+    const PdfdvTab = () => (
+      <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl shadow-md">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">
+          Análise de PDF (PDFDV)
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400">
+          Esta funcionalidade está em desenvolvimento.
+        </p>
+      </div>
+    );
+
     return (
         <>
              {notification && (
@@ -531,6 +544,7 @@ sudo certbot renew --dry-run</code></pre>
                     <TabButton tabId="settings" label={t('adminPanelSettingsTab')} />
                     <TabButton tabId="users_companies" label={t('adminPanelUsersCompaniesTab')} />
                     <TabButton tabId="ssl" label="Certificado SSL" />
+                    <TabButton tabId="pdfdv" label="PDFDV" />
                     <TabButton tabId="logs" label={t('adminPanelLogsTab')} />
                 </nav>
             </div>
@@ -538,6 +552,7 @@ sudo certbot renew --dry-run</code></pre>
             {activeTab === 'settings' && <SettingsTab />}
             {activeTab === 'users_companies' && <UsersAndCompaniesTab />}
             {activeTab === 'ssl' && <SslTab />}
+            {activeTab === 'pdfdv' && <PdfdvTab />}
             {activeTab === 'logs' && <LogsTab />}
             
             <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
