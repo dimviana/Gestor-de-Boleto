@@ -5,7 +5,9 @@ import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
-import { extractBoletoInfo } from '../services/regexService';
+import { extractBoletoInfo as extractWithRegex } from '../services/regexService';
+import { extractBoletoInfoWithPython } from '../services/pythonService';
+import { appConfig } from '../services/configService';
 
 
 // --- Controller Functions ---
@@ -110,7 +112,13 @@ export const extractBoleto = async (req: Request, res: Response) => {
     }
 
     try {
-        const extractedData = await extractBoletoInfo(req.file.buffer, req.file.originalname);
+        let extractedData;
+
+        if (appConfig.processing_method === 'ai') { // 'ai' is now mapped to the Python script
+            extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
+        } else { // Default to regex
+            extractedData = await extractWithRegex(req.file.buffer, req.file.originalname);
+        }
         
         if (extractedData.amount === null || extractedData.amount === undefined) {
             return res.status(400).json({ message: 'amountNotFoundErrorText' });
@@ -127,7 +135,7 @@ export const extractBoleto = async (req: Request, res: Response) => {
         res.status(200).json({ ...extractedData, fileData: req.file.buffer.toString('base64') });
 
     } catch (error: any) {
-        console.error("Error extracting boleto data with regexService:", error);
+        console.error("Error extracting boleto data:", error);
         return res.status(500).json({ message: 'pdfProcessingError', details: error.message || 'Failed to parse PDF content.' });
     }
 };

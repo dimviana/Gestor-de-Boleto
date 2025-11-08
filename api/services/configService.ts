@@ -4,6 +4,7 @@ import { RowDataPacket } from 'mysql2';
 interface AppConfig {
     JWT_SECRET: string;
     API_KEY: string;
+    processing_method: 'regex' | 'ai';
     [key: string]: any; 
 }
 
@@ -11,12 +12,13 @@ interface AppConfig {
 export const appConfig: AppConfig = {
     JWT_SECRET: process.env.JWT_SECRET || 'default_jwt_secret_please_change',
     API_KEY: process.env.API_KEY || '',
+    processing_method: (process.env.PROCESSING_METHOD as 'regex' | 'ai') || 'regex',
 };
 
 export const loadConfigFromDB = async (): Promise<void> => {
     console.log('Loading configuration from database...');
     try {
-        const [settings] = await pool.query<RowDataPacket[]>("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('API_KEY', 'JWT_SECRET')");
+        const [settings] = await pool.query<RowDataPacket[]>("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('API_KEY', 'JWT_SECRET', 'processing_method')");
         
         settings.forEach(setting => {
             if (setting.setting_value) { // Only override if DB value is not empty
@@ -31,7 +33,7 @@ export const loadConfigFromDB = async (): Promise<void> => {
             console.warn('WARNING: API_KEY is not set in the database or .env file. AI functionality will be disabled.');
         }
 
-        console.log('Configuration loaded successfully.');
+        console.log(`Configuration loaded successfully. Processing method: ${appConfig.processing_method}`);
     } catch (error) {
         console.error('Failed to load configuration from database. Falling back to environment variables.', error);
     }

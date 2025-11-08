@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { RegisteredUser, Role, User, LogEntry, Company, SslStatus } from '../types';
@@ -70,6 +71,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         const [currentLogoUrl, setCurrentLogoUrl] = useState(logoUrl);
         const [apiKey, setApiKey] = useState('');
         const [jwtSecret, setJwtSecret] = useState('');
+        const [currentProcessingMethod, setCurrentProcessingMethod] = useState<'regex' | 'ai'>('ai');
         const [isLoading, setIsLoading] = useState(true);
 
         useEffect(() => {
@@ -81,6 +83,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                     setCurrentLogoUrl(settings.whitelabel_logoUrl || logoUrl);
                     setApiKey(settings.API_KEY || '');
                     setJwtSecret(settings.JWT_SECRET || '');
+                    setCurrentProcessingMethod(settings.processing_method || 'ai');
                 } catch (error) {
                     console.error("Failed to load settings", error);
                     showNotification(t('settingsLoadError' as TranslationKey), 'error');
@@ -103,7 +106,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 whitelabel_appName: currentAppName,
                 whitelabel_logoUrl: currentLogoUrl,
                 API_KEY: apiKey,
-                JWT_SECRET: jwtSecret
+                JWT_SECRET: jwtSecret,
+                processing_method: currentProcessingMethod
             };
 
             try {
@@ -135,6 +139,32 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                          <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Logotipo (Opcional)</label>
                             <input type="text" value={currentLogoUrl} onChange={(e) => setCurrentLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
+                    </div>
+                </div>
+
+                <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
+
+                <div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('extractionMethodTitle')}</h3>
+                     <div className="mt-4 space-y-4">
+                        <div>
+                            <label className="flex items-center p-3 rounded-lg border dark:border-gray-700 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/50 has-[:checked]:border-blue-400 cursor-pointer">
+                                <input type="radio" name="extractionMethod" value="ai" checked={currentProcessingMethod === 'ai'} onChange={(e) => setCurrentProcessingMethod(e.target.value as 'ai' | 'regex')} className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"/>
+                                <div className="ml-3 text-sm">
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">{t('extractionMethodAI')}</span>
+                                    <p className="text-gray-500 dark:text-gray-400">{t('extractionMethodAIDescription')}</p>
+                                </div>
+                            </label>
+                        </div>
+                         <div>
+                            <label className="flex items-center p-3 rounded-lg border dark:border-gray-700 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/50 has-[:checked]:border-blue-400 cursor-pointer">
+                                <input type="radio" name="extractionMethod" value="regex" checked={currentProcessingMethod === 'regex'} onChange={(e) => setCurrentProcessingMethod(e.target.value as 'ai' | 'regex')} className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"/>
+                                 <div className="ml-3 text-sm">
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">{t('extractionMethodRegex')}</span>
+                                    <p className="text-gray-500 dark:text-gray-400">{t('extractionMethodRegexDescription')}</p>
+                                </div>
+                            </label>
                         </div>
                     </div>
                 </div>
