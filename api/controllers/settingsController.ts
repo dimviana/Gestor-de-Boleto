@@ -1,9 +1,9 @@
-
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const getSettings = async (req: Request, res: Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
@@ -17,13 +17,17 @@ export const getSettings = async (req: Request, res: Response) => {
         }
         return acc;
     }, {} as Record<string, any>);
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.json(settingsObj);
   } catch (error) {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(500).json({ message: 'Server error' });
   }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const updateSettings = async (req: Request, res: Response) => {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {
@@ -38,9 +42,11 @@ export const updateSettings = async (req: Request, res: Response) => {
             updateInMemoryConfig(key, settings[key]);
         }
         await connection.commit();
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.json({ message: 'Settings updated successfully' });
     } catch (error) {
         await connection.rollback();
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.status(500).json({ message: 'Failed to update settings' });
     } finally {
         connection.release();

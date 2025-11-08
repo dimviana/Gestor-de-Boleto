@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -6,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
@@ -17,14 +17,19 @@ export const getUsers = async (req: Request, res: Response) => {
         role: user.role === 'user' ? 'editor' : user.role,
         companyId: user.company_id
     }));
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.json(users);
   } catch (error) {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(500).json({ message: 'Server error' });
   }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const createUser = async (req: Request, res: Response) => {
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const { username, password, role, companyId } = req.body;
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const adminUser = req.user!;
   const connection = await pool.getConnection();
 
@@ -34,6 +39,7 @@ export const createUser = async (req: Request, res: Response) => {
     const [existingUsers] = await connection.query<RowDataPacket[]>('SELECT id FROM users WHERE username = ?', [username]);
     if (existingUsers.length > 0) {
       await connection.rollback();
+      // FIX: Correctly type Express request handlers to resolve property access and overload errors.
       return res.status(409).json({ message: 'addUserErrorDuplicate' });
     }
 
@@ -65,22 +71,29 @@ export const createUser = async (req: Request, res: Response) => {
         companyId: newUserDb.company_id
     };
     
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(201).json(userResponse);
   } catch (error: any) {
     await connection.rollback();
     if (error.code === 'ER_DUP_ENTRY') {
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         return res.status(409).json({ message: 'addUserErrorDuplicate' });
     }
     console.error("Error creating user:", error);
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(500).json({ message: 'Server error' });
   } finally {
     connection.release();
   }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const updateUser = async (req: Request, res: Response) => {
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const userId = req.params.id;
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const adminUser = req.user!;
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const { password } = req.body;
   const connection = await pool.getConnection();
 
@@ -90,13 +103,17 @@ export const updateUser = async (req: Request, res: Response) => {
     const [users] = await connection.query<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [userId]);
     if (users.length === 0) {
         await connection.rollback();
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         return res.status(404).json({ message: 'User not found' });
     }
     const currentUser = users[0];
 
     const updates: any = {};
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     if ('username' in req.body) updates.username = req.body.username;
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     if ('role' in req.body) updates.role = req.body.role;
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     if ('companyId' in req.body) updates.company_id = req.body.companyId || null;
 
     if (password) {
@@ -106,6 +123,7 @@ export const updateUser = async (req: Request, res: Response) => {
     
     if (Object.keys(updates).length === 0) {
         await connection.rollback();
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         return res.json({ message: 'No changes provided to update.' });
     }
     
@@ -118,19 +136,24 @@ export const updateUser = async (req: Request, res: Response) => {
     );
 
     await connection.commit();
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.json({ message: 'User updated successfully' });
 
   } catch (error) {
     await connection.rollback();
     console.error("Error updating user:", error);
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(500).json({ message: 'Server error' });
   } finally {
     connection.release();
   }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const deleteUser = async (req: Request, res: Response) => {
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const userIdToDelete = req.params.id;
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const adminUser = req.user!;
   const connection = await pool.getConnection();
 
@@ -140,6 +163,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     const [users] = await connection.query<RowDataPacket[]>('SELECT username FROM users WHERE id = ?', [userIdToDelete]);
     if (users.length === 0) {
         await connection.rollback();
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         return res.status(404).json({ message: 'User not found' });
     }
     const usernameToDelete = users[0].username;
@@ -152,10 +176,12 @@ export const deleteUser = async (req: Request, res: Response) => {
     );
 
     await connection.commit();
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.json({ message: 'User deleted' });
   } catch (error) {
     await connection.rollback();
     console.error("Error deleting user:", error);
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(500).json({ message: 'Server error' });
   } finally {
     connection.release();

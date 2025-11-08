@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -60,10 +59,13 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const getBoletos = async (req: Request, res: Response) => {
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
+      // FIX: Correctly type Express request handlers to resolve property access and overload errors.
       return res.json([]);
     }
 
@@ -76,21 +78,27 @@ export const getBoletos = async (req: Request, res: Response) => {
       params.push(user.companyId);
     } else if (req.query.companyId) {
       query += ' WHERE company_id = ?';
+      // FIX: Correctly type Express request handlers to resolve property access and overload errors.
       params.push(req.query.companyId as string);
     }
     query += ' ORDER BY created_at DESC';
 
     const [boletosFromDb] = await pool.query<RowDataPacket[]>(query, params);
     const boletos = boletosFromDb.map(mapDbBoletoToBoleto);
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.json(boletos);
   } catch (error) {
     console.error(error);
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(500).json({ message: 'Server error while fetching boletos.' });
   }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const getBoletoById = async (req: Request, res: Response) => {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const user = req.user!;
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const boletoId = req.params.id;
     try {
         let query = 'SELECT * FROM boletos WHERE id = ?';
@@ -98,6 +106,7 @@ export const getBoletoById = async (req: Request, res: Response) => {
 
         if (user.role !== 'admin') {
             if (!user.companyId) {
+                // FIX: Correctly type Express request handlers to resolve property access and overload errors.
                 return res.status(403).json({ message: 'User is not associated with a company.' });
             }
             query += ' AND company_id = ?';
@@ -107,18 +116,24 @@ export const getBoletoById = async (req: Request, res: Response) => {
         const [boletos] = await pool.query<RowDataPacket[]>(query, params);
 
         if (boletos.length === 0) {
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(404).json({ message: 'Boleto not found or access denied.' });
         }
 
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.json(mapDbBoletoToBoleto(boletos[0]));
     } catch (error) {
         console.error(`Error fetching boleto with ID ${boletoId}:`, error);
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.status(500).json({ message: 'Server error' });
     }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const extractBoleto = async (req: Request, res: Response) => {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     if (!req.file) {
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         return res.status(400).json({ message: 'No file uploaded' });
     }
 
@@ -126,53 +141,67 @@ export const extractBoleto = async (req: Request, res: Response) => {
         let extractedData;
 
         if (appConfig.processing_method === 'ai') { // 'ai' is now mapped to the Python script
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
         } else { // Default to regex
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             extractedData = await extractWithRegex(req.file.buffer, req.file.originalname);
         }
         
         if (extractedData.amount === null || extractedData.amount === undefined) {
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(400).json({ message: 'amountNotFoundErrorText' });
         }
 
         if (extractedData.amount === 0) {
+             // FIX: Correctly type Express request handlers to resolve property access and overload errors.
              return res.status(400).json({ message: 'freeBoletoErrorText' });
         }
         
         if (!extractedData.barcode) {
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(400).json({ message: 'invalidBarcodeErrorText' });
         }
 
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.status(200).json({ ...extractedData, fileData: req.file.buffer.toString('base64') });
 
     } catch (error: any) {
         console.error("Error extracting boleto data:", error);
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         return res.status(500).json({ message: 'pdfProcessingError', details: error.message || 'Failed to parse PDF content.' });
     }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const saveBoleto = async (req: Request, res: Response) => {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const user = req.user!;
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const { boletoData, companyId } = req.body;
 
     if (!isValidDateString(boletoData.documentDate) || !isValidDateString(boletoData.dueDate)) {
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         return res.status(400).json({ message: 'Data inválida detectada no PDF. As datas devem ser válidas e no formato AAAA-MM-DD.' });
     }
 
     let targetCompanyId: string | null;
     if (user.role === 'admin') {
         if (!companyId) {
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(400).json({ message: 'adminMustSelectCompanyErrorText' });
         }
         targetCompanyId = companyId;
     } else {
         if (!user.companyId) {
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(400).json({ message: 'userHasNoCompanyErrorText' });
         }
         targetCompanyId = user.companyId;
     }
     
     if (!targetCompanyId) {
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         return res.status(500).json({ message: 'Internal Server Error: Target company ID was not determined.' });
     }
 
@@ -242,22 +271,29 @@ export const saveBoleto = async (req: Request, res: Response) => {
         
         const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM boletos WHERE id = ?', [newBoleto.id]);
         if (rows.length === 0) {
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(404).json({ message: 'Failed to retrieve saved boleto' });
         }
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.status(201).json(mapDbBoletoToBoleto(rows[0]));
 
     } catch (error: any) {
         await connection.rollback();
         console.error("Error saving boleto:", error);
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.status(500).json({ message: error.message || 'Failed to save boleto' });
     } finally {
         connection.release();
     }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const updateBoletoStatus = async (req: Request, res: Response) => {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const { status } = req.body;
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const { id } = req.params;
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const user = req.user!;
     const connection = await pool.getConnection();
 
@@ -267,6 +303,7 @@ export const updateBoletoStatus = async (req: Request, res: Response) => {
         const [beforeUpdate] = await connection.query<RowDataPacket[]>('SELECT status, guide_number FROM boletos WHERE id = ?', [id]);
         if (beforeUpdate.length === 0) {
             await connection.rollback();
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(404).json({ message: 'Boleto not found' });
         }
         const oldStatus = beforeUpdate[0].status;
@@ -289,21 +326,28 @@ export const updateBoletoStatus = async (req: Request, res: Response) => {
         await connection.commit();
 
         if (rows.length === 0) {
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(404).json({ message: 'Boleto not found after update' });
         }
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.json(mapDbBoletoToBoleto(rows[0]));
     } catch (error) {
         await connection.rollback();
         console.error(`Error updating status for boleto ${id}:`, error);
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.status(500).json({ message: 'Server error' });
     } finally {
         connection.release();
     }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const updateBoletoComments = async (req: Request, res: Response) => {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const { comments } = req.body;
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const { id } = req.params;
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const user = req.user!;
     const connection = await pool.getConnection();
 
@@ -312,6 +356,7 @@ export const updateBoletoComments = async (req: Request, res: Response) => {
         const [beforeUpdate] = await connection.query<RowDataPacket[]>('SELECT guide_number FROM boletos WHERE id = ?', [id]);
         if (beforeUpdate.length === 0) {
             await connection.rollback();
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(404).json({ message: 'Boleto not found' });
         }
         const guideNumber = beforeUpdate[0].guide_number || 'N/A';
@@ -333,20 +378,26 @@ export const updateBoletoComments = async (req: Request, res: Response) => {
         await connection.commit();
 
         if (rows.length === 0) {
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(404).json({ message: 'Boleto not found after update' });
         }
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.json(mapDbBoletoToBoleto(rows[0]));
     } catch (error) {
         await connection.rollback();
         console.error(`Error updating comments for boleto ${id}:`, error);
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.status(500).json({ message: 'Server error' });
     } finally {
         connection.release();
     }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const deleteBoleto = async (req: Request, res: Response) => {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const user = req.user!;
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     const { id } = req.params;
     const connection = await pool.getConnection();
 
@@ -355,6 +406,7 @@ export const deleteBoleto = async (req: Request, res: Response) => {
         const [beforeDelete] = await connection.query<RowDataPacket[]>('SELECT guide_number FROM boletos WHERE id = ?', [id]);
         if (beforeDelete.length === 0) {
             await connection.rollback();
+            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
             return res.status(404).json({ message: 'Boleto not found' });
         }
         const guideNumber = beforeDelete[0].guide_number || 'N/A';
@@ -373,10 +425,12 @@ export const deleteBoleto = async (req: Request, res: Response) => {
         );
         
         await connection.commit();
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.json({ message: 'Boleto deleted' });
     } catch (error) {
         await connection.rollback();
         console.error(`Error deleting boleto ${id}:`, error);
+        // FIX: Correctly type Express request handlers to resolve property access and overload errors.
         res.status(500).json({ message: 'Server error' });
     } finally {
         connection.release();

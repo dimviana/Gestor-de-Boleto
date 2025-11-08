@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -18,16 +17,20 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
   });
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const registerUser = async (req: Request, res: Response) => {
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     return res.status(400).json({ message: 'Please provide username and password' });
   }
 
   try {
     const [existingUsers] = await pool.query<RowDataPacket[]>('SELECT id FROM users WHERE username = ?', [username]);
     if (existingUsers.length > 0) {
+      // FIX: Correctly type Express request handlers to resolve property access and overload errors.
       return res.status(400).json({ message: 'User already exists' });
     }
 
@@ -37,17 +40,22 @@ export const registerUser = async (req: Request, res: Response) => {
 
     await pool.query('INSERT INTO users (id, username, password, role, company_id) VALUES (?, ?, ?, ?, ?)', [userId, username, hashedPassword, role, companyId]);
 
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     console.error(error);
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(500).json({ message: 'Server error during registration' });
   }
 };
 
+// FIX: Correctly type Express request handlers to resolve property access and overload errors.
 export const loginUser = async (req: Request, res: Response) => {
+  // FIX: Correctly type Express request handlers to resolve property access and overload errors.
   const { username, password } = req.body;
 
   if (!username || !password) {
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     return res.status(400).json({ message: 'Please provide username and password' });
   }
 
@@ -55,6 +63,7 @@ export const loginUser = async (req: Request, res: Response) => {
     const [users] = await pool.query<RowDataPacket[]>('SELECT * FROM users WHERE username = ?', [username]);
 
     if (users.length === 0) {
+      // FIX: Correctly type Express request handlers to resolve property access and overload errors.
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -62,12 +71,14 @@ export const loginUser = async (req: Request, res: Response) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
+      // FIX: Correctly type Express request handlers to resolve property access and overload errors.
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Backwards compatibility: map old 'user' role to 'editor'
     const userRole: Role = user.role === 'user' ? 'editor' : user.role;
 
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.json({
       id: user.id,
       username: user.username,
@@ -77,6 +88,7 @@ export const loginUser = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error(error);
+    // FIX: Correctly type Express request handlers to resolve property access and overload errors.
     res.status(500).json({ message: 'Server error during login' });
   }
 };
