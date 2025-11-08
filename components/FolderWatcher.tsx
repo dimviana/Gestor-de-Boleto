@@ -2,27 +2,22 @@
 
 
 
+
+
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { FolderOpenIcon } from './icons/Icons';
 import { TranslationKey } from '../translations';
 
 // This is an experimental browser feature.
-// Add type definitions for the File System Access API to avoid TypeScript errors.
+// Types are now defined globally by hooks/useFolderWatcher.ts to avoid conflicts.
 interface FileSystemDirectoryHandle extends FileSystemHandle {
     kind: 'directory';
-    values: () => AsyncIterableIterator<FileSystemHandle>;
 }
 
 interface FileSystemFileHandle extends FileSystemHandle {
     kind: 'file';
     getFile: () => Promise<File>;
-}
-
-declare global {
-    interface Window {
-        showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>;
-    }
 }
 
 const isApiSupported = 'showDirectoryPicker' in window;
