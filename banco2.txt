@@ -1,10 +1,9 @@
 -- Database: boleto_manager_ai
 -- This schema defines the structure for the Boleto Manager AI application,
--- including multi-company support.
+-- including multi-company support and remote update features.
 
 --
 -- Table structure for table `companies`
--- Stores company information for multi-tenancy.
 --
 CREATE TABLE IF NOT EXISTS `companies` (
   `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the company',
@@ -17,10 +16,8 @@ CREATE TABLE IF NOT EXISTS `companies` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 --
 -- Table structure for table `users`
--- Stores user account information, including credentials, roles, and company association.
 --
 CREATE TABLE IF NOT EXISTS `users` (
   `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the user',
@@ -38,26 +35,25 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 --
 -- Table structure for table `boletos`
--- Stores all information related to the uploaded boleto payment slips, segregated by company.
 --
 CREATE TABLE IF NOT EXISTS `boletos` (
   `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the boleto',
   `user_id` VARCHAR(36) NOT NULL COMMENT 'Foreign key linking to the user who uploaded it',
   `company_id` VARCHAR(36) NOT NULL COMMENT 'Foreign key linking to the company',
-  `recipient` VARCHAR(255) DEFAULT NULL COMMENT 'Beneficiário',
-  `drawee` VARCHAR(255) DEFAULT NULL COMMENT 'Sacado',
+  `recipient` VARCHAR(255) DEFAULT NULL,
+  `drawee` VARCHAR(255) DEFAULT NULL,
   `document_date` DATE DEFAULT NULL,
   `due_date` DATE DEFAULT NULL,
   `document_amount` DECIMAL(10,2) DEFAULT NULL,
   `amount` DECIMAL(10,2) DEFAULT NULL,
   `discount` DECIMAL(10,2) DEFAULT NULL,
   `interest_and_fines` DECIMAL(10,2) DEFAULT NULL,
-  `barcode` VARCHAR(255) DEFAULT NULL COMMENT 'Linha digitável',
-  `guide_number` VARCHAR(255) DEFAULT NULL COMMENT 'Número do documento',
+  `barcode` VARCHAR(255) DEFAULT NULL,
+  `guide_number` VARCHAR(255) DEFAULT NULL,
   `pix_qr_code_text` TEXT DEFAULT NULL,
   `status` ENUM('PAGAR', 'VERIFICAR', 'PAGO') NOT NULL DEFAULT 'PAGAR',
   `file_name` VARCHAR(255) NOT NULL,
-  `file_data` MEDIUMTEXT NOT NULL COMMENT 'Base64 encoded PDF data for viewing/downloading',
+  `file_data` MEDIUMTEXT NOT NULL COMMENT 'Base64 encoded PDF data',
   `comments` TEXT DEFAULT NULL,
   `extracted_data` JSON DEFAULT NULL COMMENT 'JSON object with all raw extracted data',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -72,14 +68,13 @@ CREATE TABLE IF NOT EXISTS `boletos` (
 
 --
 -- Table structure for table `activity_logs`
--- Records significant actions performed by users for auditing and tracking.
 --
 CREATE TABLE IF NOT EXISTS `activity_logs` (
   `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the log entry',
   `user_id` VARCHAR(36) NOT NULL,
   `username` VARCHAR(255) NOT NULL,
-  `action` VARCHAR(50) NOT NULL COMMENT 'The type of action performed (e.g., LOGIN, CREATE_BOLETO)',
-  `details` TEXT COMMENT 'A description of the action',
+  `action` VARCHAR(50) NOT NULL,
+  `details` TEXT,
   `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `user_id_idx` (`user_id`),
@@ -89,7 +84,6 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
 
 --
 -- Table structure for table `settings`
--- Stores global application settings using a flexible key-value pair system.
 --
 CREATE TABLE IF NOT EXISTS `settings` (
   `id` INT AUTO_INCREMENT,
@@ -101,8 +95,21 @@ CREATE TABLE IF NOT EXISTS `settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
+-- Table structure for table `deployments`
+--
+CREATE TABLE IF NOT EXISTS `deployments` (
+  `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the deployment record',
+  `commit_sha` VARCHAR(40) NOT NULL COMMENT 'Git commit SHA of the deployed version',
+  `commit_message` TEXT,
+  `db_backup_filename` VARCHAR(255) NOT NULL COMMENT 'Filename of the database backup taken before this deployment',
+  `deployed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `commit_sha_idx` (`commit_sha`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+--
 -- Initial data for `settings` table
--- Pre-populates the settings with default values on the first run.
 --
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 ('whitelabel_appName', 'Boleto Manager AI'),

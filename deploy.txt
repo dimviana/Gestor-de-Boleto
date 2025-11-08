@@ -198,6 +198,9 @@ update_system() {
     echo -e "${YELLOW}Pulling latest changes from Git...${NC}"
     git pull
     
+    echo -e "${YELLOW}Ensuring database schema is up-to-date...${NC}"
+    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" < database/schema.txt
+
     echo -e "${YELLOW}Applying database migrations (adding document_amount column)...${NC}"
     # This command adds the 'document_amount' column if it doesn't exist.
     mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "${DB_DATABASE}" -e "ALTER TABLE boletos ADD COLUMN document_amount DECIMAL(10,2) DEFAULT NULL AFTER due_date;" || true
