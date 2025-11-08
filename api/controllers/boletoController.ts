@@ -4,9 +4,7 @@ import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
-import { extractBoletoInfo as extractWithRegex } from '../services/regexService';
 import { extractBoletoInfoWithPython } from '../services/pythonService';
-import { appConfig } from '../services/configService';
 
 
 // --- Controller Functions ---
@@ -138,15 +136,9 @@ export const extractBoleto = async (req: Request, res: Response) => {
     }
 
     try {
-        let extractedData;
-
-        if (appConfig.processing_method === 'ai') { // 'ai' is now mapped to the Python script
-            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
-            extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
-        } else { // Default to regex
-            // FIX: Correctly type Express request handlers to resolve property access and overload errors.
-            extractedData = await extractWithRegex(req.file.buffer, req.file.originalname);
-        }
+        // The system now exclusively uses the more reliable Python-based parser.
+        // The choice between 'ai' and 'regex' has been removed to simplify and improve accuracy.
+        const extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
         
         if (extractedData.amount === null || extractedData.amount === undefined) {
             // FIX: Correctly type Express request handlers to resolve property access and overload errors.

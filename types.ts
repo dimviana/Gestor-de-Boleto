@@ -50,9 +50,10 @@ export interface RegisteredUser extends Omit<User, 'token'>{
 
 export type Theme = 'light' | 'dark' | 'system';
 
-// FIX: Add missing types that were causing import errors.
+// FIX: Add missing ProcessingMethod type.
 export type ProcessingMethod = 'ai' | 'regex';
 
+// FIX: Add missing types that were causing import errors.
 export interface AiSettings {
   model: string;
   temperature: number;

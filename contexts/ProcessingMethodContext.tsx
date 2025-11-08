@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { ProcessingMethod, User } from '../types';
+import { User, ProcessingMethod } from '../types';
 import { addLogEntry } from '../services/logService';
 
 const PROCESSING_METHOD_KEY = 'processing_method';

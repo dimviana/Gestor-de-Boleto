@@ -18,7 +18,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, onClick, disabled
       setIsDragging(false);
       if (disabled) return;
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          const pdfFiles = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+          // FIX: Explicitly type `f` as `File` to resolve the "type does not exist on unknown" error.
+          const pdfFiles = Array.from(e.dataTransfer.files).filter((f: File) => f.type === 'application/pdf');
           if (pdfFiles.length > 0) {
               onFileUpload(pdfFiles);
           }
