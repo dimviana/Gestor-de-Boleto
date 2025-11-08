@@ -1,4 +1,4 @@
-// Fix: Import express type to use fully qualified types and avoid conflicts.
+
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -18,7 +18,6 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
   });
 };
 
-// Fix: Use express.Request and express.Response
 export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
@@ -45,7 +44,6 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-// Fix: Use express.Request and express.Response
 export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 

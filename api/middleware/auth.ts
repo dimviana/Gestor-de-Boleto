@@ -1,4 +1,4 @@
-// Fix: Import express type to use fully qualified types and avoid conflicts.
+
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
@@ -17,7 +17,6 @@ declare global {
     }
 }
 
-// Fix: Use express.Request, express.Response, and express.NextFunction
 export const protect = (req: Request, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -42,7 +41,6 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// Fix: Use express.Request, express.Response, and express.NextFunction
 export const admin = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -51,7 +49,6 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
-// Fix: Use express.Request, express.Response, and express.NextFunction
 export const editor = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();

@@ -1,4 +1,4 @@
-// Fix: Import express type to use fully qualified types and avoid conflicts.
+
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -7,7 +7,6 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-// Fix: Use express.Request and express.Response
 export const getSslSettings = async (req: Request, res: Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
@@ -22,7 +21,6 @@ export const getSslSettings = async (req: Request, res: Response) => {
     }
 };
 
-// Fix: Use express.Request and express.Response
 export const saveSslSettings = async (req: Request, res: Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
@@ -42,7 +40,6 @@ export const saveSslSettings = async (req: Request, res: Response) => {
     }
 };
 
-// Fix: Use express.Request and express.Response
 export const checkSslStatus = (req: Request, res: Response) => {
     const { domain } = req.body;
     if (!domain) {

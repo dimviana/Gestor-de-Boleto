@@ -1,4 +1,4 @@
-// Fix: Import express type to use fully qualified types and avoid conflicts.
+
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -6,7 +6,6 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-// Fix: Use express.Request and express.Response
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
@@ -24,7 +23,6 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-// Fix: Use express.Request and express.Response
 export const createUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
@@ -80,7 +78,6 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-// Fix: Use express.Request and express.Response
 export const updateUser = async (req: Request, res: Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
@@ -132,7 +129,6 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-// Fix: Use express.Request and express.Response
 export const deleteUser = async (req: Request, res: Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
