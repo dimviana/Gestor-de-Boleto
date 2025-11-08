@@ -99,8 +99,8 @@ def extract_boleto_info(pdf_path):
         sys.exit(1)
 
     # Prioritize 'Valor Cobrado', fall back to 'Valor do Documento'
-    amount_str = find_match(text_content, r'Valor Cobrado[^\d\n,]*((?:R\$\s*)?[\d.,]+)', find_last=True)
-    doc_amount_str = find_match(text_content, r'Valor (?:do )?Documento[^\d\n,]*((?:R\$\s*)?[\d.,]+)', find_last=True)
+    amount_str = find_match(text_content, r'(?:\(=\))?\s*Valor Cobrado[^\d,]*?((?:R\$\s*)?[\d.,]+)', find_last=True)
+    doc_amount_str = find_match(text_content, r'(?:\(=\))?\s*Valor (?:do )?Documento[^\d,]*?((?:R\$\s*)?[\d.,]+)', find_last=True)
     
     amount = parse_currency(amount_str)
     doc_amount = parse_currency(doc_amount_str)
@@ -116,12 +116,12 @@ def extract_boleto_info(pdf_path):
     result = {
         "recipient": find_match(text_content, r'(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência|CNPJ)\b)'),
         "drawee": find_match(text_content, r'(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\b(?:Instruções|Descrição do Ato|Autenticação Mecânica|FICHA DE COMPENSAÇÃO)\b)'),
-        "documentDate": parse_date(find_match(text_content, r'Data (?:do )?Documento[^\d\n]*(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})', find_last=True)),
-        "dueDate": parse_date(find_match(text_content, r'Vencimento[^\d\n]*(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})', find_last=True)),
+        "documentDate": parse_date(find_match(text_content, r'Data (?:do )?Documento[^\d]*?(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})', find_last=True)),
+        "dueDate": parse_date(find_match(text_content, r'Vencimento[^\d]*?(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})', find_last=True)),
         "documentAmount": doc_amount,
         "amount": amount,
-        "discount": parse_currency(find_match(text_content, r'(?:Desconto\s*/\s*Abatimento)[^\d\n,]*((?:R\$\s*)?[\d.,]+)', find_last=True)),
-        "interestAndFines": parse_currency(find_match(text_content, r'(?:Juros\s*/\s*Multa|Outros Acréscimos)[^\d\n,]*((?:R\$\s*)?[\d.,]+)', find_last=True)),
+        "discount": parse_currency(find_match(text_content, r'(?:\(-\))?\s*(?:Desconto\s*/\s*Abatimento)[^\d,]*?((?:R\$\s*)?[\d.,]+)', find_last=True)),
+        "interestAndFines": parse_currency(find_match(text_content, r'(?:\(\+\))?\s*(?:Juros\s*/\s*Multa|Outros Acréscimos)[^\d,]*?((?:R\$\s*)?[\d.,]+)', find_last=True)),
         "barcode": extract_barcode(text_content),
         "guideNumber": guide_number,
         "pixQrCodeText": find_match(text_content, r'(000201\S{100,})'),
