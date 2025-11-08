@@ -16,28 +16,34 @@ def parse_currency(value_str):
     if not value_str: return None
     try:
         value_str = clean_ocr_mistakes(value_str.strip())
-        value_str = re.sub(r'R\$\s*|RS\s*|valor\s*', '', value_str, flags=re.IGNORECASE).strip()
+        # Remove currency symbols and surrounding whitespace
+        value_str = re.sub(r'R\$\s*', '', value_str, flags=re.IGNORECASE).strip()
 
-        if not re.search(r'\d', value_str): return None
+        if not re.search(r'\d', value_str):
+            return None
 
-        has_comma = ',' in value_str
-        has_dot = '.' in value_str
-
-        if has_comma and has_dot:
-            value_str = value_str.replace(".", "").replace(",", ".")
-        elif has_comma and not has_dot:
-            parts = value_str.split(',')
-            if len(parts) == 2 and len(parts[1]) == 2:
-                value_str = parts[0].replace(".", "") + '.' + parts[1]
-            else:
-                value_str = value_str.replace(",", ".")
-        elif not has_comma and has_dot:
-            last_dot_index = value_str.rfind('.')
-            if len(value_str) - last_dot_index - 1 != 2:
-                value_str = value_str.replace(".", "")
-
+        # Check for Brazilian format (contains a comma)
+        if ',' in value_str:
+            # Remove thousand separators (dots), then replace comma with dot for float conversion
+            # e.g., "1.234,56" -> "1234.56"
+            value_str = value_str.replace('.', '').replace(',', '.')
+        else:
+            # No comma, could be "1234.56" or "1234".
+            # If a dot exists, assume it's a decimal separator ONLY if there are two digits after the last one.
+            # Otherwise, it's likely a thousands separator, so remove all dots.
+            if '.' in value_str:
+                last_dot_index = value_str.rfind('.')
+                if len(value_str) - last_dot_index - 1 != 2:
+                    value_str = value_str.replace('.', '')
+        
+        # At this point, the string should be in a format like "1234.56" or "1234"
         num_str = re.sub(r'[^\d.]', '', value_str)
         num = float(num_str)
+        
+        # Final sanity check, values are unlikely to be this high. Catches OCR errors like long numbers.
+        if num > 99999999.0:
+            return None
+            
         return round(num, 2)
     except (ValueError, TypeError):
         return None
@@ -99,7 +105,7 @@ def extract_boleto_info(pdf_path):
         'recipient': r'(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência|CNPJ)\b)',
         'drawee': r'(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\b(?:Instruções|Descrição do Ato|Autenticação Mecânica|FICHA DE COMPENSAÇÃO)\b)',
         'date': r'(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})',
-        'currency': r'(\b[\d,.]+\b)',
+        'currency': r'((?:R\$\s*)?[\d.,]+)',
         'guideNumberDoc': r'(?:N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?)[\s.:\n]*?(\S+)',
         'guideNumberNosso': r'(?:Nosso\sN[úu]mero)[\s.:\n]*?(\S+)',
         'pixQrCodeText': r'(000201\S{100,})',
@@ -109,13 +115,14 @@ def extract_boleto_info(pdf_path):
     drawee = find_entity(text_content, patterns['drawee'])
     pix_qr_code = find_first_match(text_content, patterns['pixQrCodeText'])
     
-    due_date_str = find_last_match(text_content, fr'Vencimento[\s\S]*{patterns["date"]}')
-    doc_date_str = find_last_match(text_content, fr'Data (?:do )?Documento[\s\S]*{patterns["date"]}')
+    due_date_str = find_last_match(text_content, fr'Vencimento[^\d\n]*{patterns["date"]}')
+    doc_date_str = find_last_match(text_content, fr'Data (?:do )?Documento[^\d\n]*{patterns["date"]}')
     
-    doc_amount_str = find_last_match(text_content, fr'Valor (?:do )?Documento[\s\S]*{patterns["currency"]}')
-    amount_str = find_last_match(text_content, fr'Valor Cobrado[\s\S]*{patterns["currency"]}')
-    discount_str = find_last_match(text_content, fr'(?:Desconto\s*/\s*Abatimento)[\s\S]*{patterns["currency"]}')
-    interest_str = find_last_match(text_content, fr'(?:Juros\s*/\s*Multa|Outros Acréscimos)[\s\S]*{patterns["currency"]}')
+    # Use non-greedy patterns that avoid capturing other numbers between the label and the value.
+    doc_amount_str = find_last_match(text_content, fr'Valor (?:do )?Documento[^\d]*{patterns["currency"]}')
+    amount_str = find_last_match(text_content, fr'Valor Cobrado[^\d]*{patterns["currency"]}')
+    discount_str = find_last_match(text_content, fr'(?:Desconto\s*/\s*Abatimento)[^\d]*{patterns["currency"]}')
+    interest_str = find_last_match(text_content, fr'(?:Juros\s*/\s*Multa|Outros Acréscimos)[^\d]*{patterns["currency"]}')
 
     doc_amount = parse_currency(doc_amount_str)
     amount = parse_currency(amount_str)
