@@ -1,11 +1,14 @@
-import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+
+// Fix: Import express type to use fully qualified types and avoid conflicts.
+import type express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-export const getUsers = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const getUsers = async (req: express.Request, res: express.Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -22,7 +25,8 @@ export const getUsers = async (req: ExpressRequest, res: ExpressResponse) => {
   }
 };
 
-export const createUser = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const createUser = async (req: express.Request, res: express.Response) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -77,7 +81,8 @@ export const createUser = async (req: ExpressRequest, res: ExpressResponse) => {
   }
 };
 
-export const updateUser = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const updateUser = async (req: express.Request, res: express.Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -128,7 +133,8 @@ export const updateUser = async (req: ExpressRequest, res: ExpressResponse) => {
   }
 };
 
-export const deleteUser = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const deleteUser = async (req: express.Request, res: express.Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();

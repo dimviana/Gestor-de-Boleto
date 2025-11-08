@@ -1,5 +1,7 @@
 
 
+
+
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { FolderOpenIcon } from './icons/Icons';
@@ -31,11 +33,12 @@ interface FolderWatcherProps {
   disabled: boolean;
   handleSelectFolder: () => void;
   stopWatching: () => void;
+  monitoredFolderPathFromDB?: string | null;
 }
 
-const FolderWatcher: React.FC<FolderWatcherProps> = ({ directoryHandle, error, disabled, handleSelectFolder, stopWatching }) => {
+const FolderWatcher: React.FC<FolderWatcherProps> = ({ directoryHandle, error, disabled, handleSelectFolder, stopWatching, monitoredFolderPathFromDB }) => {
     const { t } = useLanguage();
-    
+
     if (!isApiSupported) {
         return (
             <div className="text-center p-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 text-sm rounded-lg">
@@ -44,11 +47,13 @@ const FolderWatcher: React.FC<FolderWatcherProps> = ({ directoryHandle, error, d
         );
     }
 
-    if (directoryHandle) {
+    const monitoredFolderName = directoryHandle?.name || monitoredFolderPathFromDB;
+
+    if (monitoredFolderName) {
         return (
             <div className="mt-4 p-4 border-t border-gray-200 dark:border-gray-700 text-center">
                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    {t('monitoringFolderLabel')} <span className="font-bold text-blue-600 dark:text-blue-400">{directoryHandle.name}</span>
+                    {t('monitoringFolderLabel')} <span className="font-bold text-blue-600 dark:text-blue-400">{monitoredFolderName}</span>
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('folderWatcherTabMustBeOpen')}</p>
                 <button 

@@ -51,9 +51,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isUploadDisabled = user.role === 'viewer' || (user.role !== 'admin' && !user.companyId) || (user.role === 'admin' && !selectedCompanyFilter);
-
+  const activeCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
+  const isUploadDisabled = !activeCompanyId;
+  
   const processAndUploadFile = async (file: File) => {
+    if (!activeCompanyId) {
+        const errorKey = user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText';
+        const errorMessage = t(errorKey as TranslationKey);
+        
+        setUploadStatuses(prev => [{ 
+            id: crypto.randomUUID(), 
+            fileName: file.name, 
+            status: 'error', 
+            message: errorMessage, 
+            progress: 0 
+        }, ...prev]);
+        return;
+    }
+
     const uploadId = crypto.randomUUID();
     setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: 'Enviando e extraindo...', progress: 0 }, ...prev]);
 
@@ -66,14 +81,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     };
 
     try {
-      const targetCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
-
-      if (!targetCompanyId) {
-        const errorKey = user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText';
-        throw new Error(errorKey);
-      }
-      
-      const extractedData = await api.extractBoletoData(file, targetCompanyId, onProgress);
+      const extractedData = await api.extractBoletoData(file, activeCompanyId, onProgress);
       
       setUploadStatuses(prev => prev.map(up => 
         up.id === uploadId 
@@ -81,7 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         : up
       ));
 
-      await api.saveBoleto(extractedData, targetCompanyId);
+      await api.saveBoleto(extractedData, activeCompanyId);
 
       setUploadStatuses(prev => prev.map(up => 
         up.id === uploadId 
@@ -126,7 +134,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     }
   };
 
-  const folderWatcher = useFolderWatcher({ onFileUpload: processAndUploadFile, disabled: isUploadDisabled });
+  const folderWatcher = useFolderWatcher({ 
+    onFileUpload: processAndUploadFile, 
+    disabled: isUploadDisabled,
+    companyId: activeCompanyId,
+  });
 
   useEffect(() => {
     if (user.role === 'admin') {
@@ -135,8 +147,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         setCompanies(fetchedCompanies);
       };
       loadCompanies();
+    } else if (user.companyId) {
+      // For non-admins, we still need their company info for folder monitoring
+       const loadCompany = async () => {
+        // This is a placeholder; in a real app you might have a getCompanyById endpoint
+        const allCompanies = await api.fetchCompanies();
+        const userCompany = allCompanies.find(c => c.id === user.companyId);
+        if (userCompany) {
+            setCompanies([userCompany]);
+        }
+       };
+       loadCompany();
     }
-  }, [user.role]);
+  }, [user.role, user.companyId]);
 
   const handleToggleBoletoSelection = useCallback((id: string) => {
     setSelectedBoletoIds(prevSelected =>
@@ -269,6 +292,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     </div>
   );
 
+  const activeCompany = useMemo(() => companies.find(c => c.id === activeCompanyId), [companies, activeCompanyId]);
+  
   return (
     <>
       <Header 
@@ -322,7 +347,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
               </select>
             </div>
           )}
-           <FolderWatcher {...folderWatcher} />
+           <FolderWatcher 
+              {...folderWatcher} 
+              monitoredFolderPathFromDB={activeCompany?.monitoredFolderPath}
+            />
         </div>
         
         <div className="md:hidden mb-4">

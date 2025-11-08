@@ -1,19 +1,33 @@
-import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+
+// Fix: Import express type to use fully qualified types and avoid conflicts.
+import type express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
+import { Company } from '../../types';
 
-export const getCompanies = async (req: ExpressRequest, res: ExpressResponse) => {
+
+const mapDbCompanyToCompany = (dbCompany: any): Company => ({
+    id: dbCompany.id,
+    name: dbCompany.name,
+    cnpj: dbCompany.cnpj,
+    address: dbCompany.address,
+    monitoredFolderPath: dbCompany.monitored_folder_path
+});
+
+// Fix: Use express.Request and express.Response
+export const getCompanies = async (req: express.Request, res: express.Response) => {
   try {
-    const [companies] = await pool.query<RowDataPacket[]>('SELECT * FROM companies ORDER BY name');
-    res.json(companies);
+    const [companies] = await pool.query<RowDataPacket[]>('SELECT id, name, cnpj, address, monitored_folder_path FROM companies ORDER BY name');
+    res.json(companies.map(mapDbCompanyToCompany));
   } catch (error) {
     console.error("Error fetching companies:", error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-export const createCompany = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const createCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -46,7 +60,8 @@ export const createCompany = async (req: ExpressRequest, res: ExpressResponse) =
   }
 };
 
-export const updateCompany = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const updateCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -82,7 +97,8 @@ export const updateCompany = async (req: ExpressRequest, res: ExpressResponse) =
   }
 };
 
-export const deleteCompany = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const deleteCompany = async (req: express.Request, res: express.Response) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();
@@ -119,5 +135,34 @@ export const deleteCompany = async (req: ExpressRequest, res: ExpressResponse) =
     res.status(500).json({ message: 'Server error' });
   } finally {
     connection.release();
+  }
+};
+
+export const setMonitoredFolderPath = async (req: express.Request, res: express.Response) => {
+  const { path } = req.body;
+  const { id } = req.params;
+  
+  if (!path) {
+    return res.status(400).json({ message: "Path is required" });
+  }
+
+  try {
+    await pool.query('UPDATE companies SET monitored_folder_path = ? WHERE id = ?', [path, id]);
+    res.json({ message: 'Monitored folder path updated.' });
+  } catch (error) {
+    console.error("Error setting monitored folder path:", error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const clearMonitoredFolderPath = async (req: express.Request, res: express.Response) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query('UPDATE companies SET monitored_folder_path = NULL WHERE id = ?', [id]);
+    res.json({ message: 'Monitored folder path cleared.' });
+  } catch (error) {
+    console.error("Error clearing monitored folder path:", error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

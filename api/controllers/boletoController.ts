@@ -1,4 +1,6 @@
-import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+
+// Fix: Import express type to use fully qualified types and avoid conflicts.
+import type express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
@@ -59,7 +61,8 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-export const getBoletos = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const getBoletos = async (req: express.Request, res: express.Response) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -88,7 +91,8 @@ export const getBoletos = async (req: ExpressRequest, res: ExpressResponse) => {
   }
 };
 
-export const getBoletoById = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const getBoletoById = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -116,7 +120,8 @@ export const getBoletoById = async (req: ExpressRequest, res: ExpressResponse) =
     }
 };
 
-export const extractBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const extractBoleto = async (req: express.Request, res: express.Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -150,7 +155,8 @@ export const extractBoleto = async (req: ExpressRequest, res: ExpressResponse) =
     }
 };
 
-export const saveBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const saveBoleto = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -254,7 +260,8 @@ export const saveBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
     }
 };
 
-export const updateBoletoStatus = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const updateBoletoStatus = async (req: express.Request, res: express.Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -300,7 +307,8 @@ export const updateBoletoStatus = async (req: ExpressRequest, res: ExpressRespon
     }
 };
 
-export const updateBoletoComments = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const updateBoletoComments = async (req: express.Request, res: express.Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -344,7 +352,8 @@ export const updateBoletoComments = async (req: ExpressRequest, res: ExpressResp
     }
 };
 
-export const deleteBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const deleteBoleto = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();

@@ -191,14 +191,14 @@ export const deleteUser = (id: string): Promise<{ message: string }> => {
 // --- Companies API ---
 export const fetchCompanies = (): Promise<Company[]> => apiFetch('/companies');
 
-export const createCompany = (companyData: Omit<Company, 'id'>): Promise<Company> => {
+export const createCompany = (companyData: Omit<Company, 'id' | 'monitoredFolderPath'>): Promise<Company> => {
     return apiFetch('/companies', {
         method: 'POST',
         body: JSON.stringify(companyData),
     });
 };
 
-export const updateCompany = (id: string, updates: Partial<Omit<Company, 'id'>>): Promise<{ message: string }> => {
+export const updateCompany = (id: string, updates: Partial<Omit<Company, 'id' | 'monitoredFolderPath'>>): Promise<{ message: string }> => {
     return apiFetch(`/companies/${id}`, {
         method: 'PUT',
         body: JSON.stringify(updates),
@@ -208,6 +208,20 @@ export const updateCompany = (id: string, updates: Partial<Omit<Company, 'id'>>)
 export const deleteCompany = (id: string): Promise<{ message: string }> => {
     return apiFetch(`/companies/${id}`, { method: 'DELETE' });
 };
+
+export const setCompanyMonitoredFolder = (companyId: string, path: string): Promise<{ message: string }> => {
+    return apiFetch(`/companies/${companyId}/folder-monitoring`, {
+        method: 'PUT',
+        body: JSON.stringify({ path }),
+    });
+};
+
+export const clearCompanyMonitoredFolder = (companyId: string): Promise<{ message: string }> => {
+    return apiFetch(`/companies/${companyId}/folder-monitoring`, {
+        method: 'DELETE',
+    });
+};
+
 
 // --- Logs API ---
 export const fetchLogs = (): Promise<LogEntry[]> => apiFetch('/logs');

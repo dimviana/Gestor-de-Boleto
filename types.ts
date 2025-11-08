@@ -9,6 +9,7 @@ export interface Company {
   name: string;
   cnpj: string;
   address: string;
+  monitoredFolderPath?: string | null;
 }
 
 export interface Boleto {

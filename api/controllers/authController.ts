@@ -1,4 +1,6 @@
-import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+
+// Fix: Import express type to use fully qualified types and avoid conflicts.
+import type express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -17,7 +19,8 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
   });
 };
 
-export const registerUser = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const registerUser = async (req: express.Request, res: express.Response) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -43,7 +46,8 @@ export const registerUser = async (req: ExpressRequest, res: ExpressResponse) =>
   }
 };
 
-export const loginUser = async (req: ExpressRequest, res: ExpressResponse) => {
+// Fix: Use express.Request and express.Response
+export const loginUser = async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
