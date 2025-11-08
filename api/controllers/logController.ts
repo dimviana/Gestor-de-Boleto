@@ -1,9 +1,8 @@
-// FIX: Use explicit express types to avoid type conflicts with DOM types.
-import type { Request, Response } from 'express';
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-export const getLogs = async (req: Request, res: Response) => {
+export const getLogs = async (req: ExpressRequest, res: ExpressResponse) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');
     res.json(logs);

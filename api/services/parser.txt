@@ -114,8 +114,8 @@ def extract_boleto_info(pdf_path):
         guide_number = find_match(text_content, r'Nosso\sN[úu]mero[\s.:\n]*?(\S+)')
 
     result = {
-        "recipient": find_match(text_content, r'(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência|CNPJ)\b)'),
-        "drawee": find_match(text_content, r'(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\b(?:Instruções|Descrição do Ato|Autenticação Mecânica|FICHA DE COMPENSAÇÃO)\b)'),
+        "recipient": find_match(text_content, r'(?:Beneficiário|Cedente)[\s.:\n]*([\s\S]*?)(?=\n\s*(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência|CNPJ)|AGÊNCIA / CÓDIGO DO BENEFICIÁRIO)'),
+        "drawee": find_match(text_content, r'(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\n\s*\b(?:Instruções|Descrição|Autenticação Mecânica|FICHA DE COMPENSAÇÃO)\b)'),
         "documentDate": parse_date(find_match(text_content, r'Data (?:do )?Documento[^\d]*?(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})', find_last=True)),
         "dueDate": parse_date(find_match(text_content, r'Vencimento[^\d]*?(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})', find_last=True)),
         "documentAmount": doc_amount,

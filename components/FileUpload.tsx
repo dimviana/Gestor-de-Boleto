@@ -3,7 +3,7 @@ import { UploadIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface FileUploadProps {
-  onFileUpload: (file: File) => void;
+  onFileUpload: (files: File[]) => void;
   onClick: () => void;
   disabled: boolean;
 }
@@ -17,9 +17,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, onClick, disabled
       e.stopPropagation();
       setIsDragging(false);
       if (disabled) return;
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-          if(e.dataTransfer.files[0].type === 'application/pdf') {
-              onFileUpload(e.dataTransfer.files[0]);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          const pdfFiles = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+          if (pdfFiles.length > 0) {
+              onFileUpload(pdfFiles);
           }
       }
   }, [onFileUpload, disabled]);

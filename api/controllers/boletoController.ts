@@ -1,5 +1,4 @@
-// FIX: Use explicit express types to avoid type conflicts with DOM types.
-import type { Request, Response } from 'express';
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
@@ -17,6 +16,17 @@ const parseDecimal = (value: string | null): number | null => {
     if (value === null || value === undefined) return null;
     const num = parseFloat(value);
     return isNaN(num) ? null : num;
+};
+
+// Helper to validate date strings before DB insertion
+const isValidDateString = (dateStr: string | null | undefined): boolean => {
+    if (!dateStr || dateStr === 'null') return true; // null is a valid state
+    // Checks for YYYY-MM-DD format and ensures it's a real calendar date.
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateStr.match(regex)) return false;
+    const d = new Date(dateStr);
+    // Check if the date is valid and its ISO string representation matches.
+    return d instanceof Date && !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === dateStr;
 };
 
 
@@ -49,7 +59,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-export const getBoletos = async (req: Request, res: Response) => {
+export const getBoletos = async (req: ExpressRequest, res: ExpressResponse) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -78,7 +88,7 @@ export const getBoletos = async (req: Request, res: Response) => {
   }
 };
 
-export const getBoletoById = async (req: Request, res: Response) => {
+export const getBoletoById = async (req: ExpressRequest, res: ExpressResponse) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -106,7 +116,7 @@ export const getBoletoById = async (req: Request, res: Response) => {
     }
 };
 
-export const extractBoleto = async (req: Request, res: Response) => {
+export const extractBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -140,9 +150,13 @@ export const extractBoleto = async (req: Request, res: Response) => {
     }
 };
 
-export const saveBoleto = async (req: Request, res: Response) => {
+export const saveBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
+
+    if (!isValidDateString(boletoData.documentDate) || !isValidDateString(boletoData.dueDate)) {
+        return res.status(400).json({ message: 'Data inválida detectada no PDF. As datas devem ser válidas e no formato AAAA-MM-DD.' });
+    }
 
     let targetCompanyId: string | null;
     if (user.role === 'admin') {
@@ -240,7 +254,7 @@ export const saveBoleto = async (req: Request, res: Response) => {
     }
 };
 
-export const updateBoletoStatus = async (req: Request, res: Response) => {
+export const updateBoletoStatus = async (req: ExpressRequest, res: ExpressResponse) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -286,7 +300,7 @@ export const updateBoletoStatus = async (req: Request, res: Response) => {
     }
 };
 
-export const updateBoletoComments = async (req: Request, res: Response) => {
+export const updateBoletoComments = async (req: ExpressRequest, res: ExpressResponse) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -330,7 +344,7 @@ export const updateBoletoComments = async (req: Request, res: Response) => {
     }
 };
 
-export const deleteBoleto = async (req: Request, res: Response) => {
+export const deleteBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();

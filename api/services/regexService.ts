@@ -61,11 +61,12 @@ const parseDate = (value: string | null): string | null => {
     const [, day, month, year] = match;
     const dayInt = parseInt(day, 10);
     const monthInt = parseInt(month, 10);
+    const yearInt = parseInt(year, 10);
 
-    if (dayInt === 0 || dayInt > 31 || monthInt === 0 || monthInt > 12) {
-        return null;
+    if (dayInt > 0 && dayInt <= 31 && monthInt > 0 && monthInt <= 12 && yearInt > 1900) {
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    return null;
 };
 
 export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
@@ -79,7 +80,7 @@ export const extractBoletoInfo = async (pdfBuffer: Buffer, fileName: string): Pr
         interestAndFines: /(?:\(\+\))?\s*(?:Juros|Multa|Outros Acréscimos)[\s\S]*?(R\$\s*[\d,.]+)/gi,
         documentDate: /(?:Data do Documento)[\s:\n]*(\d{2}\/\d{2}\/\d{4})/i,
         dueDate: /(?:Vencimento)[\s:\n]*(\d{2}\/\d{2}\/\d{4})/i,
-        recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\b(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência)\b)/i,
+        recipient: /(?:Beneficiário|Cedente)[\s.:\n]*?([\s\S]*?)(?=\n\s*(?:Data (?:do )?Documento|Vencimento|Nosso Número|Agência|CNPJ)|AGÊNCIA \/ CÓDIGO DO BENEFICIÁRIO)/i,
         drawee: /(?:Pagador|Sacado)[\s.:\n]*([^\n]+)/i,
         guideNumberDoc: /(?:N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?)[\s.:\n]*?(\S+)/i,
         guideNumberNosso: /(?:Nosso\sN[úu]mero)[\s.:\n]*?(\S+)/i,

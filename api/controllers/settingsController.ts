@@ -1,10 +1,9 @@
-// FIX: Use explicit express types to avoid type conflicts with DOM types.
-import type { Request, Response } from 'express';
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
-export const getSettings = async (req: Request, res: Response) => {
+export const getSettings = async (req: ExpressRequest, res: ExpressResponse) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -23,7 +22,7 @@ export const getSettings = async (req: Request, res: Response) => {
   }
 };
 
-export const updateSettings = async (req: Request, res: Response) => {
+export const updateSettings = async (req: ExpressRequest, res: ExpressResponse) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {

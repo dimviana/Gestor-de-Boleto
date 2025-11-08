@@ -3,6 +3,7 @@
 
 
 
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification, Role } from '../types';
@@ -52,12 +53,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
   const isUploadDisabled = user.role === 'viewer' || (user.role !== 'admin' && !user.companyId) || (user.role === 'admin' && !selectedCompanyFilter);
 
-  const handleFileUpload = async (file: File) => {
+  const processAndUploadFile = async (file: File) => {
     const uploadId = crypto.randomUUID();
     setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: 'Enviando e extraindo...', progress: 0 }, ...prev]);
 
     const onProgress = (progress: number) => {
-        // The callback from api.extractBoletoData handles the first 90% of progress
         setUploadStatuses(prev => prev.map(up =>
             up.id === uploadId
             ? { ...up, progress: progress }
@@ -73,20 +73,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         throw new Error(errorKey);
       }
       
-      // 1. Extract data from the PDF
       const extractedData = await api.extractBoletoData(file, targetCompanyId, onProgress);
       
-      // 2. Update status to saving
       setUploadStatuses(prev => prev.map(up => 
         up.id === uploadId 
         ? { ...up, status: 'processing', message: 'Salvando no banco de dados...', progress: 95 } 
         : up
       ));
 
-      // 3. Save the boleto automatically
       await api.saveBoleto(extractedData, targetCompanyId);
 
-      // 4. Update status to success
       setUploadStatuses(prev => prev.map(up => 
         up.id === uploadId 
         ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } 
@@ -116,15 +112,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
       ));
     }
   };
+  
+  const handleFileUploads = (files: File[]) => {
+    for (const file of files) {
+      processAndUploadFile(file);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileUpload(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileUploads(Array.from(e.target.files));
       e.target.value = ''; // Reset input
     }
   };
 
-  const folderWatcher = useFolderWatcher({ onFileUpload: handleFileUpload, disabled: isUploadDisabled });
+  const folderWatcher = useFolderWatcher({ onFileUpload: processAndUploadFile, disabled: isUploadDisabled });
 
   useEffect(() => {
     if (user.role === 'admin') {
@@ -285,11 +287,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
           accept="application/pdf"
           onChange={handleFileChange}
           ref={fileInputRef}
+          multiple
         />
         
         <div className="hidden md:block mb-8 p-6 bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md space-y-4">
           <FileUpload 
-            onFileUpload={handleFileUpload} 
+            onFileUpload={handleFileUploads} 
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploadDisabled} 
           />

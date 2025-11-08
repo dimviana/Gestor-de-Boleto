@@ -1,5 +1,4 @@
-// FIX: Use explicit express types to avoid type conflicts with DOM types.
-import type { Request, Response } from 'express';
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { exec } from 'child_process';
@@ -7,7 +6,7 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-export const getSslSettings = async (req: Request, res: Response) => {
+export const getSslSettings = async (req: ExpressRequest, res: ExpressResponse) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
         if (rows.length > 0) {
@@ -21,7 +20,7 @@ export const getSslSettings = async (req: Request, res: Response) => {
     }
 };
 
-export const saveSslSettings = async (req: Request, res: Response) => {
+export const saveSslSettings = async (req: ExpressRequest, res: ExpressResponse) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
         return res.status(400).json({ message: 'Invalid domain specified.' });
@@ -40,7 +39,7 @@ export const saveSslSettings = async (req: Request, res: Response) => {
     }
 };
 
-export const checkSslStatus = (req: Request, res: Response) => {
+export const checkSslStatus = (req: ExpressRequest, res: ExpressResponse) => {
     const { domain } = req.body;
     if (!domain) {
         return res.status(400).json({ message: 'Domain is required.' });
