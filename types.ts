@@ -110,7 +110,7 @@ export interface SslStatus {
 }
 
 // FIX: Resolve module augmentation error for deep imports from `pdfjs-dist`.
-// A wildcard declaration (`pdfjs-dist/*`) is used instead of a specific path to resolve 
-// the "Invalid module name in augmentation" error. This approach is more robust for 
-// handling deep imports in projects with mixed Node.js and browser type definitions.
-declare module 'pdfjs-dist/*';
+// A specific path declaration is used to match the import in the backend service,
+// ensuring TypeScript can correctly resolve the module types.
+// FIX: Correct module augmentation path for pdfjs-dist deep import.
+declare module 'pdfjs-dist/legacy/build/pdf.js';

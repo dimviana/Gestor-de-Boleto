@@ -2,6 +2,8 @@
 
 
 
+
+
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -11,6 +13,7 @@ import { SslStatus } from '../../types';
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
+// FIX: Add Request and Response types to the handler.
 // FIX: Add Request and Response types to the handler.
 export const getSslSettings = async (req: Request, res: Response) => {
     try {
@@ -27,6 +30,7 @@ export const getSslSettings = async (req: Request, res: Response) => {
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
+// FIX: Add Request and Response types to the handler.
 // FIX: Add Request and Response types to the handler.
 export const saveSslSettings = async (req: Request, res: Response) => {
     const { domain } = req.body;
@@ -48,6 +52,7 @@ export const saveSslSettings = async (req: Request, res: Response) => {
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
+// FIX: Add Request and Response types to the handler.
 // FIX: Add Request and Response types to the handler.
 export const checkSslStatus = (req: Request, res: Response) => {
     const { domain } = req.body;

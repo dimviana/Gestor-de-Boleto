@@ -2,11 +2,14 @@
 
 
 
+
+
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
+// FIX: Add Request and Response types to the handler.
 // FIX: Add Request and Response types to the handler.
 export const getLogs = async (req: Request, res: Response) => {
   try {

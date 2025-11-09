@@ -2,6 +2,8 @@
 
 
 
+
+
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -10,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
+// FIX: Add Request and Response types to the handler.
 // FIX: Add Request and Response types to the handler.
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -29,6 +32,7 @@ export const getUsers = async (req: Request, res: Response) => {
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
+// FIX: Add Request and Response types to the handler.
 // FIX: Add Request and Response types to the handler.
 export const createUser = async (req: Request, res: Response) => {
   const { username, password, role, companyId } = req.body;
@@ -87,6 +91,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request and Response types to the handler.
+// FIX: Add Request and Response types to the handler.
 export const updateUser = async (req: Request, res: Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
@@ -139,6 +144,7 @@ export const updateUser = async (req: Request, res: Response) => {
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
+// FIX: Add Request and Response types to the handler.
 // FIX: Add Request and Response types to the handler.
 export const deleteUser = async (req: Request, res: Response) => {
   const userIdToDelete = req.params.id;
