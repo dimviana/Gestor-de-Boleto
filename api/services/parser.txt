@@ -127,17 +127,19 @@ def extract_boleto_info(pdf_path):
     if not guide_number:
         guide_number = find_match(text_content, r'Nosso\sN[úu]mero[\s.:\n]*?(\S+)')
 
-    # IMPROVED: Recipient regex with more delimiters to avoid over-capturing.
     recipient_regex = r'(?:Beneficiário|Cedente)[\s.:\n]*([\s\S]*?)(?=\n\s*\b(?:CNPJ|Agência\s*/\s*Código|Nosso\sNúmero|Sacado|Pagador|Vencimento|Local\sde\sPagamento|Data (?:do )?Documento)\b)'
     
-    # IMPROVED: Drawee regex stops before 'Sacador / Avalista' to capture only the name.
     drawee_regex = r'(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\n\s*\b(?:Sacador\s*/\s*Avalista|Instruções|Descrição|Autenticação Mecânica|FICHA DE COMPENSAÇÃO|Nº\sdo\sDocumento|Data\sdo\sDocumento)\b)'
+    
+    # IMPROVED: Due date regex looks for a date within a 60-char window after the label,
+    # making it robust to newlines and different layouts.
+    due_date_regex = r'Vencimento(?:[\s\S]{0,60}?)(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})'
 
     result = {
         "recipient": find_match(text_content, recipient_regex),
         "drawee": find_match(text_content, drawee_regex),
         "documentDate": parse_date(find_match(text_content, r'Data (?:do )?Documento[^\d]*?(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})', find_last=True)),
-        "dueDate": parse_date(find_match(text_content, r'Vencimento[^\d]*?(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})', find_last=True)),
+        "dueDate": parse_date(find_match(text_content, due_date_regex, find_last=True)),
         "documentAmount": doc_amount,
         "amount": amount,
         "discount": parse_currency(find_match(text_content, r'(?:\(-\))?\s*(?:Desconto\s*/\s*Abatimento)[^\d,]*?((?:R\$\s*)?[\d.,]+)', find_last=True)),

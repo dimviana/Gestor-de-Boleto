@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
-import { HashtagIcon, CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, IdIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, ArrowDownIcon, ArrowUpIcon } from './icons/Icons';
+import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface BoletoCardProps {
@@ -24,19 +24,11 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const [isDragging, setIsDragging] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(comments || '');
-  const [isExpanded, setIsExpanded] = useState(false);
 
-  // Use data from extractedData if available, otherwise fallback to root properties
-  const displayRecipient = extractedData?.recipient || boleto.recipient;
   const displayDrawee = extractedData?.drawee || boleto.drawee;
-  const displayDocDate = extractedData?.documentDate || boleto.documentDate;
   const displayDueDate = extractedData?.dueDate || boleto.dueDate;
-  const displayDocAmount = extractedData?.documentAmount ?? boleto.documentAmount;
   const displayAmount = extractedData?.amount ?? boleto.amount;
-  const displayDiscount = extractedData?.discount ?? boleto.discount;
-  const displayInterest = extractedData?.interestAndFines ?? boleto.interestAndFines;
   const displayBarcode = extractedData?.barcode || boleto.barcode;
-  const displayGuideNumber = extractedData?.guideNumber || boleto.guideNumber;
   const displayPixCode = extractedData?.pixQrCodeText || boleto.pixQrCodeText;
   const displayFileName = extractedData?.fileName || boleto.fileName;
 
@@ -165,17 +157,27 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         return null;
     }
   };
-
-  const DetailItem: React.FC<{ label: string; value?: string | number | null; children?: React.ReactNode; mono?: boolean }> = ({ label, value, children, mono = false }) => {
-    const content = value ?? children;
-    if (content === null || content === undefined || content === '' || content === t('notAvailable')) return null;
-
+  
+  const CodeItem: React.FC<{ label: string; value: string | null; onCopy: () => void; copied: boolean; icon: React.ReactNode; }> = ({ label, value, onCopy, copied, icon }) => {
+    if (!value) return null;
     return (
-        <div className="py-1.5 grid grid-cols-3 gap-2 items-start">
-            <dt className="text-xs font-medium text-gray-500 dark:text-gray-400 col-span-1">{label}</dt>
-            <dd className={`text-xs text-gray-800 dark:text-gray-200 col-span-2 text-right break-words ${mono ? 'font-mono' : ''}`}>
-                {content}
-            </dd>
+        <div className="mt-3">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                {icon}
+                <span className="ml-1.5">{label}</span>
+            </label>
+            <div className="flex items-center mt-1">
+                <p className="flex-1 text-xs text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-l-md font-mono truncate">
+                    {value}
+                </p>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onCopy(); }}
+                    className="flex-shrink-0 p-2 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-r-md"
+                    title={copied ? t('barcodeCopied') : t('copyBarcode')}
+                >
+                    {copied ? <CheckIcon className="w-5 h-5 text-green-500"/> : <CopyIcon className="w-5 h-5"/>}
+                </button>
+            </div>
         </div>
     );
   };
@@ -193,20 +195,10 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
-            <h3 className="font-extrabold text-lg text-gray-800 dark:text-gray-100 break-words">
-              {displayRecipient || t('recipientNotFound')}
+            <h3 className="font-bold text-base text-gray-800 dark:text-gray-100 break-words flex items-center">
+              <UserIcon className="w-4 h-4 mr-2 text-gray-400"/>
+              {displayDrawee || t('drawee')}
             </h3>
-            {displayDrawee && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {t('drawee').slice(0, -1)}: {displayDrawee}
-              </p>
-            )}
-            {displayGuideNumber && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono flex items-center">
-                    <HashtagIcon className="w-3 h-3 mr-1.5" />
-                    <span>Nº Doc: {displayGuideNumber}</span>
-                </p>
-            )}
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={displayFileName}>{displayFileName}</p>
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
@@ -237,56 +229,34 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             <div className="flex justify-between items-baseline">
                 <div>
                     <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
-                    <p className="text-2xl font-extrabold text-red-500 dark:text-red-400">{formatDate(displayDueDate)}</p>
+                    <p className="text-xl font-extrabold text-red-500 dark:text-red-400 flex items-center">
+                        <CalendarIcon className="w-4 h-4 mr-2"/>
+                        {formatDate(displayDueDate)}
+                    </p>
                 </div>
                  <div className="text-right">
                     <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
-                    <p className="text-3xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(displayAmount)}</p>
+                     <p className="text-2xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(displayAmount)}</p>
                 </div>
             </div>
         </div>
-
-        <div className="mt-4 pt-2 border-t border-gray-100 dark:border-slate-700 flex justify-center">
-            <button
-                onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                className="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-                <span>{isExpanded ? t('hideDetails') : t('showMoreDetails')}</span>
-                {isExpanded ? <ArrowUpIcon className="w-4 h-4 ml-1.5" /> : <ArrowDownIcon className="w-4 h-4 ml-1.5" />}
-            </button>
-        </div>
-
-        {isExpanded && (
-            <div className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-slate-600 space-y-1 animate-fade-in-up-fast">
-                 <div className="divide-y divide-gray-200 dark:divide-slate-700">
-                    <DetailItem label={t('recipient')} value={displayRecipient}/>
-                    <DetailItem label={t('drawee')} value={displayDrawee} />
-                    <DetailItem label={t('documentDate')} value={formatDate(displayDocDate)} />
-                 </div>
-                 <div className="divide-y divide-gray-200 dark:divide-slate-700 pt-2">
-                    <DetailItem label={t('documentAmount')} value={formatCurrency(displayDocAmount)} />
-                    <DetailItem label={t('discount')} value={formatCurrency(displayDiscount)} />
-                    <DetailItem label={t('interestAndFines')} value={formatCurrency(displayInterest)} />
-                 </div>
-                 <div className="pt-2">
-                    <DetailItem label={t('barcode')} mono>
-                        <div className="flex items-center justify-end space-x-2">
-                            <span>{displayBarcode}</span>
-                            <button onClick={() => handleCopy(displayBarcode, 'barcode')} className="p-1 text-gray-500 hover:text-blue-600">
-                                {barcodeCopied ? <CheckIcon className="w-4 h-4 text-green-500"/> : <CopyIcon className="w-4 h-4"/>}
-                            </button>
-                        </div>
-                    </DetailItem>
-                    <DetailItem label={t('pixQrCode')}>
-                        <button onClick={() => handleCopy(displayPixCode, 'pix')} className={`w-full text-xs font-semibold p-1.5 rounded-md flex items-center justify-center space-x-2 ${displayPixCode ? 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600' : 'cursor-default'}`} disabled={!displayPixCode}>
-                           <QrCodeIcon className="w-4 h-4" />
-                           <span>{pixCopied ? t('pixCodeCopied') : t('copyPixCode')}</span>
-                           {pixCopied && <CheckIcon className="w-4 h-4 text-green-500"/>}
-                        </button>
-                    </DetailItem>
-                 </div>
-            </div>
-        )}
+      
+      <div className="mt-2 pt-2 border-t border-dashed border-gray-100 dark:border-slate-700">
+        <CodeItem 
+            label={t('barcode')}
+            value={displayBarcode}
+            onCopy={() => handleCopy(displayBarcode, 'barcode')}
+            copied={barcodeCopied}
+            icon={<BarcodeIcon className="w-5 h-5"/>}
+        />
+        <CodeItem 
+            label={t('pixQrCode')}
+            value={displayPixCode}
+            onCopy={() => handleCopy(displayPixCode, 'pix')}
+            copied={pixCopied}
+            icon={<QrCodeIcon className="w-5 h-5"/>}
+        />
+      </div>
       
       <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 space-y-3">
         <div className="flex items-center space-x-2">
@@ -306,16 +276,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             )}
         </div>
         <div className="flex items-center justify-center space-x-4">
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onViewDetails(boleto);
-                }}
-                className="flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline"
-            >
-                <IdIcon className="w-4 h-4 mr-1.5" />
-                <span>{t('viewDetails')}</span>
-            </button>
             <button
                 onClick={(e) => {
                     e.stopPropagation();
@@ -368,21 +328,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         </div>
       )}
     </div>
-    <style>{`
-      @keyframes fade-in-up-fast {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .animate-fade-in-up-fast {
-        animation: fade-in-up-fast 0.3s ease-out forwards;
-      }
-    `}</style>
     </>
   );
 };

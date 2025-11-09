@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LogoutIcon, BookOpenIcon, SettingsIcon, BellIcon, SearchIcon } from './icons/Icons';
+import { LogoutIcon, BookOpenIcon, SettingsIcon, BellIcon, SearchIcon, MenuIcon, XIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
@@ -20,6 +20,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const notificationCount = notifications.length;
 
@@ -34,6 +35,52 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [popoverRef]);
+
+  const HeaderControls: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => (
+    <>
+      <ThemeSwitcher />
+      <LanguageSwitcher />
+
+      {user.role === 'admin' && (
+          <button
+          onClick={onOpenAdminPanel}
+          title="Painel Administrativo"
+          className="p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
+        >
+          <SettingsIcon className="w-5 h-5" />
+        </button>
+      )}
+      <button
+      onClick={onOpenDocs}
+      title={t('documentationTitle')}
+      className="p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
+    >
+      <BookOpenIcon className="w-5 h-5" />
+    </button>
+    <div className="relative" ref={popoverRef}>
+        <button
+            onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+            title={t('notificationsTitle')}
+            className="relative p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
+        >
+            <BellIcon className="w-5 h-5" />
+            {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                    {notificationCount}
+                </span>
+            )}
+        </button>
+        {isPopoverOpen && <NotificationPopover notifications={notifications} />}
+    </div>
+    <button
+      onClick={onLogout}
+      className={`flex items-center px-4 py-2 text-sm font-medium transition-colors ${isMobile ? 'w-full text-red-600 bg-red-100 dark:bg-red-900/40' : 'text-gray-600 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+    >
+      <LogoutIcon className="w-5 h-5 mr-2" />
+      {t('logoutButton')}
+    </button>
+  </>
+  );
 
   return (
     <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-md dark:shadow-lg sticky top-0 z-20">
@@ -71,52 +118,42 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
                 </div>
             </div>
 
-          <div className="flex items-center space-x-2">
-             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-3"></div>
-             <ThemeSwitcher />
-             <LanguageSwitcher />
+          <div className="hidden md:flex items-center space-x-2">
+            <HeaderControls />
+          </div>
 
-             {user.role === 'admin' && (
-                 <button
-                  onClick={onOpenAdminPanel}
-                  title="Painel Administrativo"
-                  className="p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
-                >
-                  <SettingsIcon className="w-5 h-5" />
-                </button>
-             )}
-             <button
-              onClick={onOpenDocs}
-              title={t('documentationTitle')}
-              className="p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
-            >
-              <BookOpenIcon className="w-5 h-5" />
-            </button>
-            <div className="relative" ref={popoverRef}>
-                <button
-                    onClick={() => setIsPopoverOpen(!isPopoverOpen)}
-                    title={t('notificationsTitle')}
-                    className="relative p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
-                >
-                    <BellIcon className="w-5 h-5" />
-                    {notificationCount > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                           {notificationCount}
-                        </span>
-                    )}
-                </button>
-                {isPopoverOpen && <NotificationPopover notifications={notifications} />}
-            </div>
-            <button
-              onClick={onLogout}
-              className="flex items-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
-            >
-              <LogoutIcon className="w-5 h-5 mr-2" />
-              {t('logoutButton')}
+          <div className="md:hidden ml-2">
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                <MenuIcon className="w-6 h-6" />
             </button>
           </div>
         </div>
       </div>
+      
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
+            <div className="fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl p-4 animate-slide-in-right" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="font-bold text-lg">Menu</h2>
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <XIcon className="w-6 h-6" />
+                    </button>
+                </div>
+                <div className="flex flex-col space-y-4">
+                    <HeaderControls isMobile={true}/>
+                </div>
+            </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slide-in-right {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .animate-slide-in-right {
+            animation: slide-in-right 0.3s ease-out forwards;
+        }
+      `}</style>
     </header>
   );
 };
