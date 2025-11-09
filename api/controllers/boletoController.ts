@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -59,6 +60,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
+// FIX: Add Express Request and Response types to the handler.
 export const getBoletos = async (req: express.Request, res: express.Response) => {
   const user = req.user!;
   try {
@@ -88,6 +90,7 @@ export const getBoletos = async (req: express.Request, res: express.Response) =>
   }
 };
 
+// FIX: Add Express Request and Response types to the handler.
 export const getBoletoById = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
@@ -116,6 +119,7 @@ export const getBoletoById = async (req: express.Request, res: express.Response)
     }
 };
 
+// FIX: Add Express Request and Response types to the handler.
 export const extractBoleto = async (req: express.Request, res: express.Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -144,6 +148,7 @@ export const extractBoleto = async (req: express.Request, res: express.Response)
     }
 };
 
+// FIX: Add Express Request and Response types to the handler.
 export const saveBoleto = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
@@ -246,6 +251,7 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
     }
 };
 
+// FIX: Add Express Request and Response types to the handler.
 export const updateBoletoStatus = async (req: express.Request, res: express.Response) => {
     const { status } = req.body;
     const { id } = req.params;
@@ -292,6 +298,7 @@ export const updateBoletoStatus = async (req: express.Request, res: express.Resp
     }
 };
 
+// FIX: Add Express Request and Response types to the handler.
 export const updateBoletoComments = async (req: express.Request, res: express.Response) => {
     const { comments } = req.body;
     const { id } = req.params;
@@ -336,6 +343,7 @@ export const updateBoletoComments = async (req: express.Request, res: express.Re
     }
 };
 
+// FIX: Add Express Request and Response types to the handler.
 export const deleteBoleto = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { id } = req.params;

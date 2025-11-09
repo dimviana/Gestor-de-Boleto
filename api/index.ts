@@ -1,3 +1,4 @@
+
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -16,7 +17,7 @@ import sslRoutes from './routes/ssl';
 
 dotenv.config();
 
-const app = express();
+const app: express.Express = express();
 const port = process.env.PORT || 3001;
 
 // --- Core Middleware ---
