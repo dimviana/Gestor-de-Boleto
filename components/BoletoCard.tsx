@@ -16,13 +16,14 @@ interface BoletoCardProps {
 
 const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, userRole }) => {
   const { t, language } = useLanguage();
-  const { id, status, fileData, comments, extractedData } = boleto;
+  const { id, status, fileData, comments, extractedData, detailedCosts } = boleto;
   
   const [pixCopied, setPixCopied] = useState(false);
   const [barcodeCopied, setBarcodeCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(comments || '');
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const displayRecipient = extractedData?.recipient || boleto.recipient;
   const displayDrawee = extractedData?.drawee || boleto.drawee;
@@ -31,6 +32,11 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const displayBarcode = extractedData?.barcode || boleto.barcode;
   const displayPixCode = extractedData?.pixQrCodeText || boleto.pixQrCodeText;
   const displayFileName = extractedData?.fileName || boleto.fileName;
+
+  const toggleDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDetailsOpen(!isDetailsOpen);
+  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t('notAvailable');
@@ -199,6 +205,13 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
 
   return (
     <>
+    <style>{`
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+    `}</style>
     <div 
       draggable={userRole !== 'viewer'}
       onDragStart={handleDragStart}
@@ -257,6 +270,29 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
                 </div>
             </div>
         </div>
+
+        {detailedCosts && Object.keys(detailedCosts).length > 0 && (
+            <div className="mt-3 text-center">
+                <button
+                    onClick={toggleDetails}
+                    className="px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/50 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                >
+                    {isDetailsOpen ? t('hideDetails') : t('showMoreDetails')}
+                </button>
+            </div>
+        )}
+
+        {isDetailsOpen && detailedCosts && (
+            <div className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-slate-600 space-y-1.5 animate-fade-in">
+                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-1">{t('detailedValues')}</h4>
+                {Object.entries(detailedCosts).map(([key, value]) => (
+                    <div key={key} className="flex justify-between items-center text-xs">
+                        <span className="text-gray-600 dark:text-gray-300">{key}</span>
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">{formatCurrency(value)}</span>
+                    </div>
+                ))}
+            </div>
+        )}
       
       <div className="mt-2 pt-2 border-t border-dashed border-gray-100 dark:border-slate-700">
         <CodeItem 

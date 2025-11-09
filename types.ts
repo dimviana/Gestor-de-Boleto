@@ -25,6 +25,7 @@ export interface Boleto {
   barcode: string | null;
   guideNumber: string | null;
   pixQrCodeText: string | null; // The copy-paste string
+  detailedCosts?: Record<string, number> | null;
   status: BoletoStatus;
   fileName: string;
   fileData: string;

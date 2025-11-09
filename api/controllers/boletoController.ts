@@ -1,4 +1,5 @@
 
+
 import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -37,6 +38,15 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
         ? dbBoleto.file_data.toString('base64') 
         : (typeof dbBoleto.file_data === 'string' ? dbBoleto.file_data : '');
 
+    let extractedDataParsed = null;
+    if (dbBoleto.extracted_data) {
+        try {
+            extractedDataParsed = typeof dbBoleto.extracted_data === 'string' ? JSON.parse(dbBoleto.extracted_data) : dbBoleto.extracted_data;
+        } catch(e) {
+            console.error('Could not parse extracted_data from DB for boleto ID:', dbBoleto.id);
+        }
+    }
+
     return {
         id: dbBoleto.id,
         recipient: dbBoleto.recipient,
@@ -55,7 +65,8 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
         fileData: fileData,
         companyId: dbBoleto.company_id,
         comments: dbBoleto.comments,
-        extractedData: dbBoleto.extracted_data || null,
+        extractedData: extractedDataParsed,
+        detailedCosts: extractedDataParsed?.detailedCosts || null,
         createdAt: dbBoleto.created_at,
     };
 };

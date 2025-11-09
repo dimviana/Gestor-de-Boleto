@@ -95,6 +95,23 @@ def find_pix_code(text):
         return re.sub(r'\s*\n\s*', '', match.group(1)).strip()
     return None
 
+def extract_detailed_costs(text):
+    """Extracts detailed cost items."""
+    costs = {}
+    # This pattern looks for known cost labels followed by a currency amount.
+    pattern = re.compile(r'\b(Emolumento|TSNR|FERC|FERM|FUNSEG|ISS|Tarifa\sBanco)\b\s*R\$\s*([\d,.]+)', re.IGNORECASE)
+    matches = pattern.findall(text)
+    
+    for match in matches:
+        key = match[0].strip()
+        # Normalize key if needed, e.g., 'Tarifa Banco'
+        if 'Tarifa' in key: key = 'Tarifa Banco'
+        value = parse_currency(match[1])
+        if key and value is not None:
+            costs[key] = value
+            
+    return costs if costs else None
+
 # --- Main Extraction Logic ---
 
 def extract_boleto_info(pdf_path):
@@ -125,13 +142,13 @@ def extract_boleto_info(pdf_path):
         # Document Date: Same logic as due date.
         "documentDate": r'(?i)Data (?:do )?Documento\n?.*?\b(\d{2}[/.]\d{2}[/.]\d{4})\b',
         # Amount: Prioritize "Valor Cobrado", then "Valor do Documento". The value is often at the end of the line.
-        "amount_cobrado": r'(?i)\(=\) Valor Cobrado\n?((?:R\$\s*)?[\d.,]+)',
-        "amount_documento": r'(?i)Valor (?:do )?Documento\n?((?:R\$\s*)?[\d.,]+)',
+        "amount_cobrado": r'(?i)\(=\)\s*Valor Cobrado[^\n]*?(R\$\s*[\d,.]+)',
+        "amount_documento": r'(?i)(?:\(=\))?\s*Valor do Documento[^\n]*?(R\$\s*[\d,.]+)',
         # Other values:
-        "discount": r'(?i)\(-\) (?:Desconto|Abatimento)\n?((?:R\$\s*)?[\d.,]+)',
-        "interestAndFines": r'(?i)\(\+\) (?:Juros|Multa|Mora|Acréscimos)\n?((?:R\$\s*)?[\d.,]+)',
+        "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
+        "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
         # Document Number: Prioritize "Nº Documento", then "Nosso Número".
-        "guideNumber_doc": r'(?i)N[ºo\.]?\s?(?:do\s)?Documento[\s.:\n]*?([^\n\s]+)',
+        "guideNumber_doc": r'(?i)N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?[\s.:\n]*?([^\n\s]+)',
         "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero[\s.:\n]*?([^\n\s]+)',
     }
 
@@ -162,6 +179,7 @@ def extract_boleto_info(pdf_path):
     amount_cobrado = parse_currency(raw["amount_cobrado"])
     amount_documento = parse_currency(raw["amount_documento"])
     final_amount = amount_cobrado if amount_cobrado is not None and amount_cobrado > 0 else amount_documento
+    detailed_costs = extract_detailed_costs(text_content)
 
     # Build the final JSON result
     result = {
@@ -176,6 +194,7 @@ def extract_boleto_info(pdf_path):
         "barcode": raw["barcode"],
         "guideNumber": raw["guideNumber"],
         "pixQrCodeText": raw["pixQrCodeText"],
+        "detailedCosts": detailed_costs,
     }
 
     return result
