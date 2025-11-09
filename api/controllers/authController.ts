@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -24,7 +18,6 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
 // FIX: Add Request and Response types to the handler.
 export const registerUser = async (req: Request, res: Response) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
@@ -53,7 +46,6 @@ export const registerUser = async (req: Request, res: Response) => {
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
 // FIX: Add Request and Response types to the handler.
 export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;

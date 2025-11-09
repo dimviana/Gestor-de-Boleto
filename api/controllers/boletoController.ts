@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -11,7 +5,6 @@ import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
 import { extractBoletoInfoWithPython } from '../services/pythonService';
-import { extractBoletoInfoWithGemini } from '../services/geminiService';
 import { appConfig } from '../services/configService';
 
 
@@ -129,15 +122,7 @@ export const extractBoleto = async (req: Request, res: Response) => {
     }
 
     try {
-        let extractedData;
-        if (appConfig.processing_method === 'ai') {
-            if (!appConfig.API_KEY) {
-                return res.status(500).json({ message: 'A chave da API Gemini não está configurada no servidor.' });
-            }
-            extractedData = await extractBoletoInfoWithGemini(req.file.buffer, req.file.originalname);
-        } else { // 'regex' or fallback
-            extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
-        }
+        const extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
         
         if (extractedData.amount === null || extractedData.amount === undefined) {
             return res.status(400).json({ message: 'amountNotFoundErrorText' });

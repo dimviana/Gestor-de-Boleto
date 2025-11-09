@@ -166,9 +166,21 @@ const pt = {
     nextMonth: 'Próximo Mês',
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
-        Sua tarefa é analisar a imagem de um boleto.
-        Retorne um objeto JSON estritamente com o schema fornecido. Se uma informação não for encontrada, retorne null para aquele campo.
-        Datas devem estar no formato AAAA-MM-DD. Valores monetários devem ser números.
+        Sua tarefa é analisar a IMAGEM do boleto fornecida.
+        Retorne um objeto JSON com as seguintes informações. Se uma informação não for encontrada, retorne null para aquele campo.
+        Datas devem estar no formato AAAA-MM-DD. O valor deve ser um número.
+
+        - recipient: O nome do beneficiário/cedente.
+        - drawee: O nome do sacado.
+        - documentDate: A "Data do Documento".
+        - dueDate: A data de vencimento.
+        - documentAmount: O "Valor do Documento".
+        - amount: O valor final a ser pago ("Valor Cobrado"). Se não houver, use o "Valor do Documento".
+        - discount: O valor de qualquer desconto ("(-) Desconto / Abatimento").
+        - interestAndFines: A soma de quaisquer juros e multas ("(+) Juros / Multa" ou "Outros Acréscimos").
+        - barcode: A linha digitável completa, sem pontos ou espaços.
+        - guideNumber: O "Número do Documento". Se não houver, use o "Nosso Número".
+        - pixQrCodeText: O conteúdo completo (copia e cola) do QR Code PIX.
     `,
 };
 
@@ -338,9 +350,21 @@ const en: typeof pt = {
     nextMonth: 'Next Month',
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
-        Your task is to analyze the image of a boleto.
-        Return a JSON object strictly following the provided schema. If a piece of information is not found, return null for that field.
-        Dates must be in YYYY-MM-DD format. Monetary values must be numbers.
+        Your task is to analyze the provided boleto IMAGE.
+        Return a JSON object with the following information. If a piece of information is not found, return null for that field.
+        Dates must be in YYYY-MM-DD format. The amount must be a number.
+
+        - recipient: The name of the beneficiary/payee.
+        - drawee: The name of the drawee (Sacado).
+        - documentDate: The "Data do Documento" (Document Date).
+        - dueDate: The due date.
+        - documentAmount: The "Valor do Documento" (Document Amount).
+        - amount: The final amount to be paid ("Valor Cobrado"). If not present, use "Valor do Documento".
+        - discount: The value of any discount ("(-) Desconto / Abatimento").
+        - interestAndFines: The sum of any interest and fines ("(+) Juros / Multa" or "Outros Acréscimos").
+        - barcode: The complete digitable line (linha digitável), without dots or spaces.
+        - guideNumber: The "Número do Documento" (Document Number). If not present, use "Nosso Número".
+        - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code.
     `,
 };
 

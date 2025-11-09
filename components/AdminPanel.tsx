@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { RegisteredUser, Role, User, LogEntry, Company, SslStatus } from '../types';
@@ -71,7 +65,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         // Local form states
         const [currentAppName, setCurrentAppName] = useState(appName);
         const [currentLogoUrl, setCurrentLogoUrl] = useState(logoUrl);
-        const [apiKey, setApiKey] = useState('');
         const [jwtSecret, setJwtSecret] = useState('');
         const [isLoading, setIsLoading] = useState(true);
 
@@ -82,7 +75,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                     const settings = await api.fetchAllSettings();
                     setCurrentAppName(settings.whitelabel_appName || appName);
                     setCurrentLogoUrl(settings.whitelabel_logoUrl || logoUrl);
-                    setApiKey(settings.API_KEY || '');
                     setJwtSecret(settings.JWT_SECRET || '');
                 } catch (error) {
                     console.error("Failed to load settings", error);
@@ -105,7 +97,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
             const settingsToSave = {
                 whitelabel_appName: currentAppName,
                 whitelabel_logoUrl: currentLogoUrl,
-                API_KEY: apiKey,
                 JWT_SECRET: jwtSecret,
             };
 

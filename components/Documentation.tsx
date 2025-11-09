@@ -84,80 +84,79 @@ const Documentation: React.FC = () => {
                 </header>
                 
                 <Section title="1. Project Overview">
-                    <p>Boleto Manager AI is a modern SaaS platform designed to streamline the management of Brazilian "boleto" payment slips. Users can upload a PDF file of a boleto, and the system leverages Google's Gemini AI to automatically extract key information such as the recipient, due date, amount, and barcode. The extracted boletos are then displayed on an intuitive Kanban board, allowing users to track their payment status from "To Pay" to "Verifying" and finally to "Paid."</p>
+                    <p>Boleto Manager AI is a modern SaaS platform designed to streamline the management of Brazilian "boleto" payment slips. Users can upload a PDF file of a boleto, and the system leverages a powerful backend script to automatically extract key information such as the recipient, due date, amount, and barcode. The extracted boletos are then displayed on an intuitive Kanban board, allowing users to track their payment status from "To Pay" to "Verifying" and finally to "Paid."</p>
                 </Section>
 
                 <Section title="2. Architecture & Technologies">
-                    <p>The application is a purely client-side single-page application (SPA) built with a modern frontend stack.</p>
+                    <p>The application consists of a modern frontend single-page application (SPA) and a robust backend server.</p>
                     <ul>
                         <li><strong>React:</strong> The core UI library for building components.</li>
                         <li><strong>TypeScript:</strong> For static typing, improving code quality and maintainability.</li>
                         <li><strong>Tailwind CSS:</strong> A utility-first CSS framework for rapid and consistent styling.</li>
-                        <li><strong>Google Gemini API (@google/genai):</strong> Used for the powerful AI-driven data extraction from PDF images.</li>
-                        <li><strong>PDF.js:</strong> A library by Mozilla to render PDF files in the browser and convert the first page into an image for AI analysis.</li>
-                        <li><strong>Simulated API (LocalStorage):</strong> For persistence, the application currently uses a simulated API service that stores all boleto data in the browser's <code>localStorage</code>. This makes the app self-contained and deployable on any static hosting, but it's designed to be easily swappable with a real backend.</li>
+                        <li><strong>Node.js/Express:</strong> A backend server to handle API requests, user authentication, and database interactions.</li>
+                        <li><strong>Python (PyMuPDF):</strong> A powerful Python script is used on the backend to perform fast and accurate text extraction from PDF files.</li>
+                        <li><strong>MySQL:</strong> A relational database for persisting all application data, including users, companies, and boletos.</li>
                     </ul>
                 </Section>
 
                 <Section title="3. File Structure">
                     <Code>{`
 /
-├── components/       # Reusable React components
-│   ├── icons/        # SVG icon components
-│   ├── BoletoCard.tsx
-│   ├── Dashboard.tsx
-│   ├── Documentation.tsx # This documentation component
+├── api/                # Backend (Node.js/Express) source code
+│   ├── controllers/
+│   ├── middleware/
+│   ├── routes/
+│   ├── services/
+│   │   ├── parser.py   # The Python script for PDF text extraction
+│   │   └── ...
+│   └── index.ts        # Backend entry point
+├── components/         # Frontend React components
+│   ├── icons/
 │   └── ...
-├── contexts/         # React Context providers (e.g., LanguageContext)
-├── hooks/            # Custom React hooks (e.g., useBoletos)
-├── services/         # Modules for external interactions
-│   ├── api.ts        # Simulated API for data persistence (LocalStorage)
-│   └── geminiService.ts # Logic for interacting with Gemini AI
-├── types.ts          # TypeScript type definitions
-├── translations.ts   # Internationalization (i1n) strings
-├── App.tsx           # Main application component with routing
-├── index.tsx         # Application entry point
-└── index.html        # Main HTML file
+├── contexts/           # Frontend React Context providers
+├── hooks/              # Frontend custom React hooks
+├── services/           # Frontend service modules
+│   └── api.ts          # Frontend API client
+├── types.ts            # TypeScript type definitions
+├── App.tsx             # Main application component
+├── index.tsx           # Frontend entry point
+└── index.html          # Main HTML file
                     `}</Code>
                 </Section>
 
-                {/* FIX: Updated API Key instructions to align with coding guidelines. */}
                 <Section title="4. Installation and Setup Guide">
-                    <p>Follow these steps to run the project on your local machine.</p>
+                    <p>The project is designed for server deployment using the provided `deploy.txt` script. This script automates the setup of the server environment, including Nginx, Node.js, Python, and SSL certificates.</p>
                     <h4 className="font-bold mt-4">Prerequisites:</h4>
                     <ul>
-                        <li>A modern web browser (Chrome, Firefox, Edge).</li>
-                        <li>Internet connection.</li>
-                        <li>A Google Gemini API Key. You can get one from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
+                        <li>A Linux server (Ubuntu recommended).</li>
+                        <li>A domain name pointed to your server's IP address.</li>
+                        <li>A pre-installed MySQL database.</li>
                     </ul>
                      <h4 className="font-bold mt-4">Running the App:</h4>
-                    <p>This application is designed to run directly in a browser from the provided files without a build step.</p>
-                    <ol>
-                        <li><strong>Open <code>index.html</code>:</strong> Simply open the <code>index.html</code> file in your web browser.</li>
-                        <li><strong>API Key Setup:</strong> The application requires a Google Gemini API key to function. This key must be available in the execution environment as a <code>process.env.API_KEY</code> variable.</li>
-                    </ol>
-                    <p><strong>Note:</strong> The API key is managed externally and is assumed to be injected automatically. The application is not responsible for setting up this environment variable.</p>
+                    <p>Follow the instructions in `INSTRUCOES.md` to use the `deploy.txt` script for a complete, automated production setup. The script will handle creating the necessary `.env` file on the server with your database credentials and other secrets.</p>
+                    <p>The backend server handles all the heavy lifting, including the PDF parsing via its Python script, so there's no complex local setup required for the frontend to function once deployed.</p>
                 </Section>
 
                 <Section title="5. How to Use">
                     <ol>
-                        <li><strong>Login:</strong> On the login screen, type a username. Use 'admin' to access administrative features. Click "Access Dashboard" to enter.</li>
+                        <li><strong>Login:</strong> On the login screen, enter your credentials. An administrator can create users with different roles (Admin, Editor, Viewer).</li>
                         <li><strong>(Admin) Customize Appearance:</strong> If logged in as admin, click the settings icon in the header to open the Admin Panel. Here you can change the application name and logo URL.</li>
                         <li><strong>Upload Boleto:</strong> Drag and drop a PDF file onto the designated area, or click to select a file from your computer.</li>
-                        <li><strong>AI Processing:</strong> The system will display a spinner while it converts the PDF to an image and sends it to the Gemini AI for analysis.</li>
+                        <li><strong>Backend Processing:</strong> The system will upload the file to the server, which then uses its Python script to analyze the PDF and extract the data.</li>
                         <li><strong>Manage on Kanban Board:</strong> Once processed, the new boleto card will appear in the "To Pay" column.</li>
                         <li><strong>Update Status:</strong> Click the action buttons on a card to move it through the workflow: "Mark as Paid" moves it to "Verifying," and "Verify Payment" moves it to "Paid."</li>
                         <li><strong>View/Delete:</strong> You can view the original PDF or delete a boleto using the icons on each card.</li>
                     </ol>
                 </Section>
 
-                 <Section title="6. Future Improvements">
-                    <p>The current architecture with a simulated API is excellent for demos and rapid development. The next logical step is to connect it to a real backend.</p>
+                 <Section title="6. Database and Persistence">
+                    <p>The application uses a MySQL database for all data persistence. This includes:</p>
                     <ul>
-                       <li><strong>Backend API:</strong> Develop a RESTful or GraphQL API (e.g., using Node.js, Python, or Go) to handle CRUD operations for boletos.</li>
-                       <li><strong>Database Integration:</strong> Use a robust database like PostgreSQL or MySQL.</li>
-                       <li><strong>User Authentication:</strong> Replace the simple session-based login with a secure authentication system (e.g., JWT, OAuth) that manages real user accounts and roles.</li>
-                       <li><strong>Real-time Updates:</strong> Implement WebSockets to reflect changes on the Kanban board in real-time for all connected users.</li>
+                       <li>`users`: Stores user credentials, roles, and company associations.</li>
+                       <li>`companies`: Allows for multi-tenancy, grouping users and boletos by company.</li>
+                       <li>`boletos`: Stores all extracted boleto data and a Base64-encoded copy of the original PDF file.</li>
+                       <li>`activity_logs`: Records important actions taken by users for auditing purposes.</li>
+                       <li>`settings`: Persists administrative settings like the application name and JWT secret.</li>
                     </ul>
                 </Section>
             </div>
