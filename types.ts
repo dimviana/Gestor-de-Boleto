@@ -51,17 +51,6 @@ export interface RegisteredUser extends Omit<User, 'token'>{
 
 export type Theme = 'light' | 'dark' | 'system';
 
-// FIX: Add missing AiSettings interface used for Gemini configuration.
-export interface AiSettings {
-  model: string;
-  temperature: number;
-  topK: number;
-  topP: number;
-}
-
-// FIX: Add missing ProcessingMethod type used in contexts.
-export type ProcessingMethod = 'ai' | 'regex';
-
 // New types for the logging system
 export type LogAction =
   | 'LOGIN'
@@ -112,4 +101,4 @@ export interface SslStatus {
 // A specific path declaration is used to match the import in the backend service,
 // ensuring TypeScript can correctly resolve the module types.
 // FIX: Correct module augmentation path for pdfjs-dist deep import.
-declare module 'pdfjs-dist/build/pdf';
+declare module 'pdfjs-dist';

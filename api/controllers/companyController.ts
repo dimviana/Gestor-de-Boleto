@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,7 +15,7 @@ const mapDbCompanyToCompany = (dbCompany: any): Company => ({
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request and Response types to the handler.
-export const getCompanies = async (req: Request, res: Response) => {
+export const getCompanies = async (req: express.Request, res: express.Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT id, name, cnpj, address, monitored_folder_path FROM companies ORDER BY name');
     res.json(companies.map(mapDbCompanyToCompany));
@@ -27,7 +27,7 @@ export const getCompanies = async (req: Request, res: Response) => {
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request and Response types to the handler.
-export const createCompany = async (req: Request, res: Response) => {
+export const createCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -62,7 +62,7 @@ export const createCompany = async (req: Request, res: Response) => {
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request and Response types to the handler.
-export const updateCompany = async (req: Request, res: Response) => {
+export const updateCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -100,7 +100,7 @@ export const updateCompany = async (req: Request, res: Response) => {
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request and Response types to the handler.
-export const deleteCompany = async (req: Request, res: Response) => {
+export const deleteCompany = async (req: express.Request, res: express.Response) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();
@@ -142,7 +142,7 @@ export const deleteCompany = async (req: Request, res: Response) => {
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request and Response types to the handler.
-export const setMonitoredFolderPath = async (req: Request, res: Response) => {
+export const setMonitoredFolderPath = async (req: express.Request, res: express.Response) => {
   const { path } = req.body;
   const { id } = req.params;
   
@@ -161,7 +161,7 @@ export const setMonitoredFolderPath = async (req: Request, res: Response) => {
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request and Response types to the handler.
-export const clearMonitoredFolderPath = async (req: Request, res: Response) => {
+export const clearMonitoredFolderPath = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
 
   try {
