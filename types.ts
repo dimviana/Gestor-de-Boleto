@@ -107,3 +107,6 @@ export interface SslStatus {
     issuedAt: string | null;
     error?: string;
 }
+
+// FIX: Add module declaration for pdfjs-dist legacy build to resolve TypeScript error in backend service.
+declare module 'pdfjs-dist/legacy/build/pdf';
