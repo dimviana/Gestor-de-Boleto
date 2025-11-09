@@ -31,11 +31,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
     const map = new Map<string, Boleto[]>();
     boletos.forEach(boleto => {
       if (boleto.dueDate) {
-        // The date string from the database is 'YYYY-MM-DD'.
-        // Appending T00:00:00 ensures it's parsed in the user's local timezone,
-        // preventing off-by-one-day errors that can occur when parsing 'YYYY-MM-DD' directly.
         const date = new Date(`${boleto.dueDate}T00:00:00`);
-        // Check if the created date is valid before proceeding.
         if (!isNaN(date.getTime())) {
           const dateKey = date.toISOString().split('T')[0];
           if (!map.has(dateKey)) {
@@ -109,7 +105,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
               <div className="space-y-1 overflow-y-auto flex-1">
                 {boletosForDay.map(boleto => {
                   let isOverdue = false;
-                  // Add a similar validity check here for robustness.
                   if (boleto.dueDate) {
                       const dueDateObj = new Date(`${boleto.dueDate}T00:00:00`);
                       if (!isNaN(dueDateObj.getTime())) {

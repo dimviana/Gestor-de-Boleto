@@ -18,7 +18,6 @@ import UploadProgress, { UploadStatus } from './UploadProgress';
 import FloatingMenu from './FloatingMenu';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
 import CalendarView from './CalendarView';
-import { BoletoDetailsModal } from './BoletoDetailsModal';
 
 
 interface DashboardProps {
@@ -37,7 +36,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewingDetailsBoleto, setViewingDetailsBoleto] = useState<Boleto | null>(null);
   const [currentView, setCurrentView] = useState<'kanban' | 'calendar'>('kanban');
 
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -372,9 +370,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
               <div className="order-3">
                 {currentView === 'kanban' ? (
                   <div className="flex flex-col md:flex-row -mx-2">
-                    <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewDetails={setViewingDetailsBoleto} />
-                    <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewDetails={setViewingDetailsBoleto} />
-                    <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} onViewDetails={setViewingDetailsBoleto} />
+                    <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+                    <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+                    <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
                   </div>
                 ) : (
                    <CalendarView boletos={filteredBoletos} />
@@ -417,13 +415,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
           />
       </Modal>
 
-      {viewingDetailsBoleto && (
-        <BoletoDetailsModal
-          boleto={viewingDetailsBoleto}
-          isLoading={false}
-          onClose={() => setViewingDetailsBoleto(null)}
-        />
-      )}
     </>
   );
 };

@@ -11,11 +11,10 @@ interface BoletoCardProps {
   onUpdateComments: (id: string, comments: string) => void;
   isSelected: boolean;
   onToggleSelection: (id: string) => void;
-  onViewDetails: (boleto: Boleto) => void;
   userRole: Role;
 }
 
-const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewDetails, userRole }) => {
+const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, userRole }) => {
   const { t, language } = useLanguage();
   const { id, status, fileData, comments, extractedData } = boleto;
   
