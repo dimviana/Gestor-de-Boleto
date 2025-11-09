@@ -1,7 +1,8 @@
 
+
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
-import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon } from './icons/Icons';
+import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, HashtagIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface BoletoCardProps {
@@ -30,6 +31,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const displayDueDate = extractedData?.dueDate || boleto.dueDate;
   const displayAmount = extractedData?.amount ?? boleto.amount;
   const displayBarcode = extractedData?.barcode || boleto.barcode;
+  const displayGuideNumber = extractedData?.guideNumber || boleto.guideNumber;
   const displayPixCode = extractedData?.pixQrCodeText || boleto.pixQrCodeText;
   const displayFileName = extractedData?.fileName || boleto.fileName;
 
@@ -178,7 +180,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     }
   };
   
-  const CodeItem: React.FC<{ label: string; value: string | null; onCopy: () => void; copied: boolean; icon: React.ReactNode; }> = ({ label, value, onCopy, copied, icon }) => {
+  const CodeItem: React.FC<{ label: string; value: string | null; onCopy: () => void; copied: boolean; icon: React.ReactNode; copyTitle: string; copiedTitle: string; }> = ({ label, value, onCopy, copied, icon, copyTitle, copiedTitle }) => {
     if (!value) return null;
     return (
         <div className="mt-3">
@@ -193,7 +195,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
                 <button 
                     onClick={(e) => { e.stopPropagation(); onCopy(); }}
                     className="flex-shrink-0 p-2 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-r-md"
-                    title={copied ? t('barcodeCopied') : t('copyBarcode')}
+                    title={copied ? copiedTitle : copyTitle}
                 >
                     {copied ? <CheckIcon className="w-5 h-5 text-green-500"/> : <CopyIcon className="w-5 h-5"/>}
                 </button>
@@ -228,6 +230,10 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
              <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1">
               <UserIcon className="w-4 h-4 mr-2 text-gray-400"/>
               {displayDrawee || t('drawee')}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1" title={t('guideNumber')}>
+                <HashtagIcon className="w-4 h-4 mr-2 text-gray-400" />
+                {displayGuideNumber || t('notAvailable')}
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={displayFileName}>{displayFileName}</p>
         </div>
@@ -301,6 +307,8 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             onCopy={() => handleCopy(displayBarcode, 'barcode')}
             copied={barcodeCopied}
             icon={<BarcodeIcon className="w-5 h-5"/>}
+            copyTitle={t('copyBarcode')}
+            copiedTitle={t('barcodeCopied')}
         />
         <CodeItem 
             label={t('pixQrCode')}
@@ -308,6 +316,8 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             onCopy={() => handleCopy(displayPixCode, 'pix')}
             copied={pixCopied}
             icon={<QrCodeIcon className="w-5 h-5"/>}
+            copyTitle={t('copyPixCode')}
+            copiedTitle={t('pixCodeCopied')}
         />
       </div>
       
