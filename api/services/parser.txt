@@ -155,8 +155,8 @@ def extract_boleto_info(pdf_path):
         # Other values:
         "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
         "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
-        # Document Number: Use a word boundary `\b` to match only whole numbers.
-        "guideNumber_doc": r'(?i)N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?[\s.:\n]*?(\b\d+\b)',
+        # Document Number: Look for a number of at least 8 digits to avoid ambiguity.
+        "guideNumber_doc": r'(?i)N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?[\s.:\n]*?(\b\d{8,}\b)',
         "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero[\s.:\n]*?([^\n\s]+)',
     }
 
