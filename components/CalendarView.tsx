@@ -30,8 +30,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
   const boletosByDate = useMemo(() => {
     const map = new Map<string, Boleto[]>();
     boletos.forEach(boleto => {
-      if (boleto.dueDate) {
-        const date = new Date(`${boleto.dueDate}T00:00:00`);
+      if (boleto.createdAt) {
+        const date = new Date(boleto.createdAt);
         if (!isNaN(date.getTime())) {
           const dateKey = date.toISOString().split('T')[0];
           if (!map.has(dateKey)) {
@@ -39,7 +39,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
           }
           map.get(dateKey)!.push(boleto);
         } else {
-          console.warn(`Invalid dueDate format detected for boleto ID ${boleto.id}: ${boleto.dueDate}`);
+          console.warn(`Invalid createdAt format detected for boleto ID ${boleto.id}: ${boleto.createdAt}`);
         }
       }
     });

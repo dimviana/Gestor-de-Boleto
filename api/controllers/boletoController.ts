@@ -58,6 +58,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
         companyId: dbBoleto.company_id,
         comments: dbBoleto.comments,
         extractedData: dbBoleto.extracted_data || null,
+        createdAt: dbBoleto.created_at,
     };
 };
 

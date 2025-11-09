@@ -31,6 +31,7 @@ export interface Boleto {
   companyId: string; // Added for multi-tenancy
   comments: string | null;
   extractedData?: Record<string, any> | null;
+  createdAt?: string;
 }
 
 export type Role = 'viewer' | 'editor' | 'admin';
@@ -109,4 +110,5 @@ export interface SslStatus {
 }
 
 // FIX: Add module declaration for pdfjs-dist legacy build to resolve TypeScript error in backend service.
-declare module 'pdfjs-dist/legacy/build/pdf';
+// The module name must match the import path used in `api/services/geminiService.ts` exactly, including the '.js' extension.
+declare module 'pdfjs-dist/legacy/build/pdf.js';
