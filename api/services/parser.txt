@@ -128,7 +128,7 @@ def extract_boleto_info(pdf_path):
         guide_number = find_match(text_content, r'Nosso\sN[úu]mero[\s.:\n]*?(\S+)')
 
     # IMPROVED: Recipient regex with more delimiters to avoid over-capturing.
-    recipient_regex = r'(?:Beneficiário|Cedente)[\s.:\n]*([\s\S]*?)(?=\n\s*\b(?:Agência\s*/\s*Código|Nosso\sNúmero|Sacado|Pagador|Vencimento|Local\sde\sPagamento|Data (?:do )?Documento)\b)'
+    recipient_regex = r'(?:Beneficiário|Cedente)[\s.:\n]*([\s\S]*?)(?=\n\s*\b(?:CNPJ|Agência\s*/\s*Código|Nosso\sNúmero|Sacado|Pagador|Vencimento|Local\sde\sPagamento|Data (?:do )?Documento)\b)'
     
     # IMPROVED: Drawee regex stops before 'Sacador / Avalista' to capture only the name.
     drawee_regex = r'(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\n\s*\b(?:Sacador\s*/\s*Avalista|Instruções|Descrição|Autenticação Mecânica|FICHA DE COMPENSAÇÃO|Nº\sdo\sDocumento|Data\sdo\sDocumento)\b)'

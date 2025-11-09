@@ -194,8 +194,13 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
             <h3 className="font-extrabold text-lg text-gray-800 dark:text-gray-100 break-words">
-              {displayDrawee || displayRecipient || t('recipientNotFound')}
+              {displayRecipient || t('recipientNotFound')}
             </h3>
+            {displayDrawee && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {t('drawee').slice(0, -1)}: {displayDrawee}
+              </p>
+            )}
             {displayGuideNumber && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono flex items-center">
                     <HashtagIcon className="w-3 h-3 mr-1.5" />
