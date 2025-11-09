@@ -1,1 +1,160 @@
-�jh��2�)���c��⚚+��
+# -*- coding: utf-8 -*-
+import sys
+import fitz  # PyMuPDF
+import json
+import re
+
+def clean_ocr_mistakes(value):
+    """Corrects common OCR character misinterpretations for numbers and barcodes."""
+    if not value: return ''
+    return value.replace('O', '0').replace('º', '0') \
+                .replace('I', '1').replace('l', '1') \
+                .replace('S', '5').replace('B', '8') \
+                .replace('Z', '2').replace('G', '6') \
+                .replace('§', '5')
+
+def parse_currency(value_str):
+    """
+    Parses a string representing a Brazilian currency value into a float.
+    Handles formats like '1.234,56' and '1234,56' and strips 'R$'.
+    """
+    if not value_str: return None
+    try:
+        value_str = clean_ocr_mistakes(value_str.strip())
+        # Remove currency symbols and surrounding whitespace
+        value_str = re.sub(r'R\$\s*', '', value_str, flags=re.IGNORECASE).strip()
+
+        if not re.search(r'\d', value_str):
+            return None
+
+        if ',' in value_str:
+            value_str = value_str.replace('.', '').replace(',', '.')
+        
+        num_str = re.sub(r'[^\d.]', '', value_str)
+        if not num_str: return None
+
+        num = float(num_str)
+        
+        if num > 99999999.0:
+            return None
+            
+        return round(num, 2)
+    except (ValueError, TypeError):
+        return None
+
+def parse_date(value_str):
+    """Parses a date string in DD/MM/YYYY format, allowing for OCR errors."""
+    if not value_str: return None
+    try:
+        cleaned_str = clean_ocr_mistakes(value_str)
+        match = re.search(r'(\d{2})[/\s.Il]?(\d{2})[/\s.Il]?(\d{4})', cleaned_str)
+        if match:
+            day, month, year = match.groups()
+            day_int, month_int, year_int = int(day), int(month), int(year)
+            if 0 < day_int <= 31 and 0 < month_int <= 12 and year_int > 1900:
+                return f"{year}-{str(month_int).zfill(2)}-{str(day_int).zfill(2)}"
+        return None
+    except (ValueError, TypeError):
+        return None
+
+def extract_barcode(text):
+    """Finds and cleans the 47 or 48-digit barcode from the text, robust to OCR errors."""
+    # Pattern for the standard 5-block format
+    block_pattern = r'\b(\d{5}[.\s]?\d{5})\s*(\d{5}[.\s]?\d{6})\s*(\d{5}[.\s]?\d{6})\s*(\d)\s*(\d{14})\b'
+    match = re.search(block_pattern, text)
+    if match:
+        return re.sub(r'[^0-9]', '', match.group(0))
+
+    # Pattern for a long sequence of digits that might be broken up by spaces or OCR errors
+    # Iterate line by line to find a line that is likely the barcode.
+    for line in text.split('\n'):
+        cleaned_line = clean_ocr_mistakes(line)
+        numeric_line = re.sub(r'[^0-9]', '', cleaned_line)
+        if 47 <= len(numeric_line) <= 48:
+            return numeric_line
+            
+    # Fallback to a simpler pattern if others fail
+    simple_match = re.search(r'\b\d{47,48}\b', text)
+    if simple_match:
+        return simple_match.group(0)
+
+    return None
+
+def find_match(text, pattern, find_last=False):
+    """Helper to find the first or last match of a pattern and clean it."""
+    try:
+        matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
+        if matches:
+            result = matches[-1] if find_last else matches[0]
+            # Clean up newlines and extra spaces from the matched string
+            result = re.sub(r'\s*\n\s*', ' / ', str(result)).strip()
+            return re.sub(r'\s{2,}', ' ', result)
+    except (re.error, IndexError):
+        pass
+    return None
+
+def find_pix_code(text):
+    """Finds a PIX QR Code string (Copia e Cola)."""
+    # PIX codes start with '000201' and end with a 4-char CRC ('6304XXXX')
+    match = re.search(r'(000201[\s\S]*?6304[A-Fa-f0-9]{4})', text, re.IGNORECASE)
+    if match:
+        # PIX codes can have newlines from OCR, so we remove them but keep other spaces
+        return re.sub(r'\s*\n\s*', '', match.group(1)).strip()
+    return None
+
+def extract_boleto_info(pdf_path):
+    text_content = ""
+    try:
+        with fitz.open(pdf_path) as doc:
+            for page in doc:
+                text_content += page.get_text("text") + "\n"
+    except Exception as e:
+        print(json.dumps({"error": f"Failed to open or read PDF with PyMuPDF: {str(e)}"}, ensure_ascii=False))
+        sys.exit(1)
+
+    # Prioritize 'Valor Cobrado', fall back to 'Valor do Documento'
+    amount_str = find_match(text_content, r'(?:\(=\))?\s*Valor Cobrado[^\d,]*?((?:R\$\s*)?[\d.,]+)', find_last=True)
+    doc_amount_str = find_match(text_content, r'(?:\(=\))?\s*Valor (?:do )?Documento[^\d,]*?((?:R\$\s*)?[\d.,]+)', find_last=True)
+    
+    amount = parse_currency(amount_str)
+    doc_amount = parse_currency(doc_amount_str)
+    
+    if amount is None or amount == 0:
+        amount = doc_amount
+
+    # Prioritize 'Nº Documento', fall back to 'Nosso Número'
+    guide_number = find_match(text_content, r'N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?[\s.:\n]*?(\S+)')
+    if not guide_number:
+        guide_number = find_match(text_content, r'Nosso\sN[úu]mero[\s.:\n]*?(\S+)')
+
+    recipient_regex = r'(?:Beneficiário|Cedente)[\s.:\n]*([\s\S]*?)(?=\n\s*\b(?:CNPJ|Agência\s*/\s*Código|Nosso\sNúmero|Sacado|Pagador|Vencimento|Local\sde\sPagamento|Data (?:do )?Documento)\b)'
+    
+    drawee_regex = r'(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\n\s*\b(?:Sacador\s*/\s*Avalista|Instruções|Descrição|Autenticação Mecânica|FICHA DE COMPENSAÇÃO|Nº\sdo\sDocumento|Data\sdo\sDocumento)\b)'
+    
+    # IMPROVED: Due date regex looks for a date within a 60-char window after the label,
+    # making it robust to newlines and different layouts.
+    due_date_regex = r'Vencimento(?:[\s\S]{0,60}?)(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})'
+
+    result = {
+        "recipient": find_match(text_content, recipient_regex),
+        "drawee": find_match(text_content, drawee_regex),
+        "documentDate": parse_date(find_match(text_content, r'Data (?:do )?Documento[^\d]*?(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})', find_last=True)),
+        "dueDate": parse_date(find_match(text_content, due_date_regex, find_last=True)),
+        "documentAmount": doc_amount,
+        "amount": amount,
+        "discount": parse_currency(find_match(text_content, r'(?:\(-\))?\s*(?:Desconto\s*/\s*Abatimento)[^\d,]*?((?:R\$\s*)?[\d.,]+)', find_last=True)),
+        "interestAndFines": parse_currency(find_match(text_content, r'(?:\(\+\))?\s*(?:Juros\s*/\s*Multa|Outros Acréscimos)[^\d,]*?((?:R\$\s*)?[\d.,]+)', find_last=True)),
+        "barcode": extract_barcode(text_content),
+        "guideNumber": guide_number,
+        "pixQrCodeText": find_pix_code(text_content),
+    }
+    
+    print(json.dumps(result, ensure_ascii=False))
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        pdf_file_path = sys.argv[1]
+        extract_boleto_info(pdf_file_path)
+    else:
+        print(json.dumps({"error": "No PDF file path provided."}, ensure_ascii=False))
+        sys.exit(1)
