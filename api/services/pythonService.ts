@@ -4,6 +4,8 @@ import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { Boleto } from '../../types';
+// FIX: Import 'process' to provide correct types for the Node.js global object.
+import { process } from 'process';
 
 const PYTHON_PATH = process.env.PYTHON_PATH || 'python3';
 // The script is located in the source directory, and the server is run from the project root.
