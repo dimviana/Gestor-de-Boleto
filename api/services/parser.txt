@@ -87,13 +87,20 @@ def extract_barcode(text):
     return None
 
 def find_pix_code(text):
-    """Finds a PIX QR Code string ("Copia e Cola")."""
-    # PIX codes start with '000201' and often end with '6304XXXX' (CRC).
-    # This regex captures the whole string, removing newlines which OCR might insert.
-    match = re.search(r'(000201[a-zA-Z0-9*@$.%+/=_-]{100,})', text)
+    """
+    Finds a PIX QR Code string ("Copia e Cola"). This is more robust for multi-line codes.
+    It looks for the start '000201' and the final CRC '6304[A-F0-9]{4}'.
+    """
+    # `[\s\S]*?` will non-greedily match any character including newlines.
+    match = re.search(r'(000201[.\s\S]*?6304[A-F0-9]{4})', text, re.IGNORECASE)
     if match:
-        return re.sub(r'\s*\n\s*', '', match.group(1)).strip()
+        pix_code = match.group(1)
+        # Reconstruct the code by removing all whitespace characters (spaces, newlines, etc.)
+        # that OCR might have inserted.
+        cleaned_code = re.sub(r'\s+', '', pix_code)
+        return cleaned_code
     return None
+
 
 def extract_detailed_costs(text):
     """Extracts detailed cost items."""
@@ -133,10 +140,10 @@ def extract_boleto_info(pdf_path):
 
     # Define regex patterns for each field. They are designed to be flexible.
     PATTERNS = {
-        # Recipient: Look for the label and capture the text on the same or next line until another known label appears.
-        "recipient": r'(?i)(?:Beneficiário|Cedente)[\s:.]*\n?([\s\S]*?)(?=\n\s*(?:CNPJ:|Agência|Nosso Número|Sacado|Pagador|Data (?:do )?Documento|AGÊNCIA \/ CÓDIGO DO BENEFICIÁRIO))',
-        # Drawee: Similar logic to recipient.
-        "drawee": r'(?i)(?:Pagador|Sacado)[\s:.]*\n?([\s\S]*?)(?=\n\s*(?:CNPJ:|CPF:|Endereço|Sacador|Avalista|Instruções|Autenticação Mecânica))',
+        # Recipient: Look for the label and capture text until another known label appears or end of string.
+        "recipient": r'(?i)(?:Beneficiário|Cedente)[\s:.]*\n?([\s\S]*?)(?=\n\s*(?:CNPJ:|Agência|Nosso Número|Sacado|Pagador|Data (?:do )?Documento|AGÊNCIA \/ CÓDIGO DO BENEFICIÁRIO)|$)',
+        # Drawee: Similar logic, but looks for footer keywords as terminators or end of string.
+        "drawee": r'(?i)(?:Pagador|Sacado)[\s:.]*\n?([\s\S]*?)(?=\n\s*\b(?:Instruções|Descrição|Autenticação Mecânica|FICHA DE COMPENSAÇÃO|Nosso Número)\b|$)',
         # Due Date: Find the label and look for a date pattern on the same line or the next.
         "dueDate": r'(?i)Vencimento\n?.*?\b(\d{2}[/.]\d{2}[/.]\d{4})\b',
         # Document Date: Same logic as due date.
@@ -147,8 +154,8 @@ def extract_boleto_info(pdf_path):
         # Other values:
         "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
         "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
-        # Document Number: Prioritize "Nº Documento", then "Nosso Número".
-        "guideNumber_doc": r'(?i)N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?[\s.:\n]*?([^\n\s]+)',
+        # Document Number: Prioritize "Nº Documento", specifically looking for a digit. Then try "Nosso Número".
+        "guideNumber_doc": r'(?i)N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?[\s.:\n]*?(\d[\d.-]*)',
         "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero[\s.:\n]*?([^\n\s]+)',
     }
 
