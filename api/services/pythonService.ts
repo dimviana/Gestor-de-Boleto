@@ -4,10 +4,6 @@ import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { Boleto } from '../../types';
-// FIX: Import Buffer type to resolve 'Cannot find name Buffer' error, likely due to a missing @types/node or conflicting tsconfig 'lib' settings.
-import { Buffer } from 'buffer';
-// FIX: Import process to resolve type errors like 'Property 'cwd' does not exist on type 'Process'', ensuring Node.js 'process' object types are available.
-import process from 'process';
 
 const PYTHON_PATH = process.env.PYTHON_PATH || 'python3';
 // The script is located in the source directory, and the server is run from the project root.
