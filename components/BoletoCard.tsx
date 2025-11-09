@@ -297,22 +297,26 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             <div className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-slate-600 space-y-1.5 animate-fade-in">
                 <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 pb-1">{t('documentInfo')}</h4>
                 <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-600 dark:text-gray-300">{t('documentDate')}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{t('guideNumber').replace(':', '')}</span>
+                    <span className="font-semibold text-gray-700 dark:text-gray-200">{displayGuideNumber || t('notAvailable')}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600 dark:text-gray-300">{t('documentDate').replace(':', '')}</span>
                     <span className="font-semibold text-gray-700 dark:text-gray-200">{formatDate(displayDocumentDate)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-600 dark:text-gray-300">{t('documentAmount')}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{t('documentAmount').replace(':', '')}</span>
                     <span className="font-semibold text-gray-700 dark:text-gray-200">{formatCurrency(displayDocumentAmount)}</span>
                 </div>
                 {displayDiscount && (
                     <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-600 dark:text-gray-300">{t('discount')}</span>
+                        <span className="text-gray-600 dark:text-gray-300">{t('discount').replace(':', '')}</span>
                         <span className="font-semibold text-red-500 dark:text-red-400">- {formatCurrency(displayDiscount)}</span>
                     </div>
                 )}
                 {displayInterestAndFines && (
                     <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-600 dark:text-gray-300">{t('interestAndFines')}</span>
+                        <span className="text-gray-600 dark:text-gray-300">{t('interestAndFines').replace(':', '')}</span>
                         <span className="font-semibold text-orange-500 dark:text-orange-400">+ {formatCurrency(displayInterestAndFines)}</span>
                     </div>
                 )}

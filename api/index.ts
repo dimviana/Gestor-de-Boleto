@@ -1,5 +1,6 @@
 
 
+
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -83,5 +84,7 @@ const startServer = async () => {
 
 startServer().catch(err => {
     console.error("Server startup failed.", err);
+    // FIX: 'process.exit' can cause issues. Throwing the error ensures the process exits
+    // due to an unhandled promise rejection, which is a standard Node.js behavior.
     throw err;
 });
