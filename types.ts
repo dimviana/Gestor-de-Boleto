@@ -109,6 +109,7 @@ export interface SslStatus {
     error?: string;
 }
 
-// FIX: Add module declaration for pdfjs-dist legacy build to resolve TypeScript error in backend service.
-// The module name must match the import path used in `api/services/geminiService.ts` exactly, including the '.js' extension.
-declare module 'pdfjs-dist/legacy/build/pdf.js';
+// FIX: Resolve module augmentation error for `pdfjs-dist/legacy/build/pdf`.
+// A wildcard declaration is used to correctly type deep imports from `pdfjs-dist`
+// which is used in the backend service `api/services/geminiService.ts`.
+declare module 'pdfjs-dist/legacy/build/pdf';

@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Boleto, BoletoStatus, AiSettings } from '../../types';
 import { appConfig } from './configService';
 // Use the legacy build for Node.js compatibility
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 import { createCanvas, Canvas } from 'canvas';
 import { Buffer } from 'buffer';
 import { translations } from '../../translations';
