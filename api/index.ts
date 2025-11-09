@@ -1,12 +1,4 @@
 
-
-
-
-
-
-
-
-
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -59,7 +51,8 @@ app.use('/api', apiRouter);
 
 // --- FRONTEND SERVING ---
 // The static assets and the SPA fallback are handled after the API.
-const staticPath = path.join(__dirname, '..');
+// FIX: Cannot find name '__dirname'. Using path.resolve() which resolves relative to the current working directory. The original logic `path.join(__dirname, '..')` when executed from `dist/api/index.js` resolves to the `dist` directory. `path.resolve('dist')` achieves the same result under the standard assumption of running the server from the project root.
+const staticPath = path.resolve('dist');
 
 // 1. Serve static assets (JS, CSS, images) from the build directory.
 app.use(express.static(staticPath));
