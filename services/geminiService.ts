@@ -4,26 +4,6 @@ import { translations } from '../translations';
 
 declare const pdfjsLib: any;
 
-/**
- * Helper function to get the API key.
- * This makes the application runnable locally by using localStorage as the primary source,
- * as suggested by the app's own documentation component.
- * It retains compatibility with the original environment by checking for `process.env.API_KEY` as a fallback.
- */
-const getApiKey = (): string => {
-    // API key must be obtained exclusively from process.env.API_KEY for deployed environments.
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      return process.env.API_KEY;
-    }
-    
-    // Fallback for frontend-only mode where backend is not running.
-    const key = localStorage.getItem('gemini_api_key');
-    if(key) return key;
-    
-    throw new Error("Chave da API não encontrada. A API Key deve ser configurada na variável de ambiente API_KEY ou no localStorage para modo de demonstração.");
-};
-
-
 const convertFileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -58,8 +38,8 @@ export const processBoletoPDF = async (
     aiSettings: AiSettings
 ): Promise<Omit<Boleto, 'companyId'>> => {
     try {
-        const apiKey = getApiKey();
-        const ai = new GoogleGenAI({ apiKey });
+        // FIX: Per coding guidelines, the API key must be obtained exclusively from process.env.API_KEY.
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
         const [canvas, fileAsBase64] = await Promise.all([
             renderPdfPageToCanvas(file),

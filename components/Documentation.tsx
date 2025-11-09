@@ -121,6 +121,7 @@ const Documentation: React.FC = () => {
                     `}</Code>
                 </Section>
 
+                {/* FIX: Updated API Key instructions to align with coding guidelines. */}
                 <Section title="4. Installation and Setup Guide">
                     <p>Follow these steps to run the project on your local machine.</p>
                     <h4 className="font-bold mt-4">Prerequisites:</h4>
@@ -133,18 +134,9 @@ const Documentation: React.FC = () => {
                     <p>This application is designed to run directly in a browser from the provided files without a build step.</p>
                     <ol>
                         <li><strong>Open <code>index.html</code>:</strong> Simply open the <code>index.html</code> file in your web browser.</li>
-                        <li><strong>Set API Key:</strong> The application requires a Google Gemini API key to function. Since there's no backend, you must set it directly in the browser.
-                            <ul>
-                                <li>Open your browser's Developer Tools (usually by pressing F12).</li>
-                                <li>Go to the <strong>Console</strong> tab.</li>
-                                <li>Execute the following command, replacing <code>"YOUR_API_KEY_HERE"</code> with your actual key:</li>
-                            </ul>
-                        </li>
+                        <li><strong>API Key Setup:</strong> The application requires a Google Gemini API key to function. This key must be available in the execution environment as a <code>process.env.API_KEY</code> variable.</li>
                     </ol>
-                    <Code>
-                        {`localStorage.setItem('gemini_api_key', 'YOUR_API_KEY_HERE');`}
-                    </Code>
-                    <p><strong>Note:</strong> The app has been updated to use an environment variable `process.env.API_KEY`. In this live environment, the key is assumed to be injected automatically.</p>
+                    <p><strong>Note:</strong> The API key is managed externally and is assumed to be injected automatically. The application is not responsible for setting up this environment variable.</p>
                 </Section>
 
                 <Section title="5. How to Use">

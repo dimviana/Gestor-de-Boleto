@@ -110,7 +110,6 @@ export interface SslStatus {
 }
 
 // FIX: Resolve module augmentation error for deep imports from `pdfjs-dist`.
-// A specific module declaration is used to correctly type the deep import from `pdfjs-dist`
-// used in `api/services/geminiService.ts`. This resolves "Invalid module name" errors that can
-// occur with wildcard declarations in some tooling setups.
+// The wildcard module declaration was causing an error. Replaced with the specific path
+// used in `api/services/geminiService.ts` to resolve "Cannot find module" errors correctly.
 declare module 'pdfjs-dist/legacy/build/pdf';
