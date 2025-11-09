@@ -88,16 +88,17 @@ def extract_barcode(text):
 
 def find_pix_code(text):
     """
-    Finds a PIX QR Code string ("Copia e Cola"). This is more robust for multi-line codes.
-    It looks for the start '000201' and the final CRC '6304[A-F0-9]{4}'.
+    Finds and reconstructs a PIX QR Code string ("Copia e Cola") that may be
+    split across multiple lines in the OCR text. It identifies the standard
+    start ('000201') and end ('6304' + 4 hex chars for CRC) markers.
     """
-    # `[\s\S]*?` will non-greedily match any character including newlines.
-    match = re.search(r'(000201[.\s\S]*?6304[A-F0-9]{4})', text, re.IGNORECASE)
+    # A non-greedy regex to find the content between the start and end markers,
+    # spanning across any characters including newlines.
+    match = re.search(r'(000201[\s\S]*?6304[A-F0-9]{4})', text, re.IGNORECASE)
     if match:
-        pix_code = match.group(1)
-        # Reconstruct the code by removing all whitespace characters (spaces, newlines, etc.)
-        # that OCR might have inserted.
-        cleaned_code = re.sub(r'\s+', '', pix_code)
+        pix_code_with_whitespace = match.group(1)
+        # Remove all whitespace (spaces, newlines, tabs) to reconstruct the single-line string.
+        cleaned_code = re.sub(r'\s+', '', pix_code_with_whitespace)
         return cleaned_code
     return None
 
@@ -154,8 +155,8 @@ def extract_boleto_info(pdf_path):
         # Other values:
         "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
         "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
-        # Document Number: Prioritize "Nº Documento", specifically looking for a digit. Then try "Nosso Número".
-        "guideNumber_doc": r'(?i)N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?[\s.:\n]*?(\d[\d.-]*)',
+        # Document Number: Use a word boundary `\b` to match only whole numbers.
+        "guideNumber_doc": r'(?i)N[ºo\.]?\s?(?:do\s)?Documento(?:[\/]?Guia)?[\s.:\n]*?(\b\d+\b)',
         "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero[\s.:\n]*?([^\n\s]+)',
     }
 
