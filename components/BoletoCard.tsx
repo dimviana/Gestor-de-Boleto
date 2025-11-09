@@ -25,6 +25,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(comments || '');
 
+  const displayRecipient = extractedData?.recipient || boleto.recipient;
   const displayDrawee = extractedData?.drawee || boleto.drawee;
   const displayDueDate = extractedData?.dueDate || boleto.dueDate;
   const displayAmount = extractedData?.amount ?? boleto.amount;
@@ -195,10 +196,13 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
-            <h3 className="font-bold text-base text-gray-800 dark:text-gray-100 break-words flex items-center">
+            <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 break-words">
+              {displayRecipient || t('recipient')}
+            </h3>
+             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1">
               <UserIcon className="w-4 h-4 mr-2 text-gray-400"/>
               {displayDrawee || t('drawee')}
-            </h3>
+            </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={displayFileName}>{displayFileName}</p>
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
