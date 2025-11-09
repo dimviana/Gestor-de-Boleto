@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
 import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, HashtagIcon } from './icons/Icons';
@@ -34,6 +32,10 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const displayGuideNumber = extractedData?.guideNumber || boleto.guideNumber;
   const displayPixCode = extractedData?.pixQrCodeText || boleto.pixQrCodeText;
   const displayFileName = extractedData?.fileName || boleto.fileName;
+  const displayDocumentAmount = extractedData?.documentAmount ?? boleto.documentAmount;
+  const displayDiscount = extractedData?.discount ?? boleto.discount;
+  const displayInterestAndFines = extractedData?.interestAndFines ?? boleto.interestAndFines;
+  const displayDocumentDate = extractedData?.documentDate || boleto.documentDate;
 
   const toggleDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -204,6 +206,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     );
   };
 
+  const hasExtraDetails = (boleto.documentAmount && boleto.documentAmount !== boleto.amount) || boleto.discount || boleto.interestAndFines || (detailedCosts && Object.keys(detailedCosts).length > 0);
 
   return (
     <>
@@ -279,7 +282,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             </div>
         </div>
 
-        {detailedCosts && Object.keys(detailedCosts).length > 0 && (
+        {hasExtraDetails && (
             <div className="mt-3 text-center">
                 <button
                     onClick={toggleDetails}
@@ -290,15 +293,40 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             </div>
         )}
 
-        {isDetailsOpen && detailedCosts && (
+        {isDetailsOpen && (
             <div className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-slate-600 space-y-1.5 animate-fade-in">
-                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-1">{t('detailedValues')}</h4>
-                {Object.entries(detailedCosts).map(([key, value]) => (
-                    <div key={key} className="flex justify-between items-center text-xs">
-                        <span className="text-gray-600 dark:text-gray-300">{key}</span>
-                        <span className="font-semibold text-gray-700 dark:text-gray-200">{formatCurrency(value)}</span>
+                <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 pb-1">{t('documentInfo')}</h4>
+                <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600 dark:text-gray-300">{t('documentDate')}</span>
+                    <span className="font-semibold text-gray-700 dark:text-gray-200">{formatDate(displayDocumentDate)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600 dark:text-gray-300">{t('documentAmount')}</span>
+                    <span className="font-semibold text-gray-700 dark:text-gray-200">{formatCurrency(displayDocumentAmount)}</span>
+                </div>
+                {displayDiscount && (
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-600 dark:text-gray-300">{t('discount')}</span>
+                        <span className="font-semibold text-red-500 dark:text-red-400">- {formatCurrency(displayDiscount)}</span>
                     </div>
-                ))}
+                )}
+                {displayInterestAndFines && (
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-600 dark:text-gray-300">{t('interestAndFines')}</span>
+                        <span className="font-semibold text-orange-500 dark:text-orange-400">+ {formatCurrency(displayInterestAndFines)}</span>
+                    </div>
+                )}
+                {detailedCosts && Object.keys(detailedCosts).length > 0 && (
+                    <>
+                    <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 pt-2 pb-1">{t('detailedValues')}</h4>
+                    {Object.entries(detailedCosts).map(([key, value]) => (
+                        <div key={key} className="flex justify-between items-center text-xs">
+                            <span className="text-gray-600 dark:text-gray-300">{key}</span>
+                            <span className="font-semibold text-gray-700 dark:text-gray-200">{formatCurrency(value)}</span>
+                        </div>
+                    ))}
+                    </>
+                )}
             </div>
         )}
       
