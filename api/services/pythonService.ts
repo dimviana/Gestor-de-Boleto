@@ -4,12 +4,11 @@ import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { Boleto } from '../../types';
-// FIX: Import 'process' to provide correct types for the Node.js global object.
-import { process } from 'process';
 
 const PYTHON_PATH = process.env.PYTHON_PATH || 'python3';
-// The script is located in the source directory, and the server is run from the project root.
-const PARSER_SCRIPT_PATH = path.join(process.cwd(), 'api', 'services', 'parser.txt');
+// The script is located in the source directory, and will be renamed to .py by the deploy script
+// FIX: Use path.resolve to avoid type errors with process.cwd() in mixed environments where browser types might conflict with Node.js types.
+const PARSER_SCRIPT_PATH = path.resolve('api', 'services', 'parser.py');
 
 export const extractBoletoInfoWithPython = (pdfBuffer: Buffer, fileName: string): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     return new Promise(async (resolve, reject) => {

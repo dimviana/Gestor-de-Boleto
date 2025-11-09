@@ -82,6 +82,11 @@ EOL
     echo -e "${YELLOW}Installing project dependencies (npm install)...${NC}"
     npm install
     
+    echo -e "${YELLOW}Renaming Python parser script...${NC}"
+    if [ -f "api/services/parser.txt" ]; then
+        mv "api/services/parser.txt" "api/services/parser.py"
+    fi
+
     echo -e "${YELLOW}Compiling TypeScript project (npm run build)...${NC}"
     npm run build
     
@@ -207,6 +212,11 @@ update_system() {
 
     echo -e "${YELLOW}Installing/updating dependencies...${NC}"
     npm install
+
+    echo -e "${YELLOW}Renaming Python parser script...${NC}"
+    if [ -f "api/services/parser.txt" ]; then
+        mv "api/services/parser.txt" "api/services/parser.py"
+    fi
     
     echo -e "${YELLOW}Rebuilding project...${NC}"
     npm run build
