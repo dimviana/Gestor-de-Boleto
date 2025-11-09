@@ -7,6 +7,8 @@ import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
 import { extractBoletoInfoWithPython } from '../services/pythonService';
+import { extractBoletoInfoWithGemini } from '../services/geminiService';
+import { appConfig } from '../services/configService';
 
 
 // --- Controller Functions ---
@@ -128,9 +130,15 @@ export const extractBoleto = async (req: Request, res: Response) => {
     }
 
     try {
-        // The system now exclusively uses the more reliable Python-based parser.
-        // The choice between 'ai' and 'regex' has been removed to simplify and improve accuracy.
-        const extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
+        let extractedData;
+        if (appConfig.processing_method === 'ai') {
+            if (!appConfig.API_KEY) {
+                return res.status(500).json({ message: 'A chave da API Gemini não está configurada no servidor.' });
+            }
+            extractedData = await extractBoletoInfoWithGemini(req.file.buffer, req.file.originalname);
+        } else { // 'regex' or fallback
+            extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
+        }
         
         if (extractedData.amount === null || extractedData.amount === undefined) {
             return res.status(400).json({ message: 'amountNotFoundErrorText' });

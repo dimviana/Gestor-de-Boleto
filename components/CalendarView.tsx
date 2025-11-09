@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Boleto, BoletoStatus } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -5,15 +6,26 @@ import { ArrowRightIcon, ArrowLeftIcon } from './icons/Icons';
 
 interface CalendarViewProps {
   boletos: Boleto[];
-  onViewPdf: (boleto: Boleto) => void;
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({ boletos, onViewPdf }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
   const { t, language } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const firstDayOfMonth = useMemo(() => new Date(currentDate.getFullYear(), currentDate.getMonth(), 1), [currentDate]);
-  const lastDayOfMonth = useMemo(() => new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0), [currentDate]);
+  
+  const handleOpenPdf = (boleto: Boleto) => {
+    if (!boleto.fileData) return;
+    const byteCharacters = atob(boleto.fileData);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/pdf' });
+    const fileURL = URL.createObjectURL(blob);
+    window.open(fileURL, '_blank');
+  };
 
   const boletosByDate = useMemo(() => {
     const map = new Map<string, Boleto[]>();
@@ -108,7 +120,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos, onViewPdf }) => {
                   return (
                     <button 
                         key={boleto.id} 
-                        onClick={() => onViewPdf(boleto)}
+                        onClick={() => handleOpenPdf(boleto)}
                         className={`w-full text-left p-1.5 rounded-md text-xs transition-colors ${
                             boleto.status === BoletoStatus.PAID ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300' :
                             isOverdue ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300' :

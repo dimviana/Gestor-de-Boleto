@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
 import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon } from './icons/Icons';
@@ -10,12 +11,11 @@ interface BoletoCardProps {
   onUpdateComments: (id: string, comments: string) => void;
   isSelected: boolean;
   onToggleSelection: (id: string) => void;
-  onViewPdf: (boleto: Boleto) => void;
   onViewDetails: (boleto: Boleto) => void;
   userRole: Role;
 }
 
-const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewPdf, onViewDetails, userRole }) => {
+const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, onViewDetails, userRole }) => {
   const { t, language } = useLanguage();
   const { id, status, fileData, comments, extractedData } = boleto;
   
@@ -62,6 +62,20 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             setTimeout(() => setBarcodeCopied(false), 2000);
         }
     });
+  };
+
+  const handleOpenPdf = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!fileData) return;
+    const byteCharacters = atob(fileData);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/pdf' });
+    const fileURL = URL.createObjectURL(blob);
+    window.open(fileURL, '_blank');
   };
 
   const handleDownloadPdf = (e: React.MouseEvent) => {
@@ -281,10 +295,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         </div>
         <div className="flex items-center justify-center space-x-4">
             <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onViewPdf(boleto);
-                }}
+                onClick={handleOpenPdf}
                 disabled={!fileData}
                 className="flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             >

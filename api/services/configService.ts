@@ -1,3 +1,4 @@
+
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
@@ -13,16 +14,23 @@ export const appConfig: AppConfig = {
     JWT_SECRET: process.env.JWT_SECRET || 'default_jwt_secret_please_change',
     API_KEY: process.env.API_KEY || '',
     processing_method: (process.env.PROCESSING_METHOD as 'regex' | 'ai') || 'regex',
+    ai_settings: { model: 'gemini-2.5-flash', temperature: 0.2, topK: 1, topP: 1 }
 };
 
 export const loadConfigFromDB = async (): Promise<void> => {
     console.log('Loading configuration from database...');
     try {
-        const [settings] = await pool.query<RowDataPacket[]>("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('API_KEY', 'JWT_SECRET', 'processing_method')");
+        const [settings] = await pool.query<RowDataPacket[]>("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('API_KEY', 'JWT_SECRET', 'processing_method', 'ai_settings')");
         
         settings.forEach(setting => {
             if (setting.setting_value) { // Only override if DB value is not empty
-                appConfig[setting.setting_key] = setting.setting_value;
+                try {
+                    // Attempt to parse JSON strings for settings like ai_settings
+                    appConfig[setting.setting_key] = JSON.parse(setting.setting_value);
+                } catch(e) {
+                    // Otherwise, use the raw value
+                    appConfig[setting.setting_key] = setting.setting_value;
+                }
             }
         });
 
