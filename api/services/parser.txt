@@ -134,7 +134,7 @@ def extract_boleto_info(pdf_path):
     # Define regex patterns for each field. They are designed to be flexible.
     PATTERNS = {
         # Recipient: Look for the label and capture the text on the same or next line until another known label appears.
-        "recipient": r'(?i)(?:Beneficiário|Cedente)[\s:.]*\n?([\s\S]*?)(?=\n\s*(?:CNPJ:|Agência|Nosso Número|Sacado|Pagador))',
+        "recipient": r'(?i)(?:Beneficiário|Cedente)[\s:.]*\n?([\s\S]*?)(?=\n\s*(?:CNPJ:|Agência|Nosso Número|Sacado|Pagador|Data (?:do )?Documento|AGÊNCIA \/ CÓDIGO DO BENEFICIÁRIO))',
         # Drawee: Similar logic to recipient.
         "drawee": r'(?i)(?:Pagador|Sacado)[\s:.]*\n?([\s\S]*?)(?=\n\s*(?:CNPJ:|CPF:|Endereço|Sacador|Avalista|Instruções|Autenticação Mecânica))',
         # Due Date: Find the label and look for a date pattern on the same line or the next.
@@ -142,8 +142,8 @@ def extract_boleto_info(pdf_path):
         # Document Date: Same logic as due date.
         "documentDate": r'(?i)Data (?:do )?Documento\n?.*?\b(\d{2}[/.]\d{2}[/.]\d{4})\b',
         # Amount: Prioritize "Valor Cobrado", then "Valor do Documento". The value is often at the end of the line.
-        "amount_cobrado": r'(?i)\(=\)\s*Valor Cobrado[^\n]*?(R\$\s*[\d,.]+)',
-        "amount_documento": r'(?i)(?:\(=\))?\s*Valor do Documento[^\n]*?(R\$\s*[\d,.]+)',
+        "amount_cobrado": r'(?i)\(=\)\s*Valor Cobrado\n?.*?(R\$\s*[\d,.]+)',
+        "amount_documento": r'(?i)(?:\(=\))?\s*Valor do Documento\n?.*?(R\$\s*[\d,.]+)',
         # Other values:
         "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
         "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
