@@ -1,10 +1,12 @@
 
+
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
+// FIX: Add Request and Response types to the handler.
 export const getSettings = async (req: Request, res: Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
@@ -25,6 +27,7 @@ export const getSettings = async (req: Request, res: Response) => {
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
+// FIX: Add Request and Response types to the handler.
 export const updateSettings = async (req: Request, res: Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();

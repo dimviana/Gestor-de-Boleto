@@ -131,9 +131,9 @@ def extract_boleto_info(pdf_path):
     
     drawee_regex = r'(?:Pagador|Sacado)[\s.:\n]*?([\s\S]*?)(?=\n\s*\b(?:Sacador\s*/\s*Avalista|Instruções|Descrição|Autenticação Mecânica|FICHA DE COMPENSAÇÃO|Nº\sdo\sDocumento|Data\sdo\sDocumento)\b)'
     
-    # IMPROVED: Regex looks for a date within a 60-char window after the label
-    due_date_regex = r'Vencimento(?:[\s\S]{0,60}?)(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})'
-    doc_date_regex = r'Data (?:do )?Documento(?:[\s\S]{0,60}?)(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})'
+    # IMPROVED: Regex looks for a date within a 30-char window after the label for better precision
+    due_date_regex = r'Vencimento(?:[\s\S]{0,30}?)(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})'
+    doc_date_regex = r'Data (?:do )?Documento(?:[\s\S]{0,30}?)(\d{2}[/\s.Il]?\d{2}[/\s.Il]?\d{4})'
 
     result = {
         "recipient": find_match(text_content, recipient_regex),
