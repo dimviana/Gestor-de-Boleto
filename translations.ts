@@ -2,7 +2,7 @@ export type Language = 'pt' | 'en';
 
 const pt = {
     loginTitle: 'Boleto Manager AI',
-    loginSubtitle: 'Gerencie seus boletos com o poder da IA do Gemini',
+    loginSubtitle: 'Gerencie seus boletos de forma inteligente',
     loginButton: 'Acessar o Painel',
     createAccountButton: 'Criar Conta',
     logoutButton: 'Sair',
@@ -164,29 +164,31 @@ const pt = {
     viewCalendar: 'Visão Calendário',
     previousMonth: 'Mês Anterior',
     nextMonth: 'Próximo Mês',
+    // FIX: Add missing geminiPrompt translation key.
     geminiPrompt: `
         Você é um assistente especialista em extrair informações de boletos bancários brasileiros.
-        Sua tarefa é analisar a IMAGEM do boleto fornecida.
-        Retorne um objeto JSON com as seguintes informações. Se uma informação não for encontrada, retorne null para aquele campo.
+        Sua tarefa é analisar o TEXTO EXTRAÍDO VIA OCR e a IMAGEM fornecidos a seguir.
+        O texto OCR é a fonte primária de informação, pois pode conter texto que não é visível na imagem. No entanto, o OCR pode conter erros.
+        Use a imagem para verificar o layout, corrigir erros de reconhecimento de caracteres do OCR e extrair informações que o OCR possa ter perdido, como o QR code.
+        Retorne um objeto JSON com as seguintes informações. Se uma informação não for encontrada em nenhuma das fontes, retorne null para aquele campo.
         Datas devem estar no formato AAAA-MM-DD. O valor deve ser um número.
 
         - recipient: O nome do beneficiário/cedente.
         - drawee: O nome do sacado.
         - documentDate: A "Data do Documento".
         - dueDate: A data de vencimento.
-        - documentAmount: O "Valor do Documento".
         - amount: O valor final a ser pago ("Valor Cobrado"). Se não houver, use o "Valor do Documento".
         - discount: O valor de qualquer desconto ("(-) Desconto / Abatimento").
         - interestAndFines: A soma de quaisquer juros e multas ("(+) Juros / Multa" ou "Outros Acréscimos").
-        - barcode: A linha digitável completa, sem pontos ou espaços.
-        - guideNumber: O "Número do Documento". Se não houver, use o "Nosso Número".
+        - barcode: A linha digitável completa.
+        - guideNumber: O "Número do Documento".
         - pixQrCodeText: O conteúdo completo (copia e cola) do QR Code PIX.
     `,
 };
 
 const en: typeof pt = {
     loginTitle: 'Boleto Manager AI',
-    loginSubtitle: 'Manage your payment slips with the power of Gemini AI',
+    loginSubtitle: 'Manage your payment slips intelligently',
     loginButton: 'Access Dashboard',
     createAccountButton: 'Create Account',
     logoutButton: 'Logout',
@@ -348,22 +350,24 @@ const en: typeof pt = {
     viewCalendar: 'Calendar View',
     previousMonth: 'Previous Month',
     nextMonth: 'Next Month',
+    // FIX: Add missing geminiPrompt translation key.
     geminiPrompt: `
         You are an expert assistant for extracting information from Brazilian bank slips (boletos).
-        Your task is to analyze the provided boleto IMAGE.
-        Return a JSON object with the following information. If a piece of information is not found, return null for that field.
+        Your task is to analyze the OCR-EXTRACTED TEXT and the IMAGE provided below.
+        The OCR text is the primary source of information, as it may contain text not selectable from the image. However, the OCR may contain errors.
+        Use the image to verify the layout, correct character recognition errors from the OCR, and extract information the OCR might have missed, like the QR code.
+        Return a JSON object with the following information. If a piece of information is not found in either source, return null for that field.
         Dates must be in YYYY-MM-DD format. The amount must be a number.
 
         - recipient: The name of the beneficiary/payee.
         - drawee: The name of the drawee (Sacado).
         - documentDate: The "Data do Documento" (Document Date).
         - dueDate: The due date.
-        - documentAmount: The "Valor do Documento" (Document Amount).
         - amount: The final amount to be paid ("Valor Cobrado"). If not present, use "Valor do Documento".
         - discount: The value of any discount ("(-) Desconto / Abatimento").
         - interestAndFines: The sum of any interest and fines ("(+) Juros / Multa" or "Outros Acréscimos").
-        - barcode: The complete digitable line (linha digitável), without dots or spaces.
-        - guideNumber: The "Número do Documento" (Document Number). If not present, use "Nosso Número".
+        - barcode: The complete digitable line (linha digitável).
+        - guideNumber: The "Número do Documento" (Document Number).
         - pixQrCodeText: The full text content (copy and paste) of the PIX QR Code.
     `,
 };

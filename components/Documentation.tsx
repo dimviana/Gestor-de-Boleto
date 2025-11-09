@@ -54,7 +54,7 @@ const Documentation: React.FC = () => {
                 heightLeft -= (pdfHeight - 40);
             }
             
-            pdf.save('Boleto-Manager-AI-Documentation.pdf');
+            pdf.save('Boleto-Manager-Documentation.pdf');
 
         } catch (error) {
             console.error("Error generating PDF:", error);
@@ -84,7 +84,7 @@ const Documentation: React.FC = () => {
                 </header>
                 
                 <Section title="1. Project Overview">
-                    <p>Boleto Manager AI is a modern SaaS platform designed to streamline the management of Brazilian "boleto" payment slips. Users can upload a PDF file of a boleto, and the system leverages a powerful backend script to automatically extract key information such as the recipient, due date, amount, and barcode. The extracted boletos are then displayed on an intuitive Kanban board, allowing users to track their payment status from "To Pay" to "Verifying" and finally to "Paid."</p>
+                    <p>Boleto Manager is a modern SaaS platform designed to streamline the management of Brazilian "boleto" payment slips. Users can upload a PDF file of a boleto, and the system leverages a powerful backend script to automatically extract key information such as the recipient, due date, amount, and barcode. The extracted boletos are then displayed on an intuitive Kanban board, allowing users to track their payment status from "To Pay" to "Verifying" and finally to "Paid."</p>
                 </Section>
 
                 <Section title="2. Architecture & Technologies">

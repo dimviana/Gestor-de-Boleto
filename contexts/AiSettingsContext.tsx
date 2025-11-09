@@ -1,6 +1,5 @@
-
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+// FIX: Import the AiSettings type from the central types definition.
 import { AiSettings, User } from '../types';
 import { addLogEntry } from '../services/logService';
 

@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+// FIX: Import the AiSettings type from the central types definition.
 import { Boleto, BoletoStatus, AiSettings } from '../types';
 import { translations } from '../translations';
 
@@ -50,6 +51,7 @@ export const processBoletoPDF = async (
             inlineData: { mimeType: 'image/jpeg', data: canvas.toDataURL('image/jpeg').split(',')[1] },
         };
 
+        // FIX: Correctly reference 'geminiPrompt' which has been added to translations.
         const prompt = translations[lang].geminiPrompt;
         
         const response = await ai.models.generateContent({

@@ -14,8 +14,6 @@ import settingsRoutes from './routes/settings';
 import sslRoutes from './routes/ssl';
 
 
-declare const __dirname: string;
-
 dotenv.config();
 
 const app = express();

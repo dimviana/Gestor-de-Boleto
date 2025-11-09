@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+// FIX: Import the ProcessingMethod type from the central types definition.
 import { User, ProcessingMethod } from '../types';
 import { addLogEntry } from '../services/logService';
 

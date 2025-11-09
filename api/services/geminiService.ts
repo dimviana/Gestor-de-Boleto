@@ -1,5 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
+// FIX: Import the AiSettings type from the central types definition.
 import { Boleto, BoletoStatus, AiSettings } from '../../types';
 import { appConfig } from './configService';
 // Use the legacy build for Node.js compatibility
@@ -64,7 +65,7 @@ export const extractBoletoInfoWithGemini = async (
 ): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
     try {
         const ai = new GoogleGenAI({ apiKey: appConfig.API_KEY });
-        const aiSettings = typeof appConfig.ai_settings === 'string' 
+        const aiSettings: AiSettings = typeof appConfig.ai_settings === 'string' 
             ? JSON.parse(appConfig.ai_settings)
             : appConfig.ai_settings;
 
@@ -75,6 +76,7 @@ export const extractBoletoInfoWithGemini = async (
             inlineData: { mimeType: 'image/jpeg', data: imageBase64 },
         };
 
+        // FIX: Correctly reference 'geminiPrompt' which has been added to translations.
         const prompt = translations['pt'].geminiPrompt; // Always use portuguese prompt for consistency
         
         const response = await ai.models.generateContent({
