@@ -161,32 +161,26 @@ def extract_boleto_info(pdf_path):
         return clean_text(matches[-1]) if matches else None
 
     # --- Extraction Execution ---
-
-    # --- Guide Number Extraction (Multi-stage approach for robustness) ---
+    
+    # --- Guide Number Extraction (Improved Logic) ---
     final_guide_number = None
-    number_search_pattern = r'\b(\d{8,20})\b'
 
-    # Priority 1: Look for "Nº Documento/Guia" in the main table where the value might be on the next line.
-    # It captures the text block between "Nº Documento/Guia" and the next known field label.
-    guide_number_block_pattern = r'(?i)N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*([\s\S]*?)(?=\s*(?:Espécie DOC|Aceite|Data Process\.))'
-    block_match = re.search(guide_number_block_pattern, text_content)
-    if block_match:
-        block_text = block_match.group(1)
-        num_match = re.search(number_search_pattern, block_text)
-        if num_match:
-            final_guide_number = num_match.group(1)
+    # Priority 1: Directly find the number associated with "Nº Documento/Guia".
+    # This pattern is robust enough to find the number whether it's on the same line or the next,
+    # making it the most reliable method. A length limit helps avoid grabbing "Nosso Número".
+    guide_pattern = r'(?i)N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*.*?(\b\d{8,15}\b)'
+    guide_matches = re.findall(guide_pattern, text_content)
+    
+    if guide_matches:
+        # Boletos can have the number listed twice. They should be identical.
+        # We'll take the first valid one we find.
+        for match in guide_matches:
+            cleaned_match = re.sub(r'[^\d]', '', match)
+            if cleaned_match:
+                final_guide_number = cleaned_match
+                break # Found a good match, stop looking.
 
-    # Priority 2: Look for "Nº Documento/Guia" where the number is on the same line (common at the bottom).
-    if not final_guide_number:
-        same_line_pattern = r'(?i)N[º°o\.]?\s*Documento(?:[/]?Guia)?\s+([\d.-]+)'
-        same_line_matches = re.findall(same_line_pattern, text_content)
-        if same_line_matches:
-            # Use the last match found, as it's often the most relevant one
-            cleaned = re.sub(r'[^\d]', '', same_line_matches[-1])
-            if len(cleaned) >= 8:
-                final_guide_number = cleaned
-
-    # Priority 3: Fallback to "Nosso Número" if the document number is still not found.
+    # Priority 2: Fallback to "Nosso Número" ONLY if the specific "Nº Documento" cannot be found.
     if not final_guide_number:
         nosso_numero_pattern = r'(?i)Nosso\sN[úu]mero\s*([\d.-/]+)'
         nosso_numero_match = re.search(nosso_numero_pattern, text_content)
