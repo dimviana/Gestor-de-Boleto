@@ -18,8 +18,7 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
   });
 };
 
-// Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add RequestHandler type to the handler.
+// Correctly type Express request handler to resolve property access errors.
 export const registerUser: express.RequestHandler = async (req, res) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
@@ -46,8 +45,7 @@ export const registerUser: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add RequestHandler type to the handler.
+// Correctly type Express request handler to resolve property access errors.
 export const loginUser: express.RequestHandler = async (req, res) => {
   const { username, password } = req.body;
 

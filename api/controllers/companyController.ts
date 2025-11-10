@@ -14,8 +14,7 @@ const mapDbCompanyToCompany = (dbCompany: any): Company => ({
     monitoredFolderPath: dbCompany.monitored_folder_path
 });
 
-// Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add RequestHandler type to the handler.
+// Correctly type Express request handler to resolve property access errors.
 export const getCompanies: express.RequestHandler = async (req, res) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT id, name, cnpj, address, monitored_folder_path FROM companies ORDER BY name');
@@ -26,8 +25,7 @@ export const getCompanies: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add RequestHandler type to the handler.
+// Correctly type Express request handler to resolve property access errors.
 export const createCompany: express.RequestHandler = async (req, res) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
@@ -61,8 +59,7 @@ export const createCompany: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add RequestHandler type to the handler.
+// Correctly type Express request handler to resolve property access errors.
 export const updateCompany: express.RequestHandler = async (req, res) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
@@ -99,8 +96,7 @@ export const updateCompany: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add RequestHandler type to the handler.
+// Correctly type Express request handler to resolve property access errors.
 export const deleteCompany: express.RequestHandler = async (req, res) => {
   const user = req.user!;
   const companyId = req.params.id;
@@ -141,8 +137,7 @@ export const deleteCompany: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add RequestHandler type to the handler.
+// Correctly type Express request handler to resolve property access errors.
 export const setMonitoredFolderPath: express.RequestHandler = async (req, res) => {
   const { path } = req.body;
   const { id } = req.params;
@@ -160,8 +155,7 @@ export const setMonitoredFolderPath: express.RequestHandler = async (req, res) =
   }
 };
 
-// Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add RequestHandler type to the handler.
+// Correctly type Express request handler to resolve property access errors.
 export const clearMonitoredFolderPath: express.RequestHandler = async (req, res) => {
   const { id } = req.params;
 

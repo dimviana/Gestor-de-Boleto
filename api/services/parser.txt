@@ -155,8 +155,8 @@ def extract_boleto_info(pdf_path):
         # Other values:
         "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
         "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
-        # Document Number: Use a more robust pattern with a limited search window.
-        "guideNumber_doc": r'(?i)(?:N[º°o\.]?\s*Documento|Número do Documento)[\s\S]{0,50}?(\b\d{8,}\b)',
+        # Document Number: Use a more robust pattern.
+        "guideNumber_doc": r'(?i)(?:N[º°o\.]?\s*Documento(?:[/]?Guia)?|Número do Documento)[\s.:\n]*?([^\n\s]+)',
         "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero[\s.:\n]*?([^\n\s]+)',
     }
 

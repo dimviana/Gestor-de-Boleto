@@ -18,7 +18,7 @@ declare global {
 }
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request, Response, and NextFunction types to the handler.
+// Add Request, Response, and NextFunction types to the handler.
 export const protect: express.RequestHandler = (req, res, next) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -44,7 +44,7 @@ export const protect: express.RequestHandler = (req, res, next) => {
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request, Response, and NextFunction types to the handler.
+// Add Request, Response, and NextFunction types to the handler.
 export const admin: express.RequestHandler = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -54,7 +54,7 @@ export const admin: express.RequestHandler = (req, res, next) => {
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request, Response, and NextFunction types to the handler.
+// Add Request, Response, and NextFunction types to the handler.
 export const editor: express.RequestHandler = (req, res, next) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();

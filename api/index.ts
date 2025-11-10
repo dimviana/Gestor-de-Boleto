@@ -38,7 +38,7 @@ apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/ssl', sslRoutes);
 
 // Health check for the API router itself
-// FIX: Add Request and Response types to the handler.
+// Correctly type Express request handler to resolve property access errors.
 const healthCheckHandler = (req: express.Request, res: express.Response) => {
   res.send('Boleto Manager AI Backend is running!');
 };
@@ -51,7 +51,7 @@ app.use('/api', apiRouter);
 
 // --- FRONTEND SERVING ---
 // The static assets and the SPA fallback are handled after the API.
-// FIX: Cannot find name '__dirname'. Using path.resolve() which resolves relative to the current working directory. The original logic `path.join(__dirname, '..')` when executed from `dist/api/index.js` resolves to the `dist` directory. `path.resolve('dist')` achieves the same result under the standard assumption of running the server from the project root.
+// Cannot find name '__dirname'. Using path.resolve() which resolves relative to the current working directory. The original logic `path.join(__dirname, '..')` when executed from `dist/api/index.js` resolves to the `dist` directory. `path.resolve('dist')` achieves the same result under the standard assumption of running the server from the project root.
 const staticPath = path.resolve('dist');
 
 // 1. Serve static assets (JS, CSS, images) from the build directory.
@@ -59,7 +59,7 @@ app.use(express.static(staticPath));
 
 // 2. SPA Fallback: For any GET request that doesn't match an API route or a static file,
 // serve the main index.html file. This is crucial for client-side routing.
-// FIX: Add Request and Response types to the handler.
+// Correctly type Express request handler to resolve property access errors.
 const spaFallbackHandler = (req: express.Request, res: express.Response) => {
   // This guard prevents the fallback from ever serving index.html for an API-like route.
   if (req.path.startsWith('/api/')) {
@@ -82,7 +82,7 @@ const startServer = async () => {
 
 startServer().catch(err => {
     console.error("Server startup failed.", err);
-    // FIX: 'process.exit' can cause issues. Throwing the error ensures the process exits
+    // 'process.exit' can cause issues. Throwing the error ensures the process exits
     // due to an unhandled promise rejection, which is a standard Node.js behavior.
     throw err;
 });

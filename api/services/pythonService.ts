@@ -5,12 +5,12 @@ import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { Boleto } from '../../types';
-// FIX: Add import for Buffer to resolve type error.
+// Add import for Buffer to resolve type error.
 import { Buffer } from 'buffer';
 
 const PYTHON_PATH = process.env.PYTHON_PATH || 'python3';
 // The script is located in the source directory, and will be renamed to .py by the deploy script
-// FIX: Use path.resolve to avoid type errors with process.cwd() in mixed environments where browser types might conflict with Node.js types.
+// Use path.resolve to avoid type errors with process.cwd() in mixed environments where browser types might conflict with Node.js types.
 const PARSER_SCRIPT_PATH = path.resolve('api', 'services', 'parser.py');
 
 export const extractBoletoInfoWithPython = (pdfBuffer: Buffer, fileName: string): Promise<Omit<Boleto, 'id' | 'status' | 'fileData' | 'comments' | 'companyId'>> => {
