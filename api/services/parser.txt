@@ -204,7 +204,7 @@ def extract_boleto_info(pdf_path):
         "pixQrCodeText": find_pix_code(text_content),
     }
 
-    # --- Parsing and Structuring ---
+    # --- Parsing and Structuring ----
 
     # Parse amounts, applying logic for the final amount
     amount_cobrado = parse_currency(raw["amount_cobrado"])
