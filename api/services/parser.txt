@@ -90,7 +90,7 @@ def find_pix_code(text):
     """
     Finds and reconstructs a PIX QR Code string ("Copia e Cola") that may be
     split across multiple lines in the OCR text. It identifies the standard
-    start ('000201') and end ('6304' + 4 hex chars for CRC) markers.
+    start ('000201') and end markers.
     """
     # A non-greedy regex to find the content between the start and end markers,
     # spanning across any characters including newlines.
@@ -149,12 +149,10 @@ def extract_boleto_info(pdf_path):
         "amount_documento": r'(?i)(?:\(=\))?\s*Valor do Documento\n?.*?(R\$\s*[\d,.]+)',
         "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
         "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
-        "guideNumber_doc": r'(?i)(?:N[º°o\.]?\s*Documento(?:[/]?Guia)?|Número do Documento)\s*([\d.-]+)',
-        "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero\s*([\d.-]+)',
     }
 
-    def find_first_match(pattern_key, text):
-        match = re.search(PATTERNS[pattern_key], text)
+    def find_first_match(pattern, text):
+        match = re.search(pattern, text)
         return clean_text(match.group(1)) if match else None
 
     def find_last_match(pattern_key, text):
@@ -163,28 +161,43 @@ def extract_boleto_info(pdf_path):
         return clean_text(matches[-1]) if matches else None
 
     # --- Extraction Execution ---
-    
-    # --- Guide Number Extraction (with priority) ---
+
+    # --- Guide Number Extraction (Multi-stage approach for robustness) ---
     final_guide_number = None
+    number_search_pattern = r'\b(\d{8,20})\b'
 
-    # Priority 1: "Nº Documento/Guia" or "Nº do Documento"
-    guide_number_doc_raw = find_first_match("guideNumber_doc", text_content)
-    if guide_number_doc_raw:
-        cleaned_digits = re.sub(r'[^\d]', '', guide_number_doc_raw)
-        if cleaned_digits:
-            final_guide_number = cleaned_digits
+    # Priority 1: Look for "Nº Documento/Guia" in the main table where the value might be on the next line.
+    # It captures the text block between "Nº Documento/Guia" and the next known field label.
+    guide_number_block_pattern = r'(?i)N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*([\s\S]*?)(?=\s*(?:Espécie DOC|Aceite|Data Process\.))'
+    block_match = re.search(guide_number_block_pattern, text_content)
+    if block_match:
+        block_text = block_match.group(1)
+        num_match = re.search(number_search_pattern, block_text)
+        if num_match:
+            final_guide_number = num_match.group(1)
 
-    # Priority 2: Fallback to "Nosso Número" only if no document number is found
+    # Priority 2: Look for "Nº Documento/Guia" where the number is on the same line (common at the bottom).
     if not final_guide_number:
-        guide_number_nosso_raw = find_first_match("guideNumber_nosso", text_content)
-        if guide_number_nosso_raw:
-            cleaned_digits = re.sub(r'[^\d]', '', guide_number_nosso_raw)
-            if cleaned_digits:
-                final_guide_number = cleaned_digits
-    
+        same_line_pattern = r'(?i)N[º°o\.]?\s*Documento(?:[/]?Guia)?\s+([\d.-]+)'
+        same_line_matches = re.findall(same_line_pattern, text_content)
+        if same_line_matches:
+            # Use the last match found, as it's often the most relevant one
+            cleaned = re.sub(r'[^\d]', '', same_line_matches[-1])
+            if len(cleaned) >= 8:
+                final_guide_number = cleaned
+
+    # Priority 3: Fallback to "Nosso Número" if the document number is still not found.
+    if not final_guide_number:
+        nosso_numero_pattern = r'(?i)Nosso\sN[úu]mero\s*([\d.-/]+)'
+        nosso_numero_match = re.search(nosso_numero_pattern, text_content)
+        if nosso_numero_match:
+            cleaned = re.sub(r'[^\d]', '', nosso_numero_match.group(1))
+            if cleaned:
+                final_guide_number = cleaned
+
     raw = {
-        "recipient": find_first_match("recipient", text_content),
-        "drawee": find_first_match("drawee", text_content),
+        "recipient": find_first_match(PATTERNS["recipient"], text_content),
+        "drawee": find_first_match(PATTERNS["drawee"], text_content),
         "dueDate": find_last_match("dueDate", text_content),
         "documentDate": find_last_match("documentDate", text_content),
         "amount_cobrado": find_last_match("amount_cobrado", text_content),
