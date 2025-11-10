@@ -1,40 +1,49 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LogoutIcon, BookOpenIcon, SettingsIcon, BellIcon, SearchIcon, MenuIcon, XIcon } from './icons/Icons';
+import { LogoutIcon, BookOpenIcon, SettingsIcon, BellIcon, SearchIcon, MenuIcon, XIcon, UserCircleIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
-import { User, Notification } from '../types';
+import { User, Notification, Company } from '../types';
 import NotificationPopover from './NotificationPopover';
 import ThemeSwitcher from './ThemeSwitcher';
+import UserProfilePopover from './UserProfilePopover';
 
 interface HeaderProps {
   onLogout: () => void;
   onOpenDocs: () => void;
   onOpenAdminPanel: () => void;
+  onOpenEditProfile: () => void;
   user: User;
+  companies: Company[];
   notifications: Notification[];
   onSearch: (term: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, user, notifications, onSearch }) => {
+const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, onOpenEditProfile, user, companies, notifications, onSearch }) => {
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isNotificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
+  const [isProfilePopoverOpen, setProfilePopoverOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
   const notificationCount = notifications.length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
-        setIsPopoverOpen(false);
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setNotificationPopoverOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfilePopoverOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [popoverRef]);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const companyName = companies.find(c => c.id === user.companyId)?.name || t('noCompany');
 
   const HeaderControls: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => (
     <>
@@ -57,9 +66,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
     >
       <BookOpenIcon className="w-5 h-5" />
     </button>
-    <div className="relative" ref={popoverRef}>
+    <div className="relative" ref={notificationRef}>
         <button
-            onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+            onClick={() => setNotificationPopoverOpen(!isNotificationPopoverOpen)}
             title={t('notificationsTitle')}
             className="relative p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
         >
@@ -70,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
                 </span>
             )}
         </button>
-        {isPopoverOpen && <NotificationPopover notifications={notifications} />}
+        {isNotificationPopoverOpen && <NotificationPopover notifications={notifications} />}
     </div>
     <button
       onClick={onLogout}
@@ -120,6 +129,25 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
 
           <div className="hidden md:flex items-center space-x-2">
             <HeaderControls />
+             <div className="relative" ref={profileRef}>
+                <button
+                    onClick={() => setProfilePopoverOpen(!isProfilePopoverOpen)}
+                    title={t('userProfile')}
+                    className="p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-blue-500 transition-colors"
+                >
+                    <UserCircleIcon className="w-6 h-6" />
+                </button>
+                {isProfilePopoverOpen && (
+                    <UserProfilePopover 
+                        user={user} 
+                        companyName={companyName}
+                        onEditProfileClick={() => {
+                            setProfilePopoverOpen(false);
+                            onOpenEditProfile();
+                        }}
+                    />
+                )}
+            </div>
           </div>
 
           <div className="md:hidden ml-2">

@@ -101,7 +101,7 @@ export const BoletoDetailsModal: React.FC<BoletoDetailsModalProps> = ({ boleto, 
                                 )}
                             </div>
                         </DetailItem>
-                        <DetailItem icon={<QrCodeIcon className="w-5 h-5"/>} label={t('pixQrCode')}>
+                        <DetailItem icon={<QrCodeIcon className="w-5 h-5"/>} label={t('pixQrCodeText')}>
                             {boleto.pixQrCodeText ? (
                                 <button onClick={() => handleCopy(boleto.pixQrCodeText!, 'pix')} className="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md text-left flex items-center justify-between hover:bg-gray-200 dark:hover:bg-gray-600">
                                     <span className="text-sm font-medium">{pixCopied ? t('pixCodeCopied') : t('copyPixCode')}</span>

@@ -183,6 +183,13 @@ export const updateUser = (id: string, updates: Partial<Omit<RegisteredUser, 'id
     });
 };
 
+export const updateUserProfile = (updates: { password?: string }): Promise<{ message: string }> => {
+    return apiFetch('/users/profile', {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+    });
+};
+
 export const deleteUser = (id: string): Promise<{ message: string }> => {
     return apiFetch(`/users/${id}`, { method: 'DELETE' });
 };

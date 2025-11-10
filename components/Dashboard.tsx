@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification, Role } from '../types';
@@ -21,6 +18,8 @@ import FloatingMenu from './FloatingMenu';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
 import CalendarView from './CalendarView';
 import OverviewView from './OverviewView';
+import DataExtractionConfirmationModal from './DataExtractionConfirmationModal';
+import EditProfileModal from './EditProfileModal';
 
 
 interface DashboardProps {
@@ -45,9 +44,54 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [boletoForConfirmation, setBoletoForConfirmation] = useState<Omit<Boleto, 'id' | 'status' | 'comments' | 'companyId'> | null>(null);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
   const activeCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
   const isUploadDisabled = !activeCompanyId;
   
+  const handleConfirmAndSaveBoleto = async () => {
+    if (!boletoForConfirmation || !activeCompanyId) return;
+
+    const uploadId = crypto.randomUUID();
+    // Use an existing status or create a new one
+    const existingStatus = uploadStatuses.find(s => s.fileName === boletoForConfirmation.fileName && s.status === 'processing');
+    const statusId = existingStatus ? existingStatus.id : uploadId;
+
+    setUploadStatuses(prev => {
+        if (existingStatus) {
+            return prev.map(up => up.id === statusId ? { ...up, status: 'processing', message: 'Salvando no banco de dados...', progress: 95 } : up);
+        }
+        return [{ id: uploadId, fileName: boletoForConfirmation.fileName, status: 'processing', message: 'Salvando no banco de dados...', progress: 95 }, ...prev];
+    });
+
+    try {
+      await api.saveBoleto(boletoForConfirmation, activeCompanyId);
+      setUploadStatuses(prev => prev.map(up => 
+        up.id === statusId ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } : up
+      ));
+      await fetchBoletos();
+    } catch (error: any) {
+        const messageFromServer = error.message || 'genericErrorText';
+        let errorMessage = '';
+
+        if (messageFromServer.startsWith('Duplicate barcode:')) {
+            const substitutions = { identifier: messageFromServer.split(': ')[1] || 'N/A' };
+            errorMessage = t('duplicateBarcodeErrorText', substitutions);
+        } else {
+            const isKnownKey = Object.keys(translations.pt).includes(messageFromServer);
+            errorMessage = t(isKnownKey ? messageFromServer as TranslationKey : 'genericErrorText');
+        }
+
+        setUploadStatuses(prev => prev.map(up => 
+            up.id === statusId ? { ...up, status: 'error', message: errorMessage, progress: 0 } : up
+        ));
+    } finally {
+        setBoletoForConfirmation(null); // Close modal
+    }
+  };
+
+
   const processAndUploadFile = async (file: File) => {
     if (!activeCompanyId) {
         const errorKey = user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText';
@@ -76,22 +120,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
     try {
       const extractedData = await api.extractBoletoData(file, activeCompanyId, onProgress);
-      
-      setUploadStatuses(prev => prev.map(up => 
-        up.id === uploadId 
-        ? { ...up, status: 'processing', message: 'Salvando no banco de dados...', progress: 95 } 
-        : up
-      ));
-
-      await api.saveBoleto(extractedData, activeCompanyId);
-
-      setUploadStatuses(prev => prev.map(up => 
-        up.id === uploadId 
-        ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } 
-        : up
-      ));
-      
-      await fetchBoletos();
+      setBoletoForConfirmation(extractedData); // Open confirmation modal
+      // The saving logic is now in `handleConfirmAndSaveBoleto`
 
     } catch (error: any) {
       console.error("Upload failed:", error);
@@ -135,25 +165,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   });
 
   useEffect(() => {
-    if (user.role === 'admin') {
-      const loadCompanies = async () => {
+    const loadCompanies = async () => {
+      try {
         const fetchedCompanies = await api.fetchCompanies();
         setCompanies(fetchedCompanies);
-      };
-      loadCompanies();
-    } else if (user.companyId) {
-      // For non-admins, we still need their company info for folder monitoring
-       const loadCompany = async () => {
-        // This is a placeholder; in a real app you might have a getCompanyById endpoint
-        const allCompanies = await api.fetchCompanies();
-        const userCompany = allCompanies.find(c => c.id === user.companyId);
-        if (userCompany) {
-            setCompanies([userCompany]);
-        }
-       };
-       loadCompany();
-    }
-  }, [user.role, user.companyId]);
+      } catch (error) {
+        console.error("Failed to load companies", error);
+      }
+    };
+    loadCompanies();
+  }, []);
 
   const handleToggleBoletoSelection = useCallback((id: string) => {
     setSelectedBoletoIds(prevSelected =>
@@ -218,6 +239,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     if (user.role === 'admin') {
       if (selectedCompanyFilter) {
         baseList = boletos.filter(boleto => boleto.companyId === selectedCompanyFilter);
+      } else {
+        // If admin has no filter selected, show nothing to force a selection
+        return [];
       }
     } else {
       baseList = boletos;
@@ -323,9 +347,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     <>
       <Header 
         user={user}
+        companies={companies}
         onLogout={onLogout} 
         onOpenDocs={() => setIsDocsOpen(true)}
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+        onOpenEditProfile={() => setIsEditProfileOpen(true)}
         notifications={allNotifications}
         onSearch={setSearchTerm}
       />
@@ -441,6 +467,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
                 <button onClick={() => setSelectedBoletoIds([])} className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">{t('deselectAll')}</button>
             </div>
         </div>
+      )}
+
+      {boletoForConfirmation && (
+        <DataExtractionConfirmationModal
+          boleto={boletoForConfirmation}
+          onConfirm={handleConfirmAndSaveBoleto}
+          onCancel={() => setBoletoForConfirmation(null)}
+        />
+      )}
+
+      {isEditProfileOpen && (
+        <EditProfileModal
+            onClose={() => setIsEditProfileOpen(false)}
+            currentUser={user}
+        />
       )}
 
       <Modal isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} title={t('documentationTitle')}><Documentation /></Modal>

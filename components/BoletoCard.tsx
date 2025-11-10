@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Boleto, BoletoStatus, Role } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Boleto, BoletoStatus, Role, CardFieldVisibility } from '../types';
 import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, HashtagIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { TranslationKey } from '../translations';
@@ -14,9 +14,27 @@ interface BoletoCardProps {
   userRole: Role;
 }
 
+const CARD_VISIBILITY_KEY = 'card_field_visibility';
+
+const defaultVisibility: CardFieldVisibility = {
+    recipient: true,
+    drawee: false,
+    documentDate: false,
+    dueDate: true,
+    amount: true,
+    documentAmount: false,
+    discount: false,
+    interestAndFines: false,
+    barcode: true,
+    guideNumber: true,
+    pixQrCodeText: true,
+    fileName: true,
+};
+
+
 const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, userRole }) => {
   const { t, language } = useLanguage();
-  const { id, status, fileData, comments, extractedData, detailedCosts } = boleto;
+  const { id, status, fileData, comments, extractedData } = boleto;
   
   const [pixCopied, setPixCopied] = useState(false);
   const [barcodeCopied, setBarcodeCopied] = useState(false);
@@ -24,6 +42,21 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(comments || '');
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [visibility, setVisibility] = useState<CardFieldVisibility>({});
+
+  useEffect(() => {
+    try {
+        const storedVisibility = localStorage.getItem(CARD_VISIBILITY_KEY);
+        if (storedVisibility) {
+            setVisibility(JSON.parse(storedVisibility));
+        } else {
+            setVisibility(defaultVisibility);
+        }
+    } catch (e) {
+        console.error("Failed to parse card visibility settings:", e);
+        setVisibility(defaultVisibility);
+    }
+  }, []);
 
   const displayRecipient = extractedData?.recipient || boleto.recipient;
   const displayDrawee = extractedData?.drawee || boleto.drawee;
@@ -199,8 +232,8 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     }
   };
   
-  const CodeItem: React.FC<{ label: string; value: string | null; onCopy: () => void; copied: boolean; icon: React.ReactNode; copyTitle: string; copiedTitle: string; }> = ({ label, value, onCopy, copied, icon, copyTitle, copiedTitle }) => {
-    if (!value) return null;
+  const CodeItem: React.FC<{ label: string; value: string | null; onCopy: () => void; copied: boolean; icon: React.ReactNode; copyTitle: string; copiedTitle: string; isVisible: boolean; }> = ({ label, value, onCopy, copied, icon, copyTitle, copiedTitle, isVisible }) => {
+    if (!value || !isVisible) return null;
     return (
         <div className="mt-3">
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center">
@@ -223,7 +256,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     );
   };
 
-  const hasExtraDetails = (boleto.documentAmount && boleto.documentAmount !== boleto.amount) || boleto.discount || boleto.interestAndFines || (detailedCosts && Object.keys(detailedCosts).length > 0);
+  const hasExtraDetails = (boleto.documentAmount && boleto.documentAmount !== boleto.amount) || boleto.discount || boleto.interestAndFines;
 
   return (
     <>
@@ -244,20 +277,28 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
-            <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 break-words" title={t('guideNumber')}>
-                <div className="flex items-center">
-                    <HashtagIcon className="w-4 h-4 mr-2 text-gray-400" />
-                    <span className="truncate">{displayGuideNumber || t('notAvailable')}</span>
-                </div>
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1" title={t('drawee')}>
-                <UserIcon className="w-4 h-4 mr-2 text-gray-400"/>
-                <span className="truncate">{displayDrawee || t('drawee')}</span>
-            </p>
-             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={displayRecipient}>
-                {displayRecipient || t('recipient')}
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={displayFileName}>{displayFileName}</p>
+            {visibility.guideNumber && (
+                <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 break-words" title={t('guideNumber')}>
+                    <div className="flex items-center">
+                        <HashtagIcon className="w-4 h-4 mr-2 text-gray-400" />
+                        <span className="truncate">{displayGuideNumber || t('notAvailable')}</span>
+                    </div>
+                </h3>
+            )}
+            {visibility.drawee && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1" title={t('drawee')}>
+                    <UserIcon className="w-4 h-4 mr-2 text-gray-400"/>
+                    <span className="truncate">{displayDrawee || t('drawee')}</span>
+                </p>
+            )}
+            {visibility.recipient && (
+                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={displayRecipient}>
+                    {displayRecipient || t('recipient')}
+                </p>
+            )}
+            {visibility.fileName && (
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={displayFileName}>{displayFileName}</p>
+            )}
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
           {userRole !== 'viewer' && (
@@ -282,17 +323,21 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
 
        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
             <div className="flex justify-between items-baseline">
-                <div>
-                    <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
-                    <p className="text-xl font-extrabold text-red-500 dark:text-red-400 flex items-center">
-                        <CalendarIcon className="w-4 h-4 mr-2"/>
-                        {formatDate(displayDueDate)}
-                    </p>
-                </div>
-                 <div className="text-right">
-                    <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
-                     <p className="text-2xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(displayAmount)}</p>
-                </div>
+                {visibility.dueDate && (
+                    <div>
+                        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
+                        <p className="text-xl font-extrabold text-red-500 dark:text-red-400 flex items-center">
+                            <CalendarIcon className="w-4 h-4 mr-2"/>
+                            {formatDate(displayDueDate)}
+                        </p>
+                    </div>
+                )}
+                 {visibility.amount && (
+                    <div className="text-right">
+                        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
+                        <p className="text-2xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(displayAmount)}</p>
+                    </div>
+                )}
             </div>
         </div>
 
@@ -310,10 +355,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         {isDetailsOpen && (
             <div className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-slate-600 space-y-1.5 animate-fade-in">
                 <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 pb-1">{t('documentInfo')}</h4>
-                <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-600 dark:text-gray-300">{t('guideNumber').replace(':', '')}</span>
-                    <span className="font-semibold text-gray-700 dark:text-gray-200">{displayGuideNumber || t('notAvailable')}</span>
-                </div>
                 <div className="flex justify-between items-center text-xs">
                     <span className="text-gray-600 dark:text-gray-300">{t('documentDate').replace(':', '')}</span>
                     <span className="font-semibold text-gray-700 dark:text-gray-200">{formatDate(displayDocumentDate)}</span>
@@ -334,17 +375,6 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
                         <span className="font-semibold text-orange-500 dark:text-orange-400">+ {formatCurrency(displayInterestAndFines)}</span>
                     </div>
                 )}
-                {detailedCosts && Object.keys(detailedCosts).length > 0 && (
-                    <>
-                    <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 pt-2 pb-1">{t('detailedValues')}</h4>
-                    {Object.entries(detailedCosts).map(([key, value]) => (
-                        <div key={key} className="flex justify-between items-center text-xs">
-                            <span className="text-gray-600 dark:text-gray-300">{key}</span>
-                            <span className="font-semibold text-gray-700 dark:text-gray-200">{formatCurrency(value)}</span>
-                        </div>
-                    ))}
-                    </>
-                )}
             </div>
         )}
       
@@ -357,15 +387,17 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             icon={<BarcodeIcon className="w-5 h-5"/>}
             copyTitle={t('copyBarcode')}
             copiedTitle={t('barcodeCopied')}
+            isVisible={!!visibility.barcode}
         />
         <CodeItem 
-            label={t('pixQrCode')}
+            label={t('pixQrCodeText')}
             value={displayPixCode}
             onCopy={() => handleCopy(displayPixCode, 'pix')}
             copied={pixCopied}
             icon={<QrCodeIcon className="w-5 h-5"/>}
             copyTitle={t('copyPixCode')}
             copiedTitle={t('pixCodeCopied')}
+            isVisible={!!visibility.pixQrCodeText}
         />
       </div>
       

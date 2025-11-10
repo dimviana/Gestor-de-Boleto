@@ -1,10 +1,4 @@
-
-
-
-
-
-
-import express from 'express';
+import { RequestHandler } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
@@ -12,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const getUsers = async (req: express.Request, res: express.Response) => {
+export const getUsers: RequestHandler = async (req, res) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -30,7 +24,7 @@ export const getUsers = async (req: express.Request, res: express.Response) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const createUser = async (req: express.Request, res: express.Response) => {
+export const createUser: RequestHandler = async (req, res) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -86,7 +80,7 @@ export const createUser = async (req: express.Request, res: express.Response) =>
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const updateUser = async (req: express.Request, res: express.Response) => {
+export const updateUser: RequestHandler = async (req, res) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -138,7 +132,7 @@ export const updateUser = async (req: express.Request, res: express.Response) =>
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const deleteUser = async (req: express.Request, res: express.Response) => {
+export const deleteUser: RequestHandler = async (req, res) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -169,4 +163,38 @@ export const deleteUser = async (req: express.Request, res: express.Response) =>
   } finally {
     connection.release();
   }
+};
+
+export const updateUserProfile: RequestHandler = async (req, res) => {
+    const user = req.user!;
+    const { password } = req.body;
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+            await connection.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id]);
+
+            await connection.query(
+                'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
+                [ uuidv4(), user.id, user.username, 'UPDATE_USER_PROFILE', 'User updated their own password.' ]
+            );
+        } else {
+             await connection.rollback();
+             return res.status(400).json({ message: 'No update information provided.' });
+        }
+        
+        await connection.commit();
+        res.json({ message: 'Profile updated successfully' });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("Error updating user profile:", error);
+        res.status(500).json({ message: 'Server error during profile update' });
+    } finally {
+        connection.release();
+    }
 };

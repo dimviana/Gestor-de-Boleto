@@ -36,6 +36,10 @@ export interface Boleto {
   updatedAt?: string;
 }
 
+export type BoletoField = keyof Omit<Boleto, 'id' | 'status' | 'fileData' | 'companyId' | 'comments' | 'extractedData' | 'createdAt' | 'updatedAt' | 'detailedCosts'>;
+export type CardFieldVisibility = Partial<Record<BoletoField, boolean>>;
+
+
 export type Role = 'viewer' | 'editor' | 'admin';
 
 export interface User {
@@ -63,6 +67,7 @@ export type LogAction =
   | 'UPDATE_BOLETO_COMMENT'
   | 'DELETE_BOLETO'
   | 'DELETE_USER'
+  | 'UPDATE_USER_PROFILE'
   | 'ADMIN_CREATE_USER'
   | 'ADMIN_UPDATE_USER'
   | 'ADMIN_CHANGE_SETTINGS'
