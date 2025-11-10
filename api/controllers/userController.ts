@@ -1,5 +1,9 @@
 
 
+
+
+
+
 import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -8,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const getUsers: express.RequestHandler = async (req, res) => {
+export const getUsers = async (req: express.Request, res: express.Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -26,7 +30,7 @@ export const getUsers: express.RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const createUser: express.RequestHandler = async (req, res) => {
+export const createUser = async (req: express.Request, res: express.Response) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -82,7 +86,7 @@ export const createUser: express.RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const updateUser: express.RequestHandler = async (req, res) => {
+export const updateUser = async (req: express.Request, res: express.Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -134,7 +138,7 @@ export const updateUser: express.RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const deleteUser: express.RequestHandler = async (req, res) => {
+export const deleteUser = async (req: express.Request, res: express.Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();

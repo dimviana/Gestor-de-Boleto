@@ -1,5 +1,9 @@
 
 
+
+
+
+
 import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -16,7 +20,7 @@ const mapDbCompanyToCompany = (dbCompany: any): Company => ({
 });
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const getCompanies: express.RequestHandler = async (req, res) => {
+export const getCompanies = async (req: express.Request, res: express.Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT id, name, cnpj, address, monitored_folder_path FROM companies ORDER BY name');
     res.json(companies.map(mapDbCompanyToCompany));
@@ -27,7 +31,7 @@ export const getCompanies: express.RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const createCompany: express.RequestHandler = async (req, res) => {
+export const createCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -61,7 +65,7 @@ export const createCompany: express.RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const updateCompany: express.RequestHandler = async (req, res) => {
+export const updateCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -98,7 +102,7 @@ export const updateCompany: express.RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const deleteCompany: express.RequestHandler = async (req, res) => {
+export const deleteCompany = async (req: express.Request, res: express.Response) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();
@@ -139,7 +143,7 @@ export const deleteCompany: express.RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const setMonitoredFolderPath: express.RequestHandler = async (req, res) => {
+export const setMonitoredFolderPath = async (req: express.Request, res: express.Response) => {
   const { path } = req.body;
   const { id } = req.params;
   
@@ -157,7 +161,7 @@ export const setMonitoredFolderPath: express.RequestHandler = async (req, res) =
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const clearMonitoredFolderPath: express.RequestHandler = async (req, res) => {
+export const clearMonitoredFolderPath = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
 
   try {

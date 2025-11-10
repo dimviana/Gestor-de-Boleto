@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification, Role } from '../types';
@@ -181,10 +182,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
 
   const handleBulkUpdateStatus = async (status: BoletoStatus) => {
-      await Promise.all(
-          selectedBoletoIds.map(id => updateBoletoStatus(user, id, status))
-      );
-      setSelectedBoletoIds([]);
+      const statusMap = {
+          [BoletoStatus.VERIFYING]: t('kanbanTitleVerifying'),
+          [BoletoStatus.PAID]: t('kanbanTitlePaid'),
+          [BoletoStatus.TO_PAY]: t('kanbanTitleToDo'),
+      };
+      const newStatusText = statusMap[status];
+
+      if (window.confirm(t('confirmBulkStatusChange' as TranslationKey, { count: selectedBoletoIds.length.toString(), newStatus: newStatusText }))) {
+        await Promise.all(
+            selectedBoletoIds.map(id => updateBoletoStatus(user, id, status))
+        );
+        setSelectedBoletoIds([]);
+      }
   };
 
   const handleBulkDelete = async () => {

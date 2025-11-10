@@ -149,8 +149,8 @@ def extract_boleto_info(pdf_path):
         "amount_documento": r'(?i)(?:\(=\))?\s*Valor do Documento\n?.*?(R\$\s*[\d,.]+)',
         "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
         "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
-        "guideNumber_doc": r'(?i)(?:N[º°o\.]?\s*Documento(?:[/]?Guia)?|Número do Documento)[\s.:\n]*?([^\n\s]+)',
-        "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero[\s.:\n]*?([^\n\s]+)',
+        "guideNumber_doc": r'(?i)(?:N[º°o\.]?\s*Documento(?:[/]?Guia)?|Número do Documento)\s+(\S+)',
+        "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero\s+(\S+)',
     }
 
     def find_first_match(pattern_key, text):

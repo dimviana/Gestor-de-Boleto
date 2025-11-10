@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
 import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, HashtagIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { TranslationKey } from '../translations';
 
 interface BoletoCardProps {
   boleto: Boleto;
@@ -129,11 +130,27 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     setIsCommentOpen(false);
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(t('confirmBoletoDeletion' as TranslationKey, { guideNumber: displayGuideNumber || 'N/A' }))) {
+      onDelete(id);
+    }
+  };
+
   const getAction = () => {
     const baseButtonClasses = "w-full flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors";
     const handleActionClick = (e: React.MouseEvent, newStatus: BoletoStatus) => {
         e.stopPropagation();
-        onUpdateStatus(id, newStatus);
+        const statusMap = {
+            [BoletoStatus.VERIFYING]: t('kanbanTitleVerifying'),
+            [BoletoStatus.PAID]: t('kanbanTitlePaid'),
+            [BoletoStatus.TO_PAY]: t('kanbanTitleToDo'),
+        };
+        const newStatusText = statusMap[newStatus];
+
+        if (window.confirm(t('confirmStatusChange' as TranslationKey, { guideNumber: displayGuideNumber || 'N/A', newStatus: newStatusText }))) {
+            onUpdateStatus(id, newStatus);
+        }
     };
 
     if (userRole === 'viewer') {
@@ -246,10 +263,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
           {userRole !== 'viewer' && (
             <>
               <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(id);
-                }} 
+                onClick={handleDeleteClick} 
                 className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
               >
                 <TrashIcon className="w-5 h-5" />
