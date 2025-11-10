@@ -35,7 +35,7 @@ const App: React.FC = () => {
                 className="font-mono hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 title="Ver repositório no GitHub"
             >
-                v1.3.6
+                v1.3.5
             </a>
         </div>
       </footer>
