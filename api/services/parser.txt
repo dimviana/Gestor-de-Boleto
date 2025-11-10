@@ -165,22 +165,22 @@ def extract_boleto_info(pdf_path):
     # --- Guide Number Extraction (Improved Logic) ---
     final_guide_number = None
 
-    # Priority 1: Directly find the number associated with "Nº Documento/Guia".
-    # This pattern is robust enough to find the number whether it's on the same line or the next,
-    # making it the most reliable method. A length limit helps avoid grabbing "Nosso Número".
-    guide_pattern = r'(?i)N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*.*?(\b\d{8,15}\b)'
-    guide_matches = re.findall(guide_pattern, text_content)
-    
-    if guide_matches:
-        # Boletos can have the number listed twice. They should be identical.
-        # We'll take the first valid one we find.
-        for match in guide_matches:
-            cleaned_match = re.sub(r'[^\d]', '', match)
-            if cleaned_match:
-                final_guide_number = cleaned_match
-                break # Found a good match, stop looking.
+    # Priority 1: Search for the number on the same line as the label, using a pattern
+    # based on the user's request. It's made more flexible to handle label variations and a 10-digit number.
+    same_line_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*(\d{10})\b'
+    same_line_match = re.search(same_line_pattern, text_content, re.IGNORECASE)
+    if same_line_match:
+        final_guide_number = same_line_match.group(1)
+        
+    # Priority 2: If not found, look for the number on the line immediately following the label.
+    # This is common in the payment stub section and is less ambiguous.
+    if not final_guide_number:
+        next_line_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*\n\s*(\d{8,15}\b)'
+        next_line_match = re.search(next_line_pattern, text_content, re.IGNORECASE)
+        if next_line_match:
+            final_guide_number = re.sub(r'[^\d]', '', next_line_match.group(1))
 
-    # Priority 2: Fallback to "Nosso Número" ONLY if the specific "Nº Documento" cannot be found.
+    # Priority 3: Fallback to "Nosso Número" ONLY if "Nº Documento" cannot be found.
     if not final_guide_number:
         nosso_numero_pattern = r'(?i)Nosso\sN[úu]mero\s*([\d.-/]+)'
         nosso_numero_match = re.search(nosso_numero_pattern, text_content)
