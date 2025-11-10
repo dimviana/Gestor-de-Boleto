@@ -1,4 +1,5 @@
 
+
 import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -6,7 +7,7 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const getUsers: express.RequestHandler = async (req, res) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
@@ -24,7 +25,7 @@ export const getUsers: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const createUser: express.RequestHandler = async (req, res) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
@@ -80,7 +81,7 @@ export const createUser: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const updateUser: express.RequestHandler = async (req, res) => {
   const userId = req.params.id;
   const adminUser = req.user!;
@@ -132,7 +133,7 @@ export const updateUser: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const deleteUser: express.RequestHandler = async (req, res) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;

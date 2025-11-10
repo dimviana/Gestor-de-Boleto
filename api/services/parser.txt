@@ -141,42 +141,42 @@ def extract_boleto_info(pdf_path):
 
     # Define regex patterns for each field. They are designed to be flexible.
     PATTERNS = {
-        # Recipient: Look for the label and capture text until another known label appears or end of string.
         "recipient": r'(?i)(?:Beneficiário|Cedente)[\s:.]*\n?([\s\S]*?)(?=\n\s*(?:CNPJ:|Agência|Nosso Número|Sacado|Pagador|Data (?:do )?Documento|AGÊNCIA \/ CÓDIGO DO BENEFICIÁRIO)|$)',
-        # Drawee: Similar logic, but looks for footer keywords as terminators or end of string.
         "drawee": r'(?i)(?:Pagador|Sacado)[\s:.]*\n?([\s\S]*?)(?=\n\s*\b(?:Instruções|Descrição|Autenticação Mecânica|FICHA DE COMPENSAÇÃO|Nosso Número)\b|$)',
-        # Due Date: Find the label and look for a date pattern on the same line or the next.
-        "dueDate": r'(?i)Vencimento\n?.*?\b(\d{2}[/.]\d{2}[/.]\d{4})\b',
-        # Document Date: Same logic as due date.
-        "documentDate": r'(?i)Data (?:do )?Documento\n?.*?\b(\d{2}[/.]\d{2}[/.]\d{4})\b',
-        # Amount: Prioritize "Valor Cobrado", then "Valor do Documento". The value is often at the end of the line.
+        "dueDate": r'(?i)Vencimento\n?.*?(\d{2}[/.]\d{2}[/.]\d{4})',
+        "documentDate": r'(?i)Data (?:do )?Documento\n?.*?(\d{2}[/.]\d{2}[/.]\d{4})',
         "amount_cobrado": r'(?i)\(=\)\s*Valor Cobrado\n?.*?(R\$\s*[\d,.]+)',
         "amount_documento": r'(?i)(?:\(=\))?\s*Valor do Documento\n?.*?(R\$\s*[\d,.]+)',
-        # Other values:
         "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
         "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
-        # Document Number: Use a more robust pattern.
         "guideNumber_doc": r'(?i)(?:N[º°o\.]?\s*Documento(?:[/]?Guia)?|Número do Documento)[\s.:\n]*?([^\n\s]+)',
         "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero[\s.:\n]*?([^\n\s]+)',
     }
 
-    def find_match(pattern_key, text):
+    def find_first_match(pattern_key, text):
         match = re.search(PATTERNS[pattern_key], text)
         return clean_text(match.group(1)) if match else None
+
+    def find_last_match(pattern_key, text):
+        """Finds all matches for a pattern and returns the last one."""
+        matches = re.findall(PATTERNS[pattern_key], text)
+        return clean_text(matches[-1]) if matches else None
 
     # --- Extraction Execution ---
     
     # Extract raw string values using the patterns
     raw = {
-        "recipient": find_match("recipient", text_content),
-        "drawee": find_match("drawee", text_content),
-        "dueDate": find_match("dueDate", text_content),
-        "documentDate": find_match("documentDate", text_content),
-        "amount_cobrado": find_match("amount_cobrado", text_content),
-        "amount_documento": find_match("amount_documento", text_content),
-        "discount": find_match("discount", text_content),
-        "interestAndFines": find_match("interestAndFines", text_content),
-        "guideNumber": find_match("guideNumber_doc", text_content) or find_match("guideNumber_nosso", text_content),
+        "recipient": find_first_match("recipient", text_content),
+        "drawee": find_first_match("drawee", text_content),
+        # Dates and amounts can be repeated, so we find the last occurrence
+        "dueDate": find_last_match("dueDate", text_content),
+        "documentDate": find_last_match("documentDate", text_content),
+        "amount_cobrado": find_last_match("amount_cobrado", text_content),
+        "amount_documento": find_last_match("amount_documento", text_content),
+        "discount": find_last_match("discount", text_content),
+        "interestAndFines": find_last_match("interestAndFines", text_content),
+        # Use last match for guide number as well for consistency
+        "guideNumber": find_last_match("guideNumber_doc", text_content) or find_last_match("guideNumber_nosso", text_content),
         "barcode": extract_barcode(text_content),
         "pixQrCodeText": find_pix_code(text_content),
     }

@@ -1,4 +1,5 @@
 
+
 import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -7,7 +8,7 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const getSslSettings: express.RequestHandler = async (req, res) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
@@ -22,7 +23,7 @@ export const getSslSettings: express.RequestHandler = async (req, res) => {
     }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const saveSslSettings: express.RequestHandler = async (req, res) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
@@ -42,7 +43,7 @@ export const saveSslSettings: express.RequestHandler = async (req, res) => {
     }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const checkSslStatus: express.RequestHandler = (req, res) => {
     const { domain } = req.body;
     if (!domain) {

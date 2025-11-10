@@ -1,10 +1,11 @@
 
+
 import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const getSettings: express.RequestHandler = async (req, res) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
@@ -24,7 +25,7 @@ export const getSettings: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const updateSettings: express.RequestHandler = async (req, res) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();

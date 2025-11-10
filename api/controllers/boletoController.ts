@@ -1,4 +1,5 @@
 
+
 import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -70,7 +71,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const getBoletos: express.RequestHandler = async (req, res) => {
   const user = req.user!;
   try {
@@ -100,7 +101,7 @@ export const getBoletos: express.RequestHandler = async (req, res) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const getBoletoById: express.RequestHandler = async (req, res) => {
     const user = req.user!;
     const boletoId = req.params.id;
@@ -129,7 +130,7 @@ export const getBoletoById: express.RequestHandler = async (req, res) => {
     }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const extractBoleto: express.RequestHandler = async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -158,7 +159,7 @@ export const extractBoleto: express.RequestHandler = async (req, res) => {
     }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const saveBoleto: express.RequestHandler = async (req, res) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
@@ -261,7 +262,7 @@ export const saveBoleto: express.RequestHandler = async (req, res) => {
     }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const updateBoletoStatus: express.RequestHandler = async (req, res) => {
     const { status } = req.body;
     const { id } = req.params;
@@ -308,7 +309,7 @@ export const updateBoletoStatus: express.RequestHandler = async (req, res) => {
     }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const updateBoletoComments: express.RequestHandler = async (req, res) => {
     const { comments } = req.body;
     const { id } = req.params;
@@ -353,7 +354,7 @@ export const updateBoletoComments: express.RequestHandler = async (req, res) => 
     }
 };
 
-// Correctly type Express request handler to resolve property access errors.
+// FIX: Correctly type Express request handler to resolve property access errors.
 export const deleteBoleto: express.RequestHandler = async (req, res) => {
     const user = req.user!;
     const { id } = req.params;
