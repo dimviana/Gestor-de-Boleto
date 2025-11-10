@@ -3,6 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
 import { TranslationKey } from '../translations';
 import Spinner from './Spinner';
+import { EyeIcon, EyeOffIcon } from './icons/Icons';
 
 interface LoginScreenProps {
   login: (username: string, password?: string) => Promise<void>;
@@ -17,6 +18,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -102,17 +104,24 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
                     className="w-full px-4 py-2 mt-1 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
             </div>
-            <div>
+            <div className="relative">
                  <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">{mode === 'login' ? t('passwordLabel') : t('passwordLabelRegister')}</label>
                 <input 
                     id="password"
-                    type="password"
+                    type={isPasswordVisible ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder={t('passwordPlaceholder')}
-                    className="w-full px-4 py-2 mt-1 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 mt-1 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                 />
+                 <button 
+                    type="button" 
+                    onClick={() => setIsPasswordVisible(!isPasswordVisible)} 
+                    className="absolute inset-y-0 right-0 top-6 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                    {isPasswordVisible ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                </button>
             </div>
              {mode === 'login' && <p className="text-xs text-center text-gray-500 dark:text-gray-400">{t('adminHint')}</p>}
         </div>

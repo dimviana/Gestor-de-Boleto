@@ -149,8 +149,8 @@ def extract_boleto_info(pdf_path):
         "amount_documento": r'(?i)(?:\(=\))?\s*Valor do Documento\n?.*?(R\$\s*[\d,.]+)',
         "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
         "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
-        "guideNumber_doc": r'(?i)(?:N[º°o\.]?\s*Documento(?:[/]?Guia)?|Número do Documento)\s+(\S+)',
-        "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero\s+(\S+)',
+        "guideNumber_doc": r'(?i)(?:N[º°o\.]?\s*Documento(?:[/]?Guia)?|Número do Documento)\s*([^\n]+)',
+        "guideNumber_nosso": r'(?i)Nosso\sN[úu]mero\s*([^\n]+)',
     }
 
     def find_first_match(pattern_key, text):
@@ -164,24 +164,33 @@ def extract_boleto_info(pdf_path):
 
     # --- Extraction Execution ---
     
-    # Extract raw string values using the patterns
     raw = {
         "recipient": find_first_match("recipient", text_content),
         "drawee": find_first_match("drawee", text_content),
-        # Dates and amounts can be repeated, so we find the last occurrence
         "dueDate": find_last_match("dueDate", text_content),
         "documentDate": find_last_match("documentDate", text_content),
         "amount_cobrado": find_last_match("amount_cobrado", text_content),
         "amount_documento": find_last_match("amount_documento", text_content),
         "discount": find_last_match("discount", text_content),
         "interestAndFines": find_last_match("interestAndFines", text_content),
-        # Use last match for guide number as well for consistency
-        "guideNumber": find_last_match("guideNumber_doc", text_content) or find_last_match("guideNumber_nosso", text_content),
+        "guideNumber_raw": find_last_match("guideNumber_doc", text_content) or find_last_match("guideNumber_nosso", text_content),
         "barcode": extract_barcode(text_content),
         "pixQrCodeText": find_pix_code(text_content),
     }
 
     # --- Parsing and Structuring ---
+
+    # Process guideNumber to find exactly 10 digits
+    final_guide_number = None
+    if raw["guideNumber_raw"]:
+        ten_digit_match = re.search(r'\b(\d{10})\b', raw["guideNumber_raw"])
+        if ten_digit_match:
+            final_guide_number = ten_digit_match.group(1)
+        else:
+            # Fallback: clean all non-digits from the raw string
+            cleaned_digits = re.sub(r'[^\d]', '', raw["guideNumber_raw"])
+            if cleaned_digits:
+                final_guide_number = cleaned_digits
 
     # Parse amounts, applying logic for the final amount
     amount_cobrado = parse_currency(raw["amount_cobrado"])
@@ -200,7 +209,7 @@ def extract_boleto_info(pdf_path):
         "discount": parse_currency(raw["discount"]),
         "interestAndFines": parse_currency(raw["interestAndFines"]),
         "barcode": raw["barcode"],
-        "guideNumber": raw["guideNumber"],
+        "guideNumber": final_guide_number,
         "pixQrCodeText": raw["pixQrCodeText"],
         "detailedCosts": detailed_costs,
     }

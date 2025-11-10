@@ -1,4 +1,5 @@
-import { RequestHandler } from 'express';
+
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
@@ -71,7 +72,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const getBoletos: RequestHandler = async (req, res) => {
+export const getBoletos = async (req: Request, res: Response) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -101,7 +102,7 @@ export const getBoletos: RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const getBoletoById: RequestHandler = async (req, res) => {
+export const getBoletoById = async (req: Request, res: Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -130,7 +131,7 @@ export const getBoletoById: RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const extractBoleto: RequestHandler = async (req, res) => {
+export const extractBoleto = async (req: Request, res: Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -159,7 +160,7 @@ export const extractBoleto: RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const saveBoleto: RequestHandler = async (req, res) => {
+export const saveBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -262,7 +263,7 @@ export const saveBoleto: RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const updateBoletoStatus: RequestHandler = async (req, res) => {
+export const updateBoletoStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -309,7 +310,7 @@ export const updateBoletoStatus: RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const updateBoletoComments: RequestHandler = async (req, res) => {
+export const updateBoletoComments = async (req: Request, res: Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -354,7 +355,7 @@ export const updateBoletoComments: RequestHandler = async (req, res) => {
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
-export const deleteBoleto: RequestHandler = async (req, res) => {
+export const deleteBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();

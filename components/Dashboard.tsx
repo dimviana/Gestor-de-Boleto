@@ -18,7 +18,6 @@ import FloatingMenu from './FloatingMenu';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
 import CalendarView from './CalendarView';
 import OverviewView from './OverviewView';
-import DataExtractionConfirmationModal from './DataExtractionConfirmationModal';
 import EditProfileModal from './EditProfileModal';
 
 
@@ -44,54 +43,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [boletoForConfirmation, setBoletoForConfirmation] = useState<Omit<Boleto, 'id' | 'status' | 'comments' | 'companyId'> | null>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   const activeCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
   const isUploadDisabled = !activeCompanyId;
   
-  const handleConfirmAndSaveBoleto = async () => {
-    if (!boletoForConfirmation || !activeCompanyId) return;
-
-    const uploadId = crypto.randomUUID();
-    // Use an existing status or create a new one
-    const existingStatus = uploadStatuses.find(s => s.fileName === boletoForConfirmation.fileName && s.status === 'processing');
-    const statusId = existingStatus ? existingStatus.id : uploadId;
-
-    setUploadStatuses(prev => {
-        if (existingStatus) {
-            return prev.map(up => up.id === statusId ? { ...up, status: 'processing', message: 'Salvando no banco de dados...', progress: 95 } : up);
-        }
-        return [{ id: uploadId, fileName: boletoForConfirmation.fileName, status: 'processing', message: 'Salvando no banco de dados...', progress: 95 }, ...prev];
-    });
-
-    try {
-      await api.saveBoleto(boletoForConfirmation, activeCompanyId);
-      setUploadStatuses(prev => prev.map(up => 
-        up.id === statusId ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } : up
-      ));
-      await fetchBoletos();
-    } catch (error: any) {
-        const messageFromServer = error.message || 'genericErrorText';
-        let errorMessage = '';
-
-        if (messageFromServer.startsWith('Duplicate barcode:')) {
-            const substitutions = { identifier: messageFromServer.split(': ')[1] || 'N/A' };
-            errorMessage = t('duplicateBarcodeErrorText', substitutions);
-        } else {
-            const isKnownKey = Object.keys(translations.pt).includes(messageFromServer);
-            errorMessage = t(isKnownKey ? messageFromServer as TranslationKey : 'genericErrorText');
-        }
-
-        setUploadStatuses(prev => prev.map(up => 
-            up.id === statusId ? { ...up, status: 'error', message: errorMessage, progress: 0 } : up
-        ));
-    } finally {
-        setBoletoForConfirmation(null); // Close modal
-    }
-  };
-
-
   const processAndUploadFile = async (file: File) => {
     if (!activeCompanyId) {
         const errorKey = user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText';
@@ -120,8 +76,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
     try {
       const extractedData = await api.extractBoletoData(file, activeCompanyId, onProgress);
-      setBoletoForConfirmation(extractedData); // Open confirmation modal
-      // The saving logic is now in `handleConfirmAndSaveBoleto`
+      
+      onProgress(95);
+       setUploadStatuses(prev => prev.map(up => 
+        up.id === uploadId ? { ...up, message: 'Salvando no banco de dados...', progress: 95 } : up
+      ));
+
+      await api.saveBoleto(extractedData, activeCompanyId);
+      
+      setUploadStatuses(prev => prev.map(up => 
+        up.id === uploadId ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } : up
+      ));
+
+      await fetchBoletos();
+
 
     } catch (error: any) {
       console.error("Upload failed:", error);
@@ -467,14 +435,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
                 <button onClick={() => setSelectedBoletoIds([])} className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">{t('deselectAll')}</button>
             </div>
         </div>
-      )}
-
-      {boletoForConfirmation && (
-        <DataExtractionConfirmationModal
-          boleto={boletoForConfirmation}
-          onConfirm={handleConfirmAndSaveBoleto}
-          onCancel={() => setBoletoForConfirmation(null)}
-        />
       )}
 
       {isEditProfileOpen && (
