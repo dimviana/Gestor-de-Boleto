@@ -165,8 +165,17 @@ const pt = {
     viewDetails: 'Detalhes',
     viewKanban: 'Visão Kanban',
     viewCalendar: 'Visão Calendário',
+    viewOverview: 'Visão Geral',
     previousMonth: 'Mês Anterior',
     nextMonth: 'Próximo Mês',
+    filterByDateRange: 'Filtrar por Período de Pagamento',
+    startDate: 'Data Inicial',
+    endDate: 'Data Final',
+    clearFilters: 'Limpar Filtros',
+    totalPaidInPeriod: 'Total Pago no Período',
+    paidDate: 'Data Pagamento',
+    noPaidBoletosInPeriod: 'Nenhum boleto pago encontrado no período selecionado.',
+    documentNumberShort: 'Nº Doc.',
 };
 
 const en: typeof pt = {
@@ -334,8 +343,17 @@ const en: typeof pt = {
     viewDetails: 'Details',
     viewKanban: 'Kanban View',
     viewCalendar: 'Calendar View',
+    viewOverview: 'Overview',
     previousMonth: 'Previous Month',
     nextMonth: 'Next Month',
+    filterByDateRange: 'Filter by Payment Period',
+    startDate: 'Start Date',
+    endDate: 'End Date',
+    clearFilters: 'Clear Filters',
+    totalPaidInPeriod: 'Total Paid in Period',
+    paidDate: 'Paid Date',
+    noPaidBoletosInPeriod: 'No paid boletos found in the selected period.',
+    documentNumberShort: 'Doc. No.',
 };
 
 export const translations = { pt, en };

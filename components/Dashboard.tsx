@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useBoletos } from '../hooks/useBoletos';
 import { Boleto, BoletoStatus, User, RegisteredUser, LogEntry, Notification, Company, AnyNotification, Role } from '../types';
@@ -11,7 +12,7 @@ import Spinner from './Spinner';
 import { useLanguage } from '../contexts/LanguageContext';
 import Modal from './Modal';
 import Documentation from './Documentation';
-import { HourglassIcon, CheckCircleIcon, TrashIcon, PaymentTerminalIcon, KanbanIcon, CalendarIcon } from './icons/Icons';
+import { HourglassIcon, CheckCircleIcon, TrashIcon, PaymentTerminalIcon, KanbanIcon, CalendarIcon, WalletIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
 import * as api from '../services/api';
@@ -19,6 +20,7 @@ import UploadProgress, { UploadStatus } from './UploadProgress';
 import FloatingMenu from './FloatingMenu';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
 import CalendarView from './CalendarView';
+import OverviewView from './OverviewView';
 
 
 interface DashboardProps {
@@ -37,7 +39,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentView, setCurrentView] = useState<'kanban' | 'calendar'>('kanban');
+  const [currentView, setCurrentView] = useState<'kanban' | 'calendar' | 'overview'>('kanban');
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
@@ -236,13 +238,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
   const boletosToDo = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.TO_PAY), [filteredBoletos]);
   const boletosVerifying = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.VERIFYING), [filteredBoletos]);
-  const boletosPaid = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.PAID), [filteredBoletos]);
+  
+  const boletosPaidKanban = useMemo(() => {
+      const thirtyThreeDaysAgo = new Date();
+      thirtyThreeDaysAgo.setDate(thirtyThreeDaysAgo.getDate() - 33);
+      thirtyThreeDaysAgo.setHours(0, 0, 0, 0);
+
+      return filteredBoletos.filter(b => {
+          if (b.status !== BoletoStatus.PAID) return false;
+          // If updatedAt is not available, keep it in the list to be safe.
+          if (!b.updatedAt) return true;
+          try {
+              const paidDate = new Date(b.updatedAt);
+              return paidDate >= thirtyThreeDaysAgo;
+          } catch (e) {
+              // If date is invalid, keep it.
+              return true;
+          }
+      });
+  }, [filteredBoletos]);
+
+  const allPaidBoletos = useMemo(() => 
+    filteredBoletos.filter(b => b.status === BoletoStatus.PAID), 
+  [filteredBoletos]);
 
   const calculateTotal = (boletosList: Boleto[]) => boletosList.reduce((sum, boleto) => sum + (boleto.amount || 0), 0);
   
   const totalToDo = useMemo(() => calculateTotal(boletosToDo), [boletosToDo]);
   const totalVerifying = useMemo(() => calculateTotal(boletosVerifying), [boletosVerifying]);
-  const totalPaid = useMemo(() => calculateTotal(boletosPaid), [boletosPaid]);
+  const totalPaid = useMemo(() => calculateTotal(allPaidBoletos), [allPaidBoletos]);
 
   const boletoNotifications = useMemo((): Notification[] => {
     const today = new Date();
@@ -373,6 +397,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
                     <button onClick={() => setCurrentView('calendar')} className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center transition-colors ${currentView === 'calendar' ? 'bg-white text-blue-600 shadow dark:bg-gray-800' : 'text-gray-600 dark:text-gray-300'}`}>
                         <CalendarIcon className="w-5 h-5 mr-2" /> {t('viewCalendar')}
                     </button>
+                     <button onClick={() => setCurrentView('overview')} className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center transition-colors ${currentView === 'overview' ? 'bg-white text-blue-600 shadow dark:bg-gray-800' : 'text-gray-600 dark:text-gray-300'}`}>
+                        <WalletIcon className="w-5 h-5 mr-2" /> {t('viewOverview')}
+                    </button>
                 </div>
             </div>
 
@@ -382,10 +409,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
                   <div className="flex flex-col md:flex-row -mx-2">
                     <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
                     <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
-                    <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaid} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+                    <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaidKanban} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
                   </div>
-                ) : (
+                ) : currentView === 'calendar' ? (
                    <CalendarView boletos={filteredBoletos} />
+                ) : (
+                   <OverviewView boletos={allPaidBoletos} />
                 )}
               </div>
             )}

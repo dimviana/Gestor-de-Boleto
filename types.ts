@@ -33,6 +33,7 @@ export interface Boleto {
   comments: string | null;
   extractedData?: Record<string, any> | null;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export type Role = 'viewer' | 'editor' | 'admin';

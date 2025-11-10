@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -72,6 +66,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
         extractedData: extractedDataParsed,
         detailedCosts: extractedDataParsed?.detailedCosts || null,
         createdAt: dbBoleto.created_at,
+        updatedAt: dbBoleto.updated_at,
     };
 };
 
