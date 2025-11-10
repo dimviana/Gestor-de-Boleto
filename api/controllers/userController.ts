@@ -1,18 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -21,8 +7,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const getUsers = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const getUsers: express.RequestHandler = async (req, res) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -40,8 +26,8 @@ export const getUsers = async (req: express.Request, res: express.Response) => {
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const createUser = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const createUser: express.RequestHandler = async (req, res) => {
   const { username, password, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -97,8 +83,8 @@ export const createUser = async (req: express.Request, res: express.Response) =>
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const updateUser = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const updateUser: express.RequestHandler = async (req, res) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -150,8 +136,8 @@ export const updateUser = async (req: express.Request, res: express.Response) =>
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const deleteUser = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const deleteUser: express.RequestHandler = async (req, res) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();

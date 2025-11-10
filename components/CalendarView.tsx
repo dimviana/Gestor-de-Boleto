@@ -68,6 +68,31 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
   
   const daysOfWeek = language === 'pt' ? ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // --- Monthly Summaries Calculation ---
+  const monthlyBoletos = useMemo(() => {
+    return boletos.filter(b => {
+        if (!b.createdAt) return false;
+        try {
+            const createdAtDate = new Date(b.createdAt);
+            return createdAtDate.getFullYear() === currentDate.getFullYear() &&
+                   createdAtDate.getMonth() === currentDate.getMonth();
+        } catch(e) { return false; }
+    });
+  }, [boletos, currentDate]);
+
+  const totalDue = useMemo(() => {
+      return monthlyBoletos
+          .filter(b => b.status === BoletoStatus.TO_PAY || b.status === BoletoStatus.VERIFYING)
+          .reduce((sum, b) => sum + (b.amount || 0), 0);
+  }, [monthlyBoletos]);
+
+  const totalPaid = useMemo(() => {
+      return monthlyBoletos
+          .filter(b => b.status === BoletoStatus.PAID)
+          .reduce((sum, b) => sum + (b.amount || 0), 0);
+  }, [monthlyBoletos]);
+
+
   return (
     <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700">
       <header className="flex items-center justify-between mb-4">
@@ -81,6 +106,17 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
             <ArrowRightIcon className="w-5 h-5" />
         </button>
       </header>
+      
+      <div className="flex flex-col sm:flex-row justify-around my-4 gap-4">
+          <div className="flex-1 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-center border border-red-200 dark:border-red-800/50">
+              <p className="text-sm font-medium text-red-600 dark:text-red-300">{t('totalToPay')} (Mês)</p>
+              <p className="text-2xl font-bold text-red-800 dark:text-red-200">{formatCurrency(totalDue)}</p>
+          </div>
+          <div className="flex-1 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center border border-green-200 dark:border-green-800/50">
+              <p className="text-sm font-medium text-green-600 dark:text-green-300">{t('totalPaid')} (Mês)</p>
+              <p className="text-2xl font-bold text-green-800 dark:text-green-200">{formatCurrency(totalPaid)}</p>
+          </div>
+      </div>
 
       <div className="grid grid-cols-7 gap-px">
         {daysOfWeek.map(day => (
@@ -106,10 +142,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
                 {boletosForDay.map(boleto => {
                   let isOverdue = false;
                   if (boleto.dueDate) {
-                      const dueDateObj = new Date(`${boleto.dueDate}T00:00:00`);
-                      if (!isNaN(dueDateObj.getTime())) {
-                          isOverdue = dueDateObj < today && boleto.status !== BoletoStatus.PAID;
-                      }
+                      try {
+                        const dueDateObj = new Date(`${boleto.dueDate}T00:00:00`);
+                        if (!isNaN(dueDateObj.getTime())) {
+                            isOverdue = dueDateObj < today && boleto.status !== BoletoStatus.PAID;
+                        }
+                      } catch(e) {}
                   }
                   
                   return (

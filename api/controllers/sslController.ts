@@ -1,18 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -22,8 +8,8 @@ import { SslStatus } from '../../types';
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const getSslSettings = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const getSslSettings: express.RequestHandler = async (req, res) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
         if (rows.length > 0) {
@@ -38,8 +24,8 @@ export const getSslSettings = async (req: express.Request, res: express.Response
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const saveSslSettings = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const saveSslSettings: express.RequestHandler = async (req, res) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
         return res.status(400).json({ message: 'Invalid domain specified.' });
@@ -59,8 +45,8 @@ export const saveSslSettings = async (req: express.Request, res: express.Respons
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const checkSslStatus = (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const checkSslStatus: express.RequestHandler = (req, res) => {
     const { domain } = req.body;
     if (!domain) {
         return res.status(400).json({ message: 'Domain is required.' });

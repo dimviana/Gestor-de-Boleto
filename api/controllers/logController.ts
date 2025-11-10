@@ -1,25 +1,11 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const getLogs = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const getLogs: express.RequestHandler = async (req, res) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');
     res.json(logs);

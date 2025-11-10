@@ -1,18 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -29,8 +15,8 @@ const mapDbCompanyToCompany = (dbCompany: any): Company => ({
 });
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const getCompanies = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const getCompanies: express.RequestHandler = async (req, res) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT id, name, cnpj, address, monitored_folder_path FROM companies ORDER BY name');
     res.json(companies.map(mapDbCompanyToCompany));
@@ -41,8 +27,8 @@ export const getCompanies = async (req: express.Request, res: express.Response) 
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const createCompany = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const createCompany: express.RequestHandler = async (req, res) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -76,8 +62,8 @@ export const createCompany = async (req: express.Request, res: express.Response)
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const updateCompany = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const updateCompany: express.RequestHandler = async (req, res) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -114,8 +100,8 @@ export const updateCompany = async (req: express.Request, res: express.Response)
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const deleteCompany = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const deleteCompany: express.RequestHandler = async (req, res) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();
@@ -156,8 +142,8 @@ export const deleteCompany = async (req: express.Request, res: express.Response)
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const setMonitoredFolderPath = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const setMonitoredFolderPath: express.RequestHandler = async (req, res) => {
   const { path } = req.body;
   const { id } = req.params;
   
@@ -175,8 +161,8 @@ export const setMonitoredFolderPath = async (req: express.Request, res: express.
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const clearMonitoredFolderPath = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const clearMonitoredFolderPath: express.RequestHandler = async (req, res) => {
   const { id } = req.params;
 
   try {

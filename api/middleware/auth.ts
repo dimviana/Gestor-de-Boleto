@@ -1,18 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import express, { NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
@@ -33,7 +19,7 @@ declare global {
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request, Response, and NextFunction types to the handler.
-export const protect = (req: express.Request, res: express.Response, next: NextFunction) => {
+export const protect: express.RequestHandler = (req, res, next) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -59,7 +45,7 @@ export const protect = (req: express.Request, res: express.Response, next: NextF
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request, Response, and NextFunction types to the handler.
-export const admin = (req: express.Request, res: express.Response, next: NextFunction) => {
+export const admin: express.RequestHandler = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -69,7 +55,7 @@ export const admin = (req: express.Request, res: express.Response, next: NextFun
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
 // FIX: Add Request, Response, and NextFunction types to the handler.
-export const editor = (req: express.Request, res: express.Response, next: NextFunction) => {
+export const editor: express.RequestHandler = (req, res, next) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {

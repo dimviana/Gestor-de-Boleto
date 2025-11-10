@@ -1,18 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -33,8 +19,8 @@ const generateToken = (id: string, username: string, role: Role, company_id: str
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const registerUser = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const registerUser: express.RequestHandler = async (req, res) => {
   const { username, password, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -61,8 +47,8 @@ export const registerUser = async (req: express.Request, res: express.Response) 
 };
 
 // Ensure Express request handlers are correctly typed to resolve property access errors.
-// FIX: Add Request and Response types to the handler.
-export const loginUser = async (req: express.Request, res: express.Response) => {
+// FIX: Add RequestHandler type to the handler.
+export const loginUser: express.RequestHandler = async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
