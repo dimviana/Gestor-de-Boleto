@@ -44,6 +44,16 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [visibility, setVisibility] = useState<CardFieldVisibility>({});
 
+  // States for animations
+  const [isMounted, setIsMounted] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    // Set a minimal timeout to ensure the component is rendered before starting the transition
+    const timer = setTimeout(() => setIsMounted(true), 10);
+    return () => clearTimeout(timer);
+  }, []); // Run only on mount
+
   useEffect(() => {
     try {
         const storedVisibility = localStorage.getItem(CARD_VISIBILITY_KEY);
@@ -166,7 +176,11 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm(t('confirmBoletoDeletion' as TranslationKey, { guideNumber: displayGuideNumber || 'N/A' }))) {
-      onDelete(id);
+      setIsDeleting(true); // Trigger the exit animation
+      // Call the actual delete function after the animation duration
+      setTimeout(() => {
+        onDelete(id);
+      }, 300); // This duration must match the transition duration
     }
   };
 
@@ -271,9 +285,12 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       draggable={userRole !== 'viewer'}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-lg p-4 border transition-all duration-200 hover:shadow-xl hover:-translate-y-1
+      className={`bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-lg p-4 border 
+      transition-all duration-300 ease-out
+      hover:shadow-xl hover:-translate-y-1
       ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-200 dark:border-slate-700'}
-      ${isDragging ? 'opacity-50' : ''}`}
+      ${isDragging ? 'opacity-50' : ''}
+      ${isMounted && !isDeleting ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
