@@ -167,8 +167,8 @@ def extract_boleto_info(pdf_path):
     
     final_guide_number = None
 
-    # 1. Highest priority: The specific "Nº Documento/Guia" format requested by the user.
-    guide_number_guia_raw = find_last_match("guideNumber_guia", text_content)
+    # 1. Highest priority: The specific "Nº Documento/Guia" format requested. Using first match logic.
+    guide_number_guia_raw = find_first_match("guideNumber_guia", text_content)
     if guide_number_guia_raw:
         cleaned_digits = re.sub(r'[^\d]', '', guide_number_guia_raw)
         if cleaned_digits:
@@ -176,7 +176,7 @@ def extract_boleto_info(pdf_path):
 
     # 2. Fallback to the general "Nº do Documento" format if the specific one isn't found.
     if not final_guide_number:
-        guide_number_doc_raw = find_last_match("guideNumber_doc", text_content)
+        guide_number_doc_raw = find_first_match("guideNumber_doc", text_content)
         if guide_number_doc_raw:
             cleaned_digits = re.sub(r'[^\d]', '', guide_number_doc_raw)
             if cleaned_digits:
@@ -184,7 +184,7 @@ def extract_boleto_info(pdf_path):
     
     # 3. Last resort fallback to 'Nosso Número' if no document number is found.
     if not final_guide_number:
-        guide_number_nosso_raw = find_last_match("guideNumber_nosso", text_content)
+        guide_number_nosso_raw = find_first_match("guideNumber_nosso", text_content)
         if guide_number_nosso_raw:
             cleaned_digits = re.sub(r'[^\d]', '', guide_number_nosso_raw)
             if cleaned_digits:

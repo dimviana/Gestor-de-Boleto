@@ -1,14 +1,10 @@
 
-
-
-
-
-import { Request, Response } from 'express';
+// Fix: Use type-only imports for Express types to avoid module resolution issues.
+import type { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
-// Correctly type Express request handler to resolve property access errors.
 export const getSettings = async (req: Request, res: Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
@@ -28,7 +24,6 @@ export const getSettings = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const updateSettings = async (req: Request, res: Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();

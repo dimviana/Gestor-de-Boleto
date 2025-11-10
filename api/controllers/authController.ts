@@ -1,9 +1,6 @@
 
-
-
-
-
-import { Request, Response } from 'express';
+// Fix: Use type-only imports for Express types to avoid module resolution issues.
+import type { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -22,7 +19,6 @@ const generateToken = (id: string, username: string, name: string | null, role: 
   });
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const registerUser = async (req: Request, res: Response) => {
   const { username, password, name, role = 'viewer', companyId = null } = req.body;
 
@@ -49,7 +45,6 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 

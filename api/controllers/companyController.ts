@@ -1,9 +1,6 @@
 
-
-
-
-
-import { Request, Response } from 'express';
+// Fix: Use type-only imports for Express types to avoid module resolution issues.
+import type { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,7 +15,6 @@ const mapDbCompanyToCompany = (dbCompany: any): Company => ({
     monitoredFolderPath: dbCompany.monitored_folder_path
 });
 
-// Correctly type Express request handler to resolve property access errors.
 export const getCompanies = async (req: Request, res: Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT id, name, cnpj, address, monitored_folder_path FROM companies ORDER BY name');
@@ -29,7 +25,6 @@ export const getCompanies = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const createCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
@@ -63,7 +58,6 @@ export const createCompany = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const updateCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
@@ -100,7 +94,6 @@ export const updateCompany = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const deleteCompany = async (req: Request, res: Response) => {
   const user = req.user!;
   const companyId = req.params.id;
@@ -141,7 +134,6 @@ export const deleteCompany = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const setMonitoredFolderPath = async (req: Request, res: Response) => {
   const { path } = req.body;
   const { id } = req.params;
@@ -159,7 +151,6 @@ export const setMonitoredFolderPath = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const clearMonitoredFolderPath = async (req: Request, res: Response) => {
   const { id } = req.params;
 

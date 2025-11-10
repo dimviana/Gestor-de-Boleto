@@ -1,9 +1,6 @@
 
-
-
-
-
-import { Request, Response } from 'express';
+// Fix: Use type-only imports for Express types to avoid module resolution issues.
+import type { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { exec } from 'child_process';
@@ -11,7 +8,6 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-// Correctly type Express request handler to resolve property access errors.
 export const getSslSettings = async (req: Request, res: Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
@@ -26,7 +22,6 @@ export const getSslSettings = async (req: Request, res: Response) => {
     }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const saveSslSettings = async (req: Request, res: Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
@@ -46,7 +41,6 @@ export const saveSslSettings = async (req: Request, res: Response) => {
     }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const checkSslStatus = (req: Request, res: Response) => {
     const { domain } = req.body;
     if (!domain) {

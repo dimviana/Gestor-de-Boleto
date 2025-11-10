@@ -1,9 +1,6 @@
 
-
-
-
-
-import { Request, Response, NextFunction } from 'express';
+// Fix: Use type-only imports for Express types to avoid module resolution issues.
+import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -21,7 +18,6 @@ declare global {
     }
 }
 
-// Correctly type Express request handlers to resolve property access errors.
 export const protect = (req: Request, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -46,7 +42,6 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// Correctly type Express request handlers to resolve property access errors.
 export const admin = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -55,7 +50,6 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
-// Correctly type Express request handlers to resolve property access errors.
 export const editor = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();

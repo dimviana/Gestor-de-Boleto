@@ -1,13 +1,9 @@
 
-
-
-
-
-import { Request, Response } from 'express';
+// Fix: Use type-only imports for Express types to avoid module resolution issues.
+import type { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-// Correctly type Express request handler to resolve property access errors.
 export const getLogs = async (req: Request, res: Response) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');

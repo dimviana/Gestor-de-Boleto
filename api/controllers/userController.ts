@@ -1,16 +1,12 @@
 
-
-
-
-
-import { Request, Response } from 'express';
+// Fix: Use type-only imports for Express types to avoid module resolution issues.
+import type { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-// Correctly type Express request handler to resolve property access errors.
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, name, role, company_id FROM users');
@@ -29,7 +25,6 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const createUser = async (req: Request, res: Response) => {
   const { username, password, name, role, companyId } = req.body;
   const adminUser = req.user!;
@@ -86,7 +81,6 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const updateUser = async (req: Request, res: Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
@@ -139,7 +133,6 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-// Correctly type Express request handler to resolve property access errors.
 export const deleteUser = async (req: Request, res: Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
