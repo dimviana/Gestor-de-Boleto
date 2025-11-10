@@ -7,7 +7,7 @@ import { EyeIcon, EyeOffIcon } from './icons/Icons';
 
 interface LoginScreenProps {
   login: (username: string, password?: string) => Promise<void>;
-  register: (username: string, password?: string) => Promise<boolean>;
+  register: (username: string, password?: string, name?: string) => Promise<boolean>;
   authError: string | null;
   setAuthError: (error: string | null) => void;
 }
@@ -16,6 +16,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -25,6 +26,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
 
   const handleSwitchMode = (newMode: 'login' | 'register') => {
     setMode(newMode);
+    setName('');
     setEmail('');
     setPassword('');
     setAuthError(null);
@@ -39,7 +41,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
     if (mode === 'login') {
       await login(email, password);
     } else {
-      const success = await register(email, password);
+      const success = await register(email, password, name);
       if (success) {
         setRegistrationSuccess(true);
         handleSwitchMode('login');
@@ -92,6 +94,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
         {registrationSuccess && <div className="p-3 text-sm text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-300 rounded-lg text-center">{t('registrationSuccess')}</div>}
 
         <div className="space-y-4">
+            {mode === 'register' && (
+              <div>
+                  <label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('nameLabel')}</label>
+                  <input 
+                      id="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder={t('namePlaceholder')}
+                      className="w-full px-4 py-2 mt-1 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+              </div>
+            )}
             <div>
                 <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('emailLabel')}</label>
                 <input 

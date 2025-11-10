@@ -45,10 +45,10 @@ export const useAuth = () => {
     setUser(null);
   }, []);
 
-  const register = useCallback(async (username: string, password?: string): Promise<boolean> => {
+  const register = useCallback(async (username: string, password?: string, name?: string): Promise<boolean> => {
     setAuthError(null);
     try {
-      await api.register(username, password);
+      await api.register(username, password, name);
       return true;
     } catch (error: any) {
       console.error("Registration failed:", error);

@@ -165,7 +165,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         const [isUserModalOpen, setIsUserModalOpen] = useState(false);
         const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
         const [selectedUser, setSelectedUser] = useState<RegisteredUser | null>(null);
-        const [userForm, setUserForm] = useState({ username: '', password: '', role: 'viewer' as Role, companyId: '' });
+        const [userForm, setUserForm] = useState({ username: '', name: '', password: '', role: 'viewer' as Role, companyId: '' });
         const [companyForm, setCompanyForm] = useState({ name: '', cnpj: '', address: ''});
 
         const roleClassMap: Record<Role, string> = {
@@ -189,24 +189,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
 
         const openAddUserModal = () => {
             setModalMode('add'); setSelectedUser(null);
-            setUserForm({ username: '', password: '', role: 'viewer', companyId: '' });
+            setUserForm({ username: '', name: '', password: '', role: 'viewer', companyId: '' });
             setIsUserModalOpen(true);
         };
 
         const openEditUserModal = (user: RegisteredUser) => {
             setModalMode('edit'); setSelectedUser(user);
-            setUserForm({ username: user.username, password: '', role: user.role, companyId: user.companyId || '' });
+            setUserForm({ username: user.username, name: user.name || '', password: '', role: user.role, companyId: user.companyId || '' });
             setIsUserModalOpen(true);
         };
         
         const handleUserFormSubmit = async () => {
             try {
                 if (modalMode === 'add') {
-                    await api.createUser({ username: userForm.username, password: userForm.password, role: userForm.role, companyId: userForm.companyId || undefined });
+                    await api.createUser({ username: userForm.username, name: userForm.name, password: userForm.password, role: userForm.role, companyId: userForm.companyId || undefined });
                     showNotification(t('userAddedSuccess'), 'success');
                 } else if (modalMode === 'edit' && selectedUser) {
                     const updates: Partial<Omit<RegisteredUser, 'id'>> = {};
                     if (userForm.username !== selectedUser.username) updates.username = userForm.username;
+                    if (userForm.name !== (selectedUser.name || '')) updates.name = userForm.name;
                     if (userForm.password) updates.password = userForm.password;
                     if (userForm.role !== selectedUser.role) updates.role = userForm.role;
                     if (userForm.companyId !== (selectedUser.companyId || '')) updates.companyId = userForm.companyId;
@@ -292,7 +293,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('usersInThisCompany')}</h5>
                                     <ul className="text-sm space-y-1">
-                                        {users.filter(u => u.companyId === company.id).map(user => (<li key={user.id} className="text-gray-600 dark:text-gray-400">{user.username}</li>))}
+                                        {users.filter(u => u.companyId === company.id).map(user => (<li key={user.id} className="text-gray-600 dark:text-gray-400">{user.name || user.username}</li>))}
                                         {users.filter(u => u.companyId === company.id).length === 0 && <p className="text-xs text-gray-400 italic">{t('noUsersInCompany')}</p>}
                                     </ul>
                                 </div>
@@ -309,7 +310,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                     <div className="overflow-x-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
                              <thead className="bg-gray-50 dark:bg-gray-700"><tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Usuário</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('userFormNameLabel')}</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('companyLabel')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Permissão</th>
                                 <th scope="col" className="relative px-6 py-3"><span className="sr-only">Ações</span></th>
@@ -317,7 +319,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                                 {users.map((user) => (
                                     <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{user.username}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{user.name || <span className="italic text-gray-400">N/A</span>}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{user.username}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{companies.find(c => c.id === user.companyId)?.name || <span className="italic">{t('noCompany')}</span>}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleClassMap[user.role]}`}>{user.role}</span></td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
@@ -332,6 +335,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                  </div>
                  <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title={modalMode === 'add' ? t('addUserModalTitle') : t('editUserModalTitle')}>
                     <div className="space-y-4">
+                        <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormNameLabel')}</label><input type="text" value={userForm.name} onChange={(e) => setUserForm({...userForm, name: e.target.value})} className="mt-1 block w-full input-field"/></div>
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormEmailLabel')}</label><input type="email" value={userForm.username} onChange={(e) => setUserForm({...userForm, username: e.target.value})} className="mt-1 block w-full input-field"/></div>
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormPasswordLabel')}</label><input type="password" value={userForm.password} onChange={(e) => setUserForm({...userForm, password: e.target.value})} placeholder={modalMode === 'edit' ? t('userFormPasswordPlaceholder') : ''} className="mt-1 block w-full input-field"/></div>
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('companyLabel')}</label><select value={userForm.companyId} onChange={(e) => setUserForm({...userForm, companyId: e.target.value})} className="mt-1 block w-full input-field"><option value="">{t('noCompany')}</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>

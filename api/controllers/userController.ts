@@ -1,4 +1,5 @@
 
+
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -9,12 +10,13 @@ import { Role } from '../../types';
 // FIX: Correctly type Express request handler to resolve property access errors.
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, role, company_id FROM users');
+    const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, name, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
     // Also, map old 'user' role to 'editor' for backward compatibility
     const users = usersFromDb.map(user => ({
         id: user.id,
         username: user.username,
+        name: user.name,
         role: user.role === 'user' ? 'editor' : user.role,
         companyId: user.company_id
     }));
@@ -26,7 +28,7 @@ export const getUsers = async (req: Request, res: Response) => {
 
 // FIX: Correctly type Express request handler to resolve property access errors.
 export const createUser = async (req: Request, res: Response) => {
-  const { username, password, role, companyId } = req.body;
+  const { username, password, name, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
 
@@ -43,7 +45,7 @@ export const createUser = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     
     // Use snake_case for DB insertion
-    const newUserDb = { id: uuidv4(), username, password: hashedPassword, role, company_id: companyId || null };
+    const newUserDb = { id: uuidv4(), username, name: name || null, password: hashedPassword, role, company_id: companyId || null };
     await connection.query('INSERT INTO users SET ?', newUserDb);
     
     await connection.query(
@@ -53,7 +55,7 @@ export const createUser = async (req: Request, res: Response) => {
         adminUser.id,
         adminUser.username,
         'ADMIN_CREATE_USER',
-        `Created new user '${username}' with role '${role}'.`
+        `Created new user '${name || username}' with role '${role}'.`
       ]
     );
 
@@ -63,6 +65,7 @@ export const createUser = async (req: Request, res: Response) => {
     const userResponse = {
         id: newUserDb.id,
         username: newUserDb.username,
+        name: newUserDb.name,
         role: newUserDb.role,
         companyId: newUserDb.company_id
     };
@@ -99,6 +102,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     const updates: any = {};
     if ('username' in req.body) updates.username = req.body.username;
+    if ('name' in req.body) updates.name = req.body.name;
     if ('role' in req.body) updates.role = req.body.role;
     if ('companyId' in req.body) updates.company_id = req.body.companyId || null;
 
@@ -114,7 +118,7 @@ export const updateUser = async (req: Request, res: Response) => {
     
     await connection.query('UPDATE users SET ? WHERE id = ?', [updates, userId]);
     
-    const details = `Updated user '${currentUser.username}' (ID: ${userId}). Changes: ${Object.keys(updates).filter(k => k !== 'password').join(', ')}.`;
+    const details = `Updated user '${currentUser.name || currentUser.username}' (ID: ${userId}). Changes: ${Object.keys(updates).filter(k => k !== 'password').join(', ')}.`;
     await connection.query(
         'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
         [ uuidv4(), adminUser.id, adminUser.username, 'ADMIN_UPDATE_USER', details ]
@@ -141,18 +145,18 @@ export const deleteUser = async (req: Request, res: Response) => {
   try {
     await connection.beginTransaction();
 
-    const [users] = await connection.query<RowDataPacket[]>('SELECT username FROM users WHERE id = ?', [userIdToDelete]);
+    const [users] = await connection.query<RowDataPacket[]>('SELECT username, name FROM users WHERE id = ?', [userIdToDelete]);
     if (users.length === 0) {
         await connection.rollback();
         return res.status(404).json({ message: 'User not found' });
     }
-    const usernameToDelete = users[0].username;
+    const userToDelete = users[0];
 
     await connection.query('DELETE FROM users WHERE id = ?', [userIdToDelete]);
 
     await connection.query(
         'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
-        [ uuidv4(), adminUser.id, adminUser.username, 'DELETE_USER', `Deleted user '${usernameToDelete}' (ID: ${userIdToDelete}).` ]
+        [ uuidv4(), adminUser.id, adminUser.username, 'DELETE_USER', `Deleted user '${userToDelete.name || userToDelete.username}' (ID: ${userIdToDelete}).` ]
     );
 
     await connection.commit();

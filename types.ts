@@ -45,6 +45,7 @@ export type Role = 'viewer' | 'editor' | 'admin';
 export interface User {
   id: string;
   username: string;
+  name: string | null;
   role: Role;
   companyId: string | null;
   token?: string;

@@ -1,4 +1,5 @@
 
+
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -8,19 +9,19 @@ import { v4 as uuidv4 } from 'uuid';
 import { appConfig } from '../services/configService';
 import { Role } from '../../types';
 
-const generateToken = (id: string, username: string, role: Role, company_id: string | null) => {
+const generateToken = (id: string, username: string, name: string | null, role: Role, company_id: string | null) => {
   if (!appConfig.JWT_SECRET || appConfig.JWT_SECRET === 'default_jwt_secret_please_change') {
     console.error('CRITICAL: JWT_SECRET is not configured. Cannot generate token. Please set it in the admin panel or .env file.');
     throw new Error('Server authentication is not properly configured.');
   }
-  return jwt.sign({ id, username, role, companyId: company_id }, appConfig.JWT_SECRET, {
+  return jwt.sign({ id, username, name, role, companyId: company_id }, appConfig.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
 
 // FIX: Correctly type Express request handler to resolve property access errors.
 export const registerUser = async (req: Request, res: Response) => {
-  const { username, password, role = 'viewer', companyId = null } = req.body;
+  const { username, password, name, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ message: 'Please provide username and password' });
@@ -36,7 +37,7 @@ export const registerUser = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     const userId = uuidv4();
 
-    await pool.query('INSERT INTO users (id, username, password, role, company_id) VALUES (?, ?, ?, ?, ?)', [userId, username, hashedPassword, role, companyId]);
+    await pool.query('INSERT INTO users (id, username, name, password, role, company_id) VALUES (?, ?, ?, ?, ?, ?)', [userId, username, name || null, hashedPassword, role, companyId]);
 
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
@@ -73,9 +74,10 @@ export const loginUser = async (req: Request, res: Response) => {
     res.json({
       id: user.id,
       username: user.username,
+      name: user.name,
       role: userRole,
       companyId: user.company_id,
-      token: generateToken(user.id, user.username, userRole, user.company_id),
+      token: generateToken(user.id, user.username, user.name, userRole, user.company_id),
     });
   } catch (error) {
     console.error(error);

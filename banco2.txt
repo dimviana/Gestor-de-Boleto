@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS `companies` (
 CREATE TABLE IF NOT EXISTS `users` (
   `id` VARCHAR(36) NOT NULL COMMENT 'UUID for the user',
   `username` VARCHAR(255) NOT NULL COMMENT 'User''s email address, used for login',
+  `name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'User''s full name',
   `password` VARCHAR(255) NOT NULL COMMENT 'Hashed password for security',
   `role` ENUM('viewer', 'editor', 'admin') NOT NULL DEFAULT 'viewer' COMMENT 'User role for authorization',
   `company_id` VARCHAR(36) DEFAULT NULL COMMENT 'Foreign key linking to the company',

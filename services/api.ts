@@ -73,10 +73,10 @@ export const login = (username: string, password?: string): Promise<User> => {
     });
 };
 
-export const register = (username?: string, password?: string): Promise<any> => {
+export const register = (username?: string, password?: string, name?: string): Promise<any> => {
     return apiFetch('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, name }),
     });
 };
 

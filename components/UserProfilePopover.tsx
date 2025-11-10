@@ -15,8 +15,9 @@ const UserProfilePopover: React.FC<UserProfilePopoverProps> = ({ user, companyNa
   return (
     <div className="absolute top-14 right-0 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-30 animate-fade-in-up">
       <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-        <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{user.username}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{companyName}</p>
+        <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{user.name || user.username}</p>
+        {user.name && <p className="text-xs text-gray-500 dark:text-gray-400">{user.username}</p>}
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{companyName}</p>
       </div>
       <div className="p-2">
         <button
