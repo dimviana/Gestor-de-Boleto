@@ -121,24 +121,27 @@ def extract_boleto_info(pdf_path):
 
     # --- Guide Number Extraction ---
     final_guide_number = None
-    same_line_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*(\d{8,15}\b)'
-    same_line_match = re.search(same_line_pattern, text_content, re.IGNORECASE)
-    if same_line_match:
-        final_guide_number = same_line_match.group(1)
-        
+    
+    # Priority 1: "Nosso Número"
+    nosso_numero_pattern = r'(?i)Nosso\sN[úu]mero\s*\n?\s*([\d.-/]+)'
+    nosso_numero_match = re.search(nosso_numero_pattern, text_content)
+    if nosso_numero_match:
+        cleaned = re.sub(r'[^\d]', '', nosso_numero_match.group(1))
+        if cleaned:
+            final_guide_number = cleaned
+
+    # Priority 2: Fallback to "Nº Documento" if "Nosso Número" is not found
+    if not final_guide_number:
+        same_line_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*(\d{8,15}\b)'
+        same_line_match = re.search(same_line_pattern, text_content, re.IGNORECASE)
+        if same_line_match:
+            final_guide_number = same_line_match.group(1)
+            
     if not final_guide_number:
         next_line_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*\n\s*(\d{8,15}\b)'
         next_line_match = re.search(next_line_pattern, text_content, re.IGNORECASE)
         if next_line_match:
             final_guide_number = re.sub(r'[^\d]', '', next_line_match.group(1))
-
-    if not final_guide_number:
-        nosso_numero_pattern = r'(?i)Nosso\sN[úu]mero\s*([\d.-/]+)'
-        nosso_numero_match = re.search(nosso_numero_pattern, text_content)
-        if nosso_numero_match:
-            cleaned = re.sub(r'[^\d]', '', nosso_numero_match.group(1))
-            if cleaned:
-                final_guide_number = cleaned
 
     raw = {
         "recipient": find_first_match(PATTERNS["recipient"], text_content),

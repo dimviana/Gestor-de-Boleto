@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Boleto, BoletoStatus } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -33,7 +32,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
       if (boleto.createdAt) {
         const date = new Date(boleto.createdAt);
         if (!isNaN(date.getTime())) {
-          const dateKey = date.toISOString().split('T')[0];
+          // Use local date parts to form the key, respecting user's timezone
+          const year = date.getFullYear();
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const day = date.getDate().toString().padStart(2, '0');
+          const dateKey = `${year}-${month}-${day}`;
+          
           if (!map.has(dateKey)) {
             map.set(dateKey, []);
           }
@@ -128,7 +132,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
 
       <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-slate-700 border-t border-l border-gray-200 dark:border-slate-700">
         {calendarGrid.map((date, index) => {
-          const dateKey = date.toISOString().split('T')[0];
+          // Use local date parts to form the key, matching the boletosByDate logic
+          const year = date.getFullYear();
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const day = date.getDate().toString().padStart(2, '0');
+          const dateKey = `${year}-${month}-${day}`;
+
           const isCurrentMonth = date.getMonth() === currentDate.getMonth();
           const isToday = date.getTime() === today.getTime();
           const boletosForDay = boletosByDate.get(dateKey) || [];
