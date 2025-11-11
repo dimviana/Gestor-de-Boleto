@@ -90,6 +90,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
       await fetchBoletos();
 
+      // Automatically clear the success message after a few seconds
+      setTimeout(() => {
+        setUploadStatuses(prev => prev.filter(status => status.id !== uploadId));
+      }, 5000);
+
 
     } catch (error: any) {
       console.error("Upload failed:", error);
