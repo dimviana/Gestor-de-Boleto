@@ -27,9 +27,12 @@ const OverviewView: React.FC<OverviewViewProps> = ({ boletos }) => {
     try {
       // Appending T00:00:00 ensures the date is parsed in the local timezone, not UTC.
       const date = new Date(`${dateString}T00:00:00`);
+      if (isNaN(date.getTime())) {
+        return t('notAvailable');
+      }
       return new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : 'en-US', options).format(date);
     } catch (e) {
-      return dateString;
+      return t('notAvailable');
     }
   };
 

@@ -1,7 +1,4 @@
 
-
-
-// FIX: Import Request, Response, NextFunction types from express
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
@@ -20,7 +17,7 @@ declare global {
     }
 }
 
-// FIX: Use correct types for middleware handler
+// Add explicit types for Express middleware handlers.
 export const protect = (req: Request, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -45,7 +42,7 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// FIX: Use correct types for middleware handler
+// Add explicit types for Express middleware handlers.
 export const admin = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -54,7 +51,7 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
-// FIX: Use correct types for middleware handler
+// Add explicit types for Express middleware handlers.
 export const editor = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();

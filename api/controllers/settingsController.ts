@@ -1,13 +1,10 @@
 
-
-
-// FIX: Import Request and Response types from express
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const getSettings = async (_req: Request, res: Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
@@ -27,7 +24,7 @@ export const getSettings = async (_req: Request, res: Response) => {
   }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const updateSettings = async (req: Request, res: Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();

@@ -1,7 +1,4 @@
 
-
-
-// FIX: Import Request and Response types from express
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -45,7 +42,7 @@ apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/tracking', trackingRoutes);
 
 // Health check for the API router itself
-// FIX: Use correct types for handler and handle unused req parameter
+// Add explicit types for Express Request and Response objects.
 const healthCheckHandler = (_req: Request, res: Response) => {
   res.send('Boleto Manager AI Backend is running!');
 };
@@ -66,7 +63,7 @@ app.use(express.static(staticPath));
 
 // 2. SPA Fallback: For any GET request that doesn't match an API route or a static file,
 // serve the main index.html file. This is crucial for client-side routing.
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 const spaFallbackHandler = (req: Request, res: Response) => {
   // This guard prevents the fallback from ever serving index.html for an API-like route.
   if (req.path.startsWith('/api/')) {

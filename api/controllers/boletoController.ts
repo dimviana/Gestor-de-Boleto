@@ -1,7 +1,4 @@
 
-
-
-// FIX: Import Request and Response types from express
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -74,7 +71,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const getBoletos = async (req: Request, res: Response) => {
   const user = req.user!;
   try {
@@ -104,7 +101,7 @@ export const getBoletos = async (req: Request, res: Response) => {
   }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const getBoletoById = async (req: Request, res: Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
@@ -133,7 +130,7 @@ export const getBoletoById = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const extractBoleto = async (req: Request, res: Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -162,7 +159,7 @@ export const extractBoleto = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const saveBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
@@ -265,7 +262,7 @@ export const saveBoleto = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const updateBoletoStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     const { id } = req.params;
@@ -312,7 +309,7 @@ export const updateBoletoStatus = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const updateBoletoComments = async (req: Request, res: Response) => {
     const { comments } = req.body;
     const { id } = req.params;
@@ -357,7 +354,7 @@ export const updateBoletoComments = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const deleteBoleto = async (req: Request, res: Response) => {
     const user = req.user!;
     const { id } = req.params;

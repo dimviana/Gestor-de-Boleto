@@ -1,11 +1,10 @@
 
-// FIX: Import Request and Response types from express
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const sendReminders = async (req: Request, res: Response) => {
     const { companyId } = req.body;
     const user = req.user!;

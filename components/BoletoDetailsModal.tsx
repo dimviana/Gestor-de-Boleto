@@ -51,8 +51,11 @@ export const BoletoDetailsModal: React.FC<BoletoDetailsModalProps> = ({ boleto, 
     if (!dateString) return t('notAvailable');
     try {
       const date = new Date(`${dateString}T00:00:00`);
+      if (isNaN(date.getTime())) {
+        return t('notAvailable');
+      }
       return new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : 'en-US').format(date);
-    } catch (e) { return dateString; }
+    } catch (e) { return t('notAvailable'); }
   };
   
   const formatCurrency = (value: number | null) => {

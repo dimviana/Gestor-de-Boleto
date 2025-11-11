@@ -1,12 +1,11 @@
 
-// FIX: Import Request and Response types from express
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { v4 as uuidv4 } from 'uuid';
 import { RowDataPacket } from 'mysql2';
 import { appConfig } from '../services/configService';
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const logTracking = async (req: Request, res: Response) => {
     const user = req.user!;
     const { latitude, longitude } = req.body;
@@ -36,7 +35,7 @@ export const logTracking = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const getTrackingLogs = async (_req: Request, res: Response) => {
     try {
         const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM tracking_logs ORDER BY timestamp DESC LIMIT 500');

@@ -1,7 +1,4 @@
 
-
-
-// FIX: Import Request and Response types from express
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
@@ -10,7 +7,7 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const getSslSettings = async (_req: Request, res: Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
@@ -25,7 +22,7 @@ export const getSslSettings = async (_req: Request, res: Response) => {
     }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const saveSslSettings = async (req: Request, res: Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
@@ -45,7 +42,7 @@ export const saveSslSettings = async (req: Request, res: Response) => {
     }
 };
 
-// FIX: Use correct types for handler
+// Add explicit types for Express Request and Response objects.
 export const checkSslStatus = (req: Request, res: Response) => {
     const { domain } = req.body;
     if (!domain) {

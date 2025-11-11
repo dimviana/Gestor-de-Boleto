@@ -90,9 +90,14 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     if (!dateString) return t('notAvailable');
     try {
       const date = new Date(`${dateString}T00:00:00`);
+      // Check if the date is valid. An invalid date's time is NaN.
+      if (isNaN(date.getTime())) {
+        return t('notAvailable');
+      }
       return new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : 'en-US').format(date);
     } catch (e) {
-      return dateString;
+      // Fallback for any other unexpected errors during date processing
+      return t('notAvailable');
     }
   };
 
