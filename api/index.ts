@@ -1,7 +1,6 @@
 
+
 import express from 'express';
-// Fix: The `import type` was causing type resolution errors. Changed to a standard import.
-import { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
@@ -16,6 +15,7 @@ import logRoutes from './routes/logs';
 import settingsRoutes from './routes/settings';
 import sslRoutes from './routes/ssl';
 import notificationRoutes from './routes/notifications';
+import trackingRoutes from './routes/tracking';
 
 
 dotenv.config();
@@ -24,6 +24,7 @@ const app: express.Express = express();
 const port = process.env.PORT || 3001;
 
 // --- Core Middleware ---
+app.set('trust proxy', true); // Important for getting correct IP behind a proxy like Nginx
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -39,9 +40,11 @@ apiRouter.use('/logs', logRoutes);
 apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/ssl', sslRoutes);
 apiRouter.use('/notifications', notificationRoutes);
+apiRouter.use('/tracking', trackingRoutes);
 
 // Health check for the API router itself
-const healthCheckHandler = (req: Request, res: Response) => {
+// @ts-ignore
+const healthCheckHandler = (req: express.Request, res: express.Response) => {
   res.send('Boleto Manager AI Backend is running!');
 };
 apiRouter.get('/', healthCheckHandler);
@@ -61,7 +64,8 @@ app.use(express.static(staticPath));
 
 // 2. SPA Fallback: For any GET request that doesn't match an API route or a static file,
 // serve the main index.html file. This is crucial for client-side routing.
-const spaFallbackHandler = (req: Request, res: Response) => {
+// @ts-ignore
+const spaFallbackHandler = (req: express.Request, res: express.Response) => {
   // This guard prevents the fallback from ever serving index.html for an API-like route.
   if (req.path.startsWith('/api/')) {
     return res.status(404).send('API endpoint not found.');

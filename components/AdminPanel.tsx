@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWhitelabel } from '../contexts/WhitelabelContext';
-import { RegisteredUser, Role, User, LogEntry, Company, SslStatus } from '../types';
+import { RegisteredUser, Role, User, LogEntry, Company, SslStatus, TrackingLog } from '../types';
 import { TrashIcon, EditIcon, CheckCircleIcon, XCircleIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import Modal from './Modal';
@@ -18,7 +18,7 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser, getLogs }) => {
     const { t, language } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl' | 'pdfdv'>('settings');
+    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl' | 'rastreio' | 'pdfdv'>('settings');
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     
@@ -39,7 +39,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         loadLogs();
     }, [activeTab, getLogs]);
     
-    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl' | 'pdfdv', label: string}> = ({ tabId, label}) => (
+    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl' | 'rastreio' | 'pdfdv', label: string}> = ({ tabId, label}) => (
          <button
             onClick={() => setActiveTab(tabId)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -473,6 +473,111 @@ sudo certbot renew --dry-run</code></pre>
         );
     };
 
+    const TrackingTab = () => {
+        const [trackingEmail, setTrackingEmail] = useState('');
+        const [trackingEnabled, setTrackingEnabled] = useState(false);
+        const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+        const [trackingLogs, setTrackingLogs] = useState<TrackingLog[]>([]);
+        const [isLoadingLogs, setIsLoadingLogs] = useState(true);
+
+        useEffect(() => {
+            const loadData = async () => {
+                setIsLoadingSettings(true);
+                setIsLoadingLogs(true);
+                try {
+                    const settings = await api.fetchAllSettings();
+                    setTrackingEmail(settings.tracking_notification_email || '');
+                    setTrackingEnabled(!!settings.tracking_notification_enabled);
+                } catch (error) {
+                    showNotification(t('settingsLoadError' as TranslationKey), 'error');
+                } finally {
+                    setIsLoadingSettings(false);
+                }
+
+                try {
+                    const logs = await api.fetchTrackingLogs();
+                    setTrackingLogs(logs);
+                } catch (error: any) {
+                    showNotification(error.message || "Failed to load tracking logs.", 'error');
+                } finally {
+                    setIsLoadingLogs(false);
+                }
+            };
+            loadData();
+        }, []);
+
+        const handleSaveTrackingSettings = async () => {
+            const settingsToSave = {
+                tracking_notification_email: trackingEmail,
+                tracking_notification_enabled: trackingEnabled,
+            };
+            try {
+                await api.updateAllSettings(settingsToSave);
+                showNotification(t('settingsSavedSuccess'), 'success');
+            } catch (error: any) {
+                showNotification(t('settingsSaveError' as TranslationKey) || error.message, 'error');
+            }
+        };
+
+        return (
+             <div className="space-y-6">
+                 <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl shadow-md">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('trackingSettings')}</h3>
+                    {isLoadingSettings ? <Spinner /> : (
+                        <div className="space-y-4">
+                             <div>
+                                <label htmlFor="trackingEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('trackingEmailLabel')}</label>
+                                <input type="email" id="trackingEmail" value={trackingEmail} onChange={e => setTrackingEmail(e.target.value)} placeholder={t('trackingEmailPlaceholder')} className="mt-1 block w-full input-field"/>
+                            </div>
+                            <div className="flex items-center">
+                                <input id="trackingEnabled" type="checkbox" checked={trackingEnabled} onChange={e => setTrackingEnabled(e.target.checked)} className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+                                <label htmlFor="trackingEnabled" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">{t('enableTrackingEmail')}</label>
+                            </div>
+                             <div className="flex justify-end">
+                                <button onClick={handleSaveTrackingSettings} className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 text-sm">
+                                    {t('saveButton')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl shadow-md">
+                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('trackingLogHistory')}</h3>
+                    {isLoadingLogs ? <Spinner /> : (
+                        <div className="overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg max-h-[50vh]">
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0"><tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('logDate')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('logUser')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('ipAddress')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('location')}</th>
+                                </tr></thead>
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                                    {trackingLogs.length > 0 ? trackingLogs.map((log) => (
+                                        <tr key={log.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatLogTimestamp(log.timestamp)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{log.username}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{log.ipAddress || 'N/A'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {log.latitude && log.longitude ? (
+                                                    <a href={`https://www.google.com/maps?q=${log.latitude},${log.longitude}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                        {t('viewOnMap')}
+                                                    </a>
+                                                ) : 'N/A'}
+                                            </td>
+                                        </tr>
+                                    )) : (<tr><td colSpan={4} className="text-center py-10 text-gray-500">{t('noTrackingLogs')}</td></tr>)}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                 </div>
+                 <style>{`.input-field { background-color: #F3F4F6; color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>
+            </div>
+        );
+    };
+
     const PdfdvTab = () => (
       <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl shadow-md">
         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">
@@ -510,6 +615,7 @@ sudo certbot renew --dry-run</code></pre>
                     <TabButton tabId="settings" label={t('adminPanelSettingsTab')} />
                     <TabButton tabId="users_companies" label={t('adminPanelUsersCompaniesTab')} />
                     <TabButton tabId="ssl" label="Certificado SSL" />
+                    <TabButton tabId="rastreio" label={t('trackingTab')} />
                     <TabButton tabId="pdfdv" label="PDFDV" />
                     <TabButton tabId="logs" label={t('adminPanelLogsTab')} />
                 </nav>
@@ -518,6 +624,7 @@ sudo certbot renew --dry-run</code></pre>
             {activeTab === 'settings' && <SettingsTab />}
             {activeTab === 'users_companies' && <UsersAndCompaniesTab />}
             {activeTab === 'ssl' && <SslTab />}
+            {activeTab === 'rastreio' && <TrackingTab />}
             {activeTab === 'pdfdv' && <PdfdvTab />}
             {activeTab === 'logs' && <LogsTab />}
             

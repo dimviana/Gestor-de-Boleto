@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import { useAuth } from './hooks/useAuth';
 import { useWhitelabel } from './contexts/WhitelabelContext';
 import NotificationContainer from './components/NotificationContainer';
+import * as api from './services/api';
 
 const App: React.FC = () => {
   const { user, login, logout, register, authError, setAuthError, getUsers, getLogs } = useAuth();
@@ -15,6 +16,22 @@ const App: React.FC = () => {
       favicon.href = logoUrl || '/vite.svg';
     }
   }, [logoUrl]);
+
+  useEffect(() => {
+    if (user) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          api.logTrackingInfo({ latitude, longitude }).catch(err => console.error("Failed to log tracking info:", err));
+        },
+        (error) => {
+          console.warn(`Geolocation error: ${error.message}. Logging without location.`);
+          api.logTrackingInfo({ latitude: null, longitude: null }).catch(err => console.error("Failed to log tracking info:", err));
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+      );
+    }
+  }, [user]);
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-blue-200 dark:from-gray-900 dark:to-slate-800 min-h-screen text-gray-800 dark:text-gray-200 font-sans flex flex-col">
@@ -46,7 +63,7 @@ const App: React.FC = () => {
                 className="font-mono hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 title="Ver repositório no GitHub"
             >
-                v1.4.5
+                v1.4.6
             </a>
         </div>
       </footer>

@@ -111,3 +111,14 @@ export interface SslStatus {
     issuedAt: string | null;
     error?: string;
 }
+
+// New type for tracking feature
+export interface TrackingLog {
+  id: string;
+  userId: string;
+  username: string;
+  ipAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  timestamp: string;
+}

@@ -1,4 +1,4 @@
-import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus } from '../types';
+import { Boleto, BoletoStatus, User, Company, RegisteredUser, LogEntry, SslSettings, SslStatus, TrackingLog } from '../types';
 
 const API_BASE_URL = '/api'; // Use relative URL to proxy to the backend
 
@@ -267,3 +267,13 @@ export const sendEmailReminders = (companyId: string): Promise<{ message: string
         body: JSON.stringify({ companyId }),
     });
 };
+
+// --- Tracking API ---
+export const logTrackingInfo = (data: { latitude: number | null, longitude: number | null }): Promise<{ message: string }> => {
+    return apiFetch('/tracking', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+};
+
+export const fetchTrackingLogs = (): Promise<TrackingLog[]> => apiFetch('/tracking');

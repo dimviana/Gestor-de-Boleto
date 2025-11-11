@@ -198,6 +198,16 @@ const pt = {
     noRemindersToSend: 'Nenhum boleto precisa de lembrete no momento.',
     remindersSentError: 'Falha ao enviar os lembretes por e-mail.',
     sendingReminders: 'Enviando...',
+    trackingTab: 'Rastreio',
+    trackingSettings: 'Configurações de Notificação de Rastreio',
+    enableTrackingEmail: 'Habilitar envio de e-mail a cada login',
+    trackingEmailLabel: 'E-mail para Notificações',
+    trackingEmailPlaceholder: 'admin@suaempresa.com',
+    trackingLogHistory: 'Histórico de Acessos',
+    ipAddress: 'Endereço IP',
+    location: 'Localização (Aprox.)',
+    noTrackingLogs: 'Nenhum registro de acesso encontrado.',
+    viewOnMap: 'Ver no Mapa',
 };
 
 const en: typeof pt = {
@@ -398,6 +408,16 @@ const en: typeof pt = {
     noRemindersToSend: 'No boletos need reminders at the moment.',
     remindersSentError: 'Failed to send email reminders.',
     sendingReminders: 'Sending...',
+    trackingTab: 'Tracking',
+    trackingSettings: 'Tracking Notification Settings',
+    enableTrackingEmail: 'Enable email notification on each login',
+    trackingEmailLabel: 'Notification Email',
+    trackingEmailPlaceholder: 'admin@yourcompany.com',
+    trackingLogHistory: 'Access History',
+    ipAddress: 'IP Address',
+    location: 'Location (Approx.)',
+    noTrackingLogs: 'No access logs found.',
+    viewOnMap: 'View on Map',
 };
 
 export const translations = { pt, en };

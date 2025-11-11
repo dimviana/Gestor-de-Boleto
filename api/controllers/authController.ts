@@ -1,6 +1,6 @@
 
-// Fix: The `import type` was causing type resolution errors. Changed to a standard import.
-import { Request, Response } from 'express';
+
+import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -19,7 +19,7 @@ const generateToken = (id: string, username: string, name: string | null, role: 
   });
 };
 
-export const registerUser = async (req: Request, res: Response) => {
+export const registerUser = async (req: express.Request, res: express.Response) => {
   const { username, password, name, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -45,7 +45,7 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-export const loginUser = async (req: Request, res: Response) => {
+export const loginUser = async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
