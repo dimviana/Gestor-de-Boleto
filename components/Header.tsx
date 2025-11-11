@@ -30,6 +30,16 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
 
   const notificationCount = notifications.length;
 
+  const hasOverdue = notifications.some(n => n.type === 'overdue');
+  const hasDueSoon = notifications.some(n => n.type === 'dueSoon');
+
+  let notificationBadgeClasses = 'bg-red-500 text-white';
+  if (hasOverdue) {
+    notificationBadgeClasses = 'bg-red-500 text-white';
+  } else if (hasDueSoon) {
+    notificationBadgeClasses = 'bg-yellow-400 text-black';
+  }
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
@@ -74,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
         >
             <BellIcon className="w-5 h-5" />
             {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                <span className={`absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold ${notificationBadgeClasses}`}>
                     {notificationCount}
                 </span>
             )}
