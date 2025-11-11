@@ -11,45 +11,30 @@ def clean_text(value):
     """Removes leading/trailing whitespace, collapses multiple spaces, and normalizes line breaks."""
     if not value:
         return None
-    # Replace multiple newlines/spaces with a single space, then strip.
     return re.sub(r'\s+', ' ', value).strip()
 
 def parse_currency(value_str):
-    """
-    Parses a string representing a Brazilian currency value into a float.
-    Handles formats like '1.234,56' and '1234,56', strips 'R$', and cleans OCR errors.
-    """
     if not value_str:
         return None
     try:
-        # Correct common OCR mistakes for numbers
         value_str = value_str.replace('O', '0').replace('o', '0').replace('l', '1').replace('I', '1').replace('S', '5').replace('B', '8')
-        # Remove currency symbols and non-numeric characters except for separators
         cleaned_str = re.sub(r'(?i)R\$\s*', '', value_str).strip()
-        
-        # Standardize decimal separator to '.'
         if ',' in cleaned_str and '.' in cleaned_str:
-            # Assumes '.' is thousand separator and ',' is decimal
             cleaned_str = cleaned_str.replace('.', '').replace(',', '.')
         elif ',' in cleaned_str:
             cleaned_str = cleaned_str.replace(',', '.')
-            
-        # Remove any remaining non-digit characters except the decimal point
         numeric_str = re.sub(r'[^\d.]', '', cleaned_str)
         if not numeric_str:
             return None
-            
         num = float(numeric_str)
         return round(num, 2)
     except (ValueError, TypeError):
         return None
 
 def parse_date(value_str):
-    """Parses a date string (DD/MM/YYYY) into ISO format (YYYY-MM-DD), robust to OCR errors."""
     if not value_str:
         return None
     try:
-        # Correct common OCR mistakes for separators and numbers
         cleaned_str = value_str.replace(' ', '/').replace('.', '/').replace('l', '1').replace('I', '1').replace('o','0').replace('O','0')
         match = re.search(r'(\d{1,2})[/\s](\d{1,2})[/\s](\d{4})', cleaned_str)
         if match:
@@ -61,94 +46,69 @@ def parse_date(value_str):
         return None
 
 def extract_barcode(text):
-    """
-    Finds and cleans the 47 or 48-digit barcode from the text.
-    It tries multiple patterns to handle different layouts and OCR errors.
-    """
-    # 1. Standard block format: 12345.12345 12345.123456 12345.123456 1 12345678901234
     block_pattern = r'\b(\d{5}[.\s]?\d{5})\s*(\d{5}[.\s]?\d{6})\s*(\d{5}[.\s]?\d{6})\s*(\d)\s*(\d{14})\b'
     match = re.search(block_pattern, text)
     if match:
         return re.sub(r'[^\d]', '', match.group(0))
-
-    # 2. Look for long sequences of digits that might be broken up by spaces, common in OCR.
-    # We clean the text first to handle common OCR mistakes.
     cleaned_text = text.replace('O', '0').replace('o', '0').replace('l', '1').replace('I', '1').replace('S', '5').replace('B', '8')
     for line in cleaned_text.split('\n'):
         numeric_line = re.sub(r'[^\d]', '', line)
         if 47 <= len(numeric_line) <= 48:
             return numeric_line
-            
-    # 3. Fallback for a contiguous block of 47 or 48 digits.
     contiguous_match = re.search(r'\b\d{47,48}\b', cleaned_text)
     if contiguous_match:
         return contiguous_match.group(0)
-
     return None
 
 def find_pix_code(text):
-    """
-    Finds and reconstructs a PIX QR Code string ("Copia e Cola") that may be
-    split across multiple lines in the OCR text. It identifies the standard
-    start ('000201') and end markers.
-    """
-    # A non-greedy regex to find the content between the start and end markers,
-    # spanning across any characters including newlines.
     match = re.search(r'(000201[\s\S]*?6304[A-F0-9]{4})', text, re.IGNORECASE)
     if match:
         pix_code_with_whitespace = match.group(1)
-        # Remove all whitespace (spaces, newlines, tabs) to reconstruct the single-line string.
         cleaned_code = re.sub(r'\s+', '', pix_code_with_whitespace)
         return cleaned_code
     return None
 
-
 def extract_detailed_costs(text):
-    """Extracts detailed cost items."""
+    """Extracts detailed cost items, robust to different layouts."""
     costs = {}
-    # This pattern looks for known cost labels followed by a currency amount.
-    pattern = re.compile(r'\b(Emolumento|TSNR|FERC|FERM|FUNSEG|ISS|Tarifa\sBanco)\b\s*R\$\s*([\d,.]+)', re.IGNORECASE)
-    matches = pattern.findall(text)
-    
-    for match in matches:
-        key = match[0].strip()
-        # Normalize key if needed, e.g., 'Tarifa Banco'
-        if 'Tarifa' in key: key = 'Tarifa Banco'
-        value = parse_currency(match[1])
-        if key and value is not None:
-            costs[key] = value
-            
+    labels = ['Emolumento', 'TSNR', 'FERC', 'FERM', 'FUNSEG', 'ISS', 'Tarifa Banco']
+    for i, label in enumerate(labels):
+        next_delimiters = labels[i+1:] + ['Totais', 'Valor Cobrado', '(=) Valor Cobrado']
+        next_pattern = '|'.join(map(re.escape, next_delimiters))
+        pattern = re.compile(rf'\b({re.escape(label)})\b([\s\S]*?)(?=\b(?:{next_pattern})\b|$)', re.IGNORECASE)
+        match = pattern.search(text)
+        if match:
+            content_after_label = match.group(2)
+            currency_match = re.search(r'R\$\s*([\d,.]+)', content_after_label)
+            if currency_match:
+                value = parse_currency(currency_match.group(1))
+                if value is not None:
+                    key = label
+                    if 'Tarifa' in key: key = 'Tarifa Banco'
+                    costs[key] = value
     return costs if costs else None
 
 # --- Main Extraction Logic ---
 
 def extract_boleto_info(pdf_path):
-    """
-    Opens a PDF, extracts its text content, and uses a series of regular expressions
-    to find and parse key information from a Brazilian boleto.
-    """
     text_content = ""
     try:
-        # Use PyMuPDF (fitz) to extract raw text. The 'sort=True' flag organizes
-        # text more logically, which is crucial for reliable regex matching.
         with fitz.open(pdf_path) as doc:
             for page in doc:
                 text_content += page.get_text("text", sort=True) + "\n"
     except Exception as e:
-        # If the script fails, it MUST output a JSON with an "error" key.
         print(json.dumps({"error": f"PyMuPDF error reading PDF: {str(e)}"}, ensure_ascii=False), file=sys.stderr)
         return {"error": f"PyMuPDF error reading PDF: {str(e)}"}
 
-    # Define regex patterns for each field. They are designed to be flexible.
     PATTERNS = {
-        "recipient": r'(?i)(?:Beneficiário|Cedente)[\s:.]*\n?([\s\S]*?)(?=\n\s*(?:CNPJ:|Agência|Nosso Número|Sacado|Pagador|Data (?:do )?Documento|AGÊNCIA \/ CÓDIGO DO BENEFICIÁRIO)|$)',
-        "drawee": r'(?i)(?:Pagador|Sacado)[\s:.]*\n?([\s\S]*?)(?=\n\s*\b(?:Instruções|Descrição|Autenticação Mecânica|FICHA DE COMPENSAÇÃO|Nosso Número)\b|$)',
-        "dueDate": r'(?i)Vencimento\n?.*?(\d{2}[/.]\d{2}[/.]\d{4})',
-        "documentDate": r'(?i)Data (?:do )?Documento\n?.*?(\d{2}[/.]\d{2}[/.]\d{4})',
-        "amount_cobrado": r'(?i)\(=\)\s*Valor Cobrado\n?.*?(R\$\s*[\d,.]+)',
-        "amount_documento": r'(?i)(?:\(=\))?\s*Valor do Documento\n?.*?(R\$\s*[\d,.]+)',
-        "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)[^\n]*?(R\$\s*[\d,.]+)',
-        "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)[^\n]*?(R\$\s*[\d,.]+)',
+        "recipient": r'(?i)(?:Beneficiário|Cedente)[\s:.]*\n?([\s\S]*?)(?=\n\s*(?:CNPJ:|Agência|Nosso Número|Sacado|Pagador|Data (?:do )?Documento|Vencimento|AGÊNCIA \/ CÓDIGO DO BENEFICIÁRIO)|$)',
+        "drawee": r'(?i)(?:Pagador|Sacado)[\s:.]*\n?([\s\S]*?)(?=\n\s*\b(?:Sacador / Avalista|Instruções|Descrição|Autenticação Mecânica|FICHA DE COMPENSAÇÃO|Nosso Número)\b|$)',
+        "dueDate": r'(?i)Vencimento\s*\n?\s*(\d{2}[/.]\d{2}[/.]\d{4})',
+        "documentDate": r'(?i)Data (?:do )?Documento\s*\n?\s*(\d{2}[/.]\d{2}[/.]\d{4})',
+        "amount_cobrado": r'(?i)\(=\)\s*Valor Cobrado\s*\n?\s*(R\$\s*[\d,.]+)',
+        "amount_documento": r'(?i)(?:\(=\))?\s*Valor do Documento\s*\n?\s*(R\$\s*[\d,.]+)',
+        "discount": r'(?i)\(-\)\s*(?:Desconto|Abatimento)\s*\n?\s*(R\$\s*[\d,.]+)',
+        "interestAndFines": r'(?i)\(\+\)\s*(?:Juros|Multa|Mora|Acréscimos)\s*\n?\s*(R\$\s*[\d,.]+)',
     }
 
     def find_first_match(pattern, text):
@@ -156,31 +116,22 @@ def extract_boleto_info(pdf_path):
         return clean_text(match.group(1)) if match else None
 
     def find_last_match(pattern_key, text):
-        """Finds all matches for a pattern and returns the last one."""
         matches = re.findall(PATTERNS[pattern_key], text)
         return clean_text(matches[-1]) if matches else None
 
-    # --- Extraction Execution ---
-    
-    # --- Guide Number Extraction (Improved Logic) ---
+    # --- Guide Number Extraction ---
     final_guide_number = None
-
-    # Priority 1: Search for the number on the same line as the label, using a pattern
-    # based on the user's request. It's made more flexible to handle label variations and a 10-digit number.
-    same_line_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*(\d{10})\b'
+    same_line_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*(\d{8,15}\b)'
     same_line_match = re.search(same_line_pattern, text_content, re.IGNORECASE)
     if same_line_match:
         final_guide_number = same_line_match.group(1)
         
-    # Priority 2: If not found, look for the number on the line immediately following the label.
-    # This is common in the payment stub section and is less ambiguous.
     if not final_guide_number:
         next_line_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*\n\s*(\d{8,15}\b)'
         next_line_match = re.search(next_line_pattern, text_content, re.IGNORECASE)
         if next_line_match:
             final_guide_number = re.sub(r'[^\d]', '', next_line_match.group(1))
 
-    # Priority 3: Fallback to "Nosso Número" ONLY if "Nº Documento" cannot be found.
     if not final_guide_number:
         nosso_numero_pattern = r'(?i)Nosso\sN[úu]mero\s*([\d.-/]+)'
         nosso_numero_match = re.search(nosso_numero_pattern, text_content)
@@ -202,15 +153,11 @@ def extract_boleto_info(pdf_path):
         "pixQrCodeText": find_pix_code(text_content),
     }
 
-    # --- Parsing and Structuring ----
-
-    # Parse amounts, applying logic for the final amount
     amount_cobrado = parse_currency(raw["amount_cobrado"])
     amount_documento = parse_currency(raw["amount_documento"])
     final_amount = amount_cobrado if amount_cobrado is not None and amount_cobrado > 0 else amount_documento
     detailed_costs = extract_detailed_costs(text_content)
 
-    # Build the final JSON result
     result = {
         "recipient": raw["recipient"],
         "drawee": raw["drawee"],
@@ -228,24 +175,17 @@ def extract_boleto_info(pdf_path):
 
     return result
 
-
 if __name__ == "__main__":
-    # The script is called with the path to the temporary PDF file.
     if len(sys.argv) > 1:
         pdf_file_path = sys.argv[1]
         if not os.path.exists(pdf_file_path):
-             # Output error as JSON to stderr for debugging
             print(json.dumps({"error": "PDF file not found at path: " + pdf_file_path}, ensure_ascii=False), file=sys.stderr)
-            # Output error as JSON to stdout for Node.js to capture
             print(json.dumps({"error": "PDF file not found at path: " + pdf_file_path}, ensure_ascii=False))
             sys.exit(1)
             
         extraction_result = extract_boleto_info(pdf_file_path)
-        # The final, successful output MUST be a single JSON string to stdout.
         print(json.dumps(extraction_result, ensure_ascii=False))
     else:
-        # Output error as JSON to stderr for debugging
         print(json.dumps({"error": "No PDF file path provided."}, ensure_ascii=False), file=sys.stderr)
-        # Output error as JSON to stdout for Node.js to capture
         print(json.dumps({"error": "No PDF file path provided."}, ensure_ascii=False))
         sys.exit(1)
