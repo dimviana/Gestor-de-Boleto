@@ -19,7 +19,7 @@ const UserProfilePopover: React.FC<UserProfilePopoverProps> = ({ user, companyNa
         {user.name && <p className="text-xs text-gray-500 dark:text-gray-400">{user.username}</p>}
         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-2">
             <OfficeBuildingIcon className="w-4 h-4 mr-2 flex-shrink-0" />
-            <span className="truncate">{companyName}</span>
+            <span className="truncate font-semibold">{companyName}</span>
         </div>
       </div>
       <div className="p-2">
