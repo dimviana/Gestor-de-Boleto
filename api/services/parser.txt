@@ -100,7 +100,7 @@ def get_last_match(pattern, text):
 
 def get_first_match_multiline(pattern, text):
     """Finds the first match for a pattern that might capture multi-line content."""
-    match = re.search(pattern, text, re.IGNORECASE)
+    match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
     return clean_text(match.group(1)) if match else None
 
 def get_amounts(text):
@@ -124,27 +124,27 @@ def get_amounts(text):
     }
     
 def get_guide_number(text):
-    """Prioritizes 'Nosso Número' and falls back to 'Nº Documento'."""
-    # Priority 1: Nosso Número (captures numbers, dots, hyphens, slashes)
-    nosso_numero_pattern = r'Nosso\s*N[úu]mero\s*([\d./-]+)'
-    match = re.search(nosso_numero_pattern, text, re.IGNORECASE)
-    if match and match.group(1):
-        # Return it cleaned of non-numeric characters for consistency
-        return re.sub(r'[^\d]', '', match.group(1))
-
-    # Priority 2: Nº Documento/Guia
+    """Extracts 'Nº do Documento/Guia'."""
     doc_numero_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*([^\n\r]+)'
     match = re.search(doc_numero_pattern, text, re.IGNORECASE)
     if match and match.group(1):
         # The number can be on the same line or the next, this captures it
         return clean_text(match.group(1).strip())
-        
+    return None
+
+def get_nosso_numero(text):
+    """Extracts 'Nosso Número'."""
+    nosso_numero_pattern = r'Nosso\s*N[úu]mero\s*([\d./-]+)'
+    match = re.search(nosso_numero_pattern, text, re.IGNORECASE)
+    if match and match.group(1):
+        # Return it cleaned of non-numeric characters for consistency
+        return re.sub(r'[^\d]', '', match.group(1))
     return None
 
 def get_detailed_costs(text):
     """Extracts detailed cost items like Emolumento, FERC, etc."""
     costs = {}
-    # Ordered list of known labels
+    # Ordered list of known labels from the example PDF
     labels = ['Emolumento', 'TSNR', 'FERC', 'FERM', 'FUNSEG', 'ISS', 'Tarifa Banco']
     text_slice = text
     
@@ -176,25 +176,27 @@ def extract_boleto_info(pdf_path):
     except Exception as e:
         return {"error": f"PyMuPDF failed to read the PDF file: {str(e)}"}
 
-    # Define patterns for multiline fields
-    recipient_pattern = r'Cedente\s*\n([\s\S]*?)(?=\nAgência / Código do Cedente|\nNosso Número)'
-    drawee_pattern = r'Sacado\s*\n([\s\S]*?)(?=\nSacador / Avalista|\nInstruções)'
-    due_date_pattern = r'Vencimento\s*(\d{2}/\d{2}/\d{4})'
-    doc_date_pattern = r'Data do Documento\s*(\d{2}/\d{2}/\d{4})'
+    # Define patterns for multiline fields based on the provided PDF structure
+    recipient_pattern = r'Cedente\n([\s\S]*?)(?=\nData do Documento)'
+    drawee_pattern = r'Sacado\n([\s\S]*?)(?=\nSacador / Avalista|\nInstruções)'
+    due_date_pattern = r'Vencimento\n(\d{2}/\d{2}/\d{4})'
+    doc_date_pattern = r'Data do Documento\n(\d{2}/\d{2}/\d{4})'
 
     amounts = get_amounts(text_content)
-
+    
+    # Build the final result object
     result = {
         "recipient": get_first_match_multiline(recipient_pattern, text_content),
         "drawee": get_first_match_multiline(drawee_pattern, text_content),
-        "documentDate": parse_date(get_last_match(doc_date_pattern, text_content)),
-        "dueDate": parse_date(get_last_match(due_date_pattern, text_content)),
+        "documentDate": parse_date(get_first_match_multiline(doc_date_pattern, text_content)),
+        "dueDate": parse_date(get_first_match_multiline(due_date_pattern, text_content)),
         "documentAmount": amounts["documentAmount"],
         "amount": amounts["amount"],
         "discount": amounts["discount"],
         "interestAndFines": amounts["interestAndFines"],
         "barcode": get_barcode(text_content),
         "guideNumber": get_guide_number(text_content),
+        "nossoNumero": get_nosso_numero(text_content), # Added extra field
         "pixQrCodeText": get_pix_code(text_content),
         "detailedCosts": get_detailed_costs(text_content),
     }
