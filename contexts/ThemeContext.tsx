@@ -15,39 +15,40 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return (localStorage.getItem(THEME_KEY) as Theme) || 'system';
   });
 
-  useEffect(() => {
+  const applyTheme = (isDark: boolean) => {
     const root = window.document.documentElement;
-    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    if (theme === 'dark') {
+    const themeColor = isDark ? '#111827' : '#FFFFFF'; // gray-900 for dark, white for light
+    
+    if (isDark) {
       root.classList.add('dark');
-    } else if (theme === 'light') {
+    } else {
       root.classList.remove('dark');
-    } else { // 'system'
-      if (isSystemDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
     }
-  }, [theme]);
+
+    let themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!themeColorMeta) {
+        themeColorMeta = document.createElement('meta');
+        themeColorMeta.name = 'theme-color';
+        document.head.appendChild(themeColorMeta);
+    }
+    themeColorMeta.content = themeColor;
+  };
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
-    const handleChange = () => {
+    const updateTheme = () => {
       if (theme === 'system') {
-        const root = window.document.documentElement;
-        if (mediaQuery.matches) {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
+        applyTheme(mediaQuery.matches);
+      } else {
+        applyTheme(theme === 'dark');
       }
     };
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    updateTheme(); // Apply theme on initial load and when theme setting changes
+
+    mediaQuery.addEventListener('change', updateTheme);
+    return () => mediaQuery.removeEventListener('change', updateTheme);
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {

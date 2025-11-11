@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Boleto, BoletoStatus } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ArrowRightIcon, ArrowLeftIcon } from './icons/Icons';
+import { TranslationKey } from '../translations';
 
 interface CalendarViewProps {
   boletos: Boleto[];
@@ -102,15 +103,20 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
   return (
     <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700">
       <header className="flex items-center justify-between mb-4">
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700">
-            <ArrowLeftIcon className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700">
+                <ArrowLeftIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700">
+                <ArrowRightIcon className="w-5 h-5" />
+            </button>
+             <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-slate-700 rounded-md hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors">
+                {t('todayButton' as TranslationKey)}
+            </button>
+        </div>
         <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400 capitalize">
           {currentDate.toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', { month: 'long', year: 'numeric' })}
         </h2>
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700">
-            <ArrowRightIcon className="w-5 h-5" />
-        </button>
       </header>
       
       <div className="flex flex-col sm:flex-row justify-around my-4 gap-4">
