@@ -279,7 +279,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
           const daysUntilDue = Math.ceil(timeDiff / (1000 * 3600 * 24));
           
           if (daysUntilDue < 0) return { boleto, type: 'overdue', daysUntilDue };
-          if (daysUntilDue <= 3) return { boleto, type: 'dueSoon', daysUntilDue };
+          if (daysUntilDue <= 1) return { boleto, type: 'dueSoon', daysUntilDue };
           return null;
         } catch (e) {
             console.error("Invalid date format for boleto:", boleto.id, boleto.dueDate);

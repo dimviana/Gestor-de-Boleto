@@ -26,6 +26,9 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
     if (notification.daysUntilDue === 0) {
       return <span className="px-2 py-1 text-xs font-bold text-yellow-800 bg-yellow-300 rounded-full">{t('dueTodayAlert')}</span>;
     }
+    if (notification.daysUntilDue === 1) {
+      return <span className="px-2 py-1 text-xs font-bold text-orange-800 bg-orange-300 rounded-full">{t('dueTomorrowAlert')}</span>;
+    }
     return <span className="px-2 py-1 text-xs font-bold text-orange-800 bg-orange-300 rounded-full">{t('dueSoonAlert', { days: String(notification.daysUntilDue) })}</span>;
   };
   
