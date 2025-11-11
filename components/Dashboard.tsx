@@ -12,7 +12,7 @@ import Documentation from './Documentation';
 import { HourglassIcon, CheckCircleIcon, TrashIcon, PaymentTerminalIcon, KanbanIcon, CalendarIcon, WalletIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
-import * as api from '../services/api';
+import * as api from './services/api';
 import UploadProgress, { UploadStatus } from './UploadProgress';
 import FloatingMenu from './FloatingMenu';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
@@ -38,6 +38,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [selectedBoletoIds, setSelectedBoletoIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentView, setCurrentView] = useState<'kanban' | 'calendar' | 'overview'>('kanban');
+  const [activeKanbanTab, setActiveKanbanTab] = useState<BoletoStatus>(BoletoStatus.TO_PAY);
+
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
@@ -430,11 +432,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
             {isLoadingBoletos ? <div className="order-3 flex justify-center items-center h-64"><Spinner /></div> : (
               <div className="order-3">
                 {currentView === 'kanban' ? (
-                  <div className="flex flex-col md:flex-row -mx-2">
-                    <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
-                    <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
-                    <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaidKanban} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
-                  </div>
+                  <>
+                    {/* Controles de abas para visualização em dispositivos móveis */}
+                    <div className="md:hidden mb-4">
+                        <div className="flex border-b border-gray-200 dark:border-gray-700">
+                            <button onClick={() => setActiveKanbanTab(BoletoStatus.TO_PAY)} className={`w-1/3 py-3 text-center font-medium text-sm transition-colors duration-300 ${activeKanbanTab === BoletoStatus.TO_PAY ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 dark:text-gray-300'}`}>{t('kanbanTitleToDo')} ({boletosToDo.length})</button>
+                            <button onClick={() => setActiveKanbanTab(BoletoStatus.VERIFYING)} className={`w-1/3 py-3 text-center font-medium text-sm transition-colors duration-300 ${activeKanbanTab === BoletoStatus.VERIFYING ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 dark:text-gray-300'}`}>{t('kanbanTitleVerifying')} ({boletosVerifying.length})</button>
+                            <button onClick={() => setActiveKanbanTab(BoletoStatus.PAID)} className={`w-1/3 py-3 text-center font-medium text-sm transition-colors duration-300 ${activeKanbanTab === BoletoStatus.PAID ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 dark:text-gray-300'}`}>{t('kanbanTitlePaid')} ({boletosPaidKanban.length})</button>
+                        </div>
+                    </div>
+
+                    {/* Visualização em Abas para Dispositivos Móveis */}
+                    <div className="md:hidden -mx-2">
+                        {activeKanbanTab === BoletoStatus.TO_PAY && <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />}
+                        {activeKanbanTab === BoletoStatus.VERIFYING && <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />}
+                        {activeKanbanTab === BoletoStatus.PAID && <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaidKanban} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />}
+                    </div>
+                    
+                    {/* Visualização de 3 Colunas para Desktop */}
+                    <div className="hidden md:flex flex-row -mx-2">
+                      <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+                      <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+                      <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaidKanban} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+                    </div>
+                  </>
                 ) : currentView === 'calendar' ? (
                    <CalendarView boletos={filteredBoletos} />
                 ) : (

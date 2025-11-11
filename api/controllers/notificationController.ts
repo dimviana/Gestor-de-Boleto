@@ -1,11 +1,11 @@
 
-import { Request, Response } from 'express';
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
 // Add explicit types for Express Request and Response objects.
-export const sendReminders = async (req: Request, res: Response) => {
+export const sendReminders = async (req: express.Request, res: express.Response) => {
     const { companyId } = req.body;
     const user = req.user!;
 
