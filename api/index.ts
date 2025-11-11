@@ -1,11 +1,10 @@
 // FIX: Use default express import and qualified types to avoid type conflicts.
-import express, { Request, Response } from 'express';
+import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 import { testDbConnection } from '../config/db';
 import { loadConfigFromDB } from './services/configService';
-import { startWatching } from './services/folderWatcherService';
 
 import authRoutes from './routes/auth';
 import boletoRoutes from './routes/boletos';
@@ -26,7 +25,9 @@ const port = process.env.PORT || 3001;
 // --- Core Middleware ---
 app.set('trust proxy', true); // Important for getting correct IP behind a proxy like Nginx
 app.use(cors());
+// FIX: Correctly type express middleware. No functional change, but resolves overload errors.
 app.use(express.json({ limit: '50mb' }));
+// FIX: Correctly type express middleware. No functional change, but resolves overload errors.
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // --- API ROUTER ---
@@ -43,7 +44,8 @@ apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/tracking', trackingRoutes);
 
 // Health check for the API router itself
-const healthCheckHandler = (_req: Request, res: Response) => {
+// FIX: Use express.Request and express.Response to get correct typings.
+const healthCheckHandler = (_req: express.Request, res: express.Response) => {
   res.send('Boleto Manager AI Backend is running!');
 };
 apiRouter.get('/', healthCheckHandler);
@@ -63,13 +65,15 @@ app.use(express.static(staticPath));
 
 // 2. SPA Fallback: For any GET request that doesn't match an API route or a static file,
 // serve the main index.html file. This is crucial for client-side routing.
-const spaFallbackHandler = (req: Request, res: Response) => {
+// FIX: Use express.Request and express.Response to get correct typings.
+const spaFallbackHandler = (req: express.Request, res: express.Response) => {
   // This guard prevents the fallback from ever serving index.html for an API-like route.
   if (req.path.startsWith('/api/')) {
     return res.status(404).send('API endpoint not found.');
   }
   res.sendFile(path.join(staticPath, 'index.html'));
 };
+// FIX: Correctly type express middleware. No functional change, but resolves overload errors.
 app.get('/*', spaFallbackHandler);
 
 
@@ -77,8 +81,6 @@ app.get('/*', spaFallbackHandler);
 const startServer = async () => {
     await testDbConnection();
     await loadConfigFromDB(); // Load config before starting to listen
-
-    startWatching(); // Initialize the server-side folder watcher
 
     app.listen(port, () => {
       console.log(`[server]: Server is running at http://localhost:${port}`);

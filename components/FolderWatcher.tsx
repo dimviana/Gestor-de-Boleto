@@ -1,87 +1,84 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { FolderOpenIcon } from './icons/Icons';
 import { TranslationKey } from '../translations';
-import { useFolderWatcher } from '../hooks/useFolderWatcher';
-import Spinner from './Spinner';
 
 interface FolderWatcherProps {
+  isMonitoring: boolean;
+  folderName: string | null;
+  error: string | null;
+  isPermissionDenied: boolean;
+  startMonitoring: () => void;
+  stopMonitoring: () => void;
+  reselectFolder: () => void;
   disabled: boolean;
-  companyId: string | null;
-  monitoredFolderPathFromDB?: string | null;
-  onPathChange: () => void; // Callback to refresh company data
 }
 
-const FolderWatcher: React.FC<FolderWatcherProps> = ({ disabled, companyId, monitoredFolderPathFromDB, onPathChange }) => {
+const FolderWatcher: React.FC<FolderWatcherProps> = ({
+  isMonitoring,
+  folderName,
+  error,
+  isPermissionDenied,
+  startMonitoring,
+  stopMonitoring,
+  reselectFolder,
+  disabled
+}) => {
     const { t } = useLanguage();
-    const { isLoading, savePath, clearPath } = useFolderWatcher({ companyId });
-    const [pathInput, setPathInput] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
 
-    useEffect(() => {
-        setPathInput(monitoredFolderPathFromDB || '');
-        setIsEditing(!monitoredFolderPathFromDB);
-    }, [monitoredFolderPathFromDB]);
-
-    const handleSave = async () => {
-        await savePath(pathInput);
-        onPathChange(); // Notify dashboard to refetch company data
-        setIsEditing(false);
-    };
-
-    const handleClear = async () => {
-        await clearPath();
-        onPathChange(); // Notify dashboard to refetch company data
-    };
-
-    const handleEdit = () => {
-        setIsEditing(true);
-    };
+    if (error && error !== 'folderWatcherUnsupported') {
+        return (
+            <div className="mt-4 p-4 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-red-500 dark:text-red-400">
+                {t(error as TranslationKey)}
+            </div>
+        );
+    }
+    
+    // If feature is not supported at all, don't render anything to avoid confusion
+    if (error === 'folderWatcherUnsupported') {
+        return null;
+    }
 
     return (
-        <div className="mt-4 p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
-            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-300">{t('monitorFolderServerPathLabel')}</h4>
-            
-            {isEditing ? (
-                <>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('monitorFolderServerDescription')}</p>
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="text"
-                            value={pathInput}
-                            onChange={(e) => setPathInput(e.target.value)}
-                            placeholder={t('monitorFolderServerPathPlaceholder')}
-                            className="w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            disabled={disabled || isLoading}
-                        />
-                        <button
-                            onClick={handleSave}
-                            disabled={disabled || isLoading || !pathInput}
-                            className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
-                        >
-                            {isLoading ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : t('savePathButton')}
-                        </button>
-                    </div>
-                </>
-            ) : (
-                <div className="p-3 bg-gray-100 dark:bg-gray-900/50 rounded-lg flex items-center justify-between">
-                    <p className="text-sm font-mono text-gray-700 dark:text-gray-300 truncate">
-                        <FolderOpenIcon className="w-5 h-5 inline-block mr-2 text-blue-500"/>
-                        {monitoredFolderPathFromDB}
-                    </p>
-                    <div className="flex items-center space-x-2">
-                        <button onClick={handleEdit} disabled={disabled || isLoading} className="px-3 py-1 text-sm font-semibold text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900 disabled:opacity-50">{t('changePathButton')}</button>
-                        <button onClick={handleClear} disabled={disabled || isLoading} className="px-3 py-1 text-sm font-semibold text-red-600 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900 disabled:opacity-50">
-                            {isLoading ? '...' : t('stopMonitoringButton')}
-                        </button>
-                    </div>
-                </div>
-            )}
-            
-            {disabled && !companyId && (
-                <p className="text-xs text-center text-yellow-600 dark:text-yellow-400">{t('adminMustSelectCompanyErrorText')}</p>
-            )}
-        </div>
+      <div className={`mt-4 p-4 border-t border-gray-200 dark:border-gray-700 space-y-3 transition-opacity ${disabled ? 'opacity-50' : ''}`}>
+        {isMonitoring ? (
+          <div className="p-3 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-between">
+            <div>
+                <p className="text-sm font-semibold text-green-800 dark:text-green-200">{t('monitoringFolderLabel')}</p>
+                <p className="text-sm font-mono text-green-700 dark:text-green-300 truncate">{folderName}</p>
+            </div>
+            <button
+              onClick={stopMonitoring}
+              disabled={disabled}
+              className="px-3 py-1 text-sm font-semibold text-red-600 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900 disabled:opacity-50"
+            >
+              {t('stopMonitoringButton')}
+            </button>
+          </div>
+        ) : isPermissionDenied && folderName ? (
+          <div className="p-3 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg text-center">
+               <p className="text-sm text-yellow-800 dark:text-yellow-300">{t('resumeMonitoringPrompt', { folderName })}</p>
+               <button onClick={reselectFolder} className="mt-2 px-4 py-1.5 text-sm font-bold text-white bg-yellow-600 rounded-lg hover:bg-yellow-700">
+                  {t('reselectFolderButton')}
+              </button>
+          </div>
+        ) : (
+          <>
+              <button
+                  onClick={startMonitoring}
+                  disabled={disabled}
+                  className="w-full flex items-center justify-center px-4 py-3 text-sm font-semibold text-white bg-gray-600 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-colors disabled:opacity-50"
+              >
+                  <FolderOpenIcon className="w-5 h-5 mr-2" />
+                  {t('monitorFolderButton')}
+              </button>
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400">{t('folderWatcherDescription')}</p>
+          </>
+        )}
+        {disabled && (
+             <p className="text-xs text-center text-yellow-600 dark:text-yellow-400">{t('adminMustSelectCompanyErrorText')}</p>
+        )}
+      </div>
     );
 };
 

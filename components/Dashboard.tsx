@@ -18,6 +18,7 @@ import FloatingMenu from './FloatingMenu';
 import CalendarView from './CalendarView';
 import OverviewView from './OverviewView';
 import EditProfileModal from './EditProfileModal';
+import { useFolderWatcher } from '../hooks/useFolderWatcher';
 
 
 interface DashboardProps {
@@ -125,6 +126,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     }
   };
 
+  const folderWatcher = useFolderWatcher(handleFileUploads);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFileUploads(Array.from(e.target.files));
@@ -132,7 +135,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     }
   };
 
-  // FIX: Removed redundant useFolderWatcher call. The FolderWatcher component is self-contained.
   const loadCompanies = useCallback(async () => {
     try {
       const fetchedCompanies = await api.fetchCompanies();
@@ -338,8 +340,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         <p className="text-4xl font-bold text-gray-800 dark:text-white self-end tracking-tight">{formatCurrency(value)}</p>
     </div>
   );
-
-  const activeCompany = useMemo(() => companies.find(c => c.id === activeCompanyId), [companies, activeCompanyId]);
   
   return (
     <>
@@ -397,12 +397,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
               </select>
             </div>
           )}
-           {/* FIX: Correctly pass props to FolderWatcher. */}
            <FolderWatcher 
-              disabled={isUploadDisabled}
-              companyId={activeCompanyId}
-              monitoredFolderPathFromDB={activeCompany?.monitoredFolderPath}
-              onPathChange={loadCompanies}
+                disabled={isUploadDisabled}
+                isMonitoring={folderWatcher.isMonitoring}
+                folderName={folderWatcher.folderName}
+                error={folderWatcher.error}
+                isPermissionDenied={folderWatcher.isPermissionDenied}
+                startMonitoring={folderWatcher.startMonitoring}
+                stopMonitoring={folderWatcher.stopMonitoring}
+                reselectFolder={folderWatcher.reselectFolder}
             />
         </div>
         
@@ -469,9 +472,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         {dbError && <p className="text-red-500 text-center mt-4">{dbError}</p>}
       </main>
       
-      {/* FIX: Removed onFolderWatchClick as it's no longer part of the client-side functionality. */}
       <FloatingMenu 
         onFileUploadClick={() => fileInputRef.current?.click()}
+        onFolderWatchClick={folderWatcher.startMonitoring}
         disabled={isUploadDisabled}
       />
 
