@@ -123,12 +123,33 @@ def get_amounts(text):
         "interestAndFines": parse_currency(get_last_match(interest_pattern, text)),
     }
     
-def get_guide_number(text):
-    """Extracts 'Nº do Documento/Guia' robustly, whether on the same line or next."""
-    pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s+(\S+)'
-    match = re.search(pattern, text, re.IGNORECASE)
+def get_guide_number(text, barcode):
+    """
+    Extracts 'Nº do Documento/Guia'.
+    PER USER REQUEST: The primary method is to derive the number by slicing the barcode.
+    The "regex" is replaced by this string slicing logic.
+    If that fails, it falls back to finding the value by its label in the text.
+    """
+    # Primary method: derive from barcode
+    if barcode and len(barcode) >= 47:
+        try:
+            # Slicing: ignore first 21, ignore last 18 chars
+            # This corresponds to positions 21 up to (but not including) the 18th char from the end.
+            derived_number = barcode[21:-18]
+            if derived_number:
+                return derived_number
+        except IndexError:
+            pass # Fall through to label search
+            
+    # Fallback method: find by label
+    label_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s+(\S+)'
+    match = re.search(label_pattern, text, re.IGNORECASE)
     if match and match.group(1):
-        return clean_text(match.group(1).strip())
+        cleaned_value = clean_text(match.group(1).strip())
+        # Ensure it looks like a number before returning
+        if re.match(r'^\d+$', cleaned_value):
+            return cleaned_value
+            
     return None
 
 def get_nosso_numero(text):
@@ -183,6 +204,7 @@ def extract_boleto_info(pdf_path):
     doc_date_pattern = r'Data do Documento\s+(\d{2}/\d{2}/\d{4})'
 
     amounts = get_amounts(text_content)
+    barcode = get_barcode(text_content)
     
     # Build the final result object
     result = {
@@ -194,8 +216,8 @@ def extract_boleto_info(pdf_path):
         "amount": amounts["amount"],
         "discount": amounts["discount"],
         "interestAndFines": amounts["interestAndFines"],
-        "barcode": get_barcode(text_content),
-        "guideNumber": get_guide_number(text_content),
+        "barcode": barcode,
+        "guideNumber": get_guide_number(text_content, barcode),
         "nossoNumero": get_nosso_numero(text_content),
         "pixQrCodeText": get_pix_code(text_content),
         "detailedCosts": get_detailed_costs(text_content),
