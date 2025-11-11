@@ -1,10 +1,13 @@
 
 
-import express from 'express';
+
+// FIX: Import Request and Response types from express
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 
-export const getLogs = async (req: express.Request, res: express.Response) => {
+// FIX: Use correct types for handler
+export const getLogs = async (_req: Request, res: Response) => {
   try {
     const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM activity_logs ORDER BY timestamp DESC');
     res.json(logs);

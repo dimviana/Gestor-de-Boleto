@@ -233,7 +233,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     );
   }, [boletos, user.role, selectedCompanyFilter, searchTerm]);
 
-  const boletosToDo = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.TO_PAY), [filteredBoletos]);
+  const boletosToDo = useMemo(() => 
+    filteredBoletos
+      .filter(b => b.status === BoletoStatus.TO_PAY)
+      .sort((a, b) => {
+        // Handle cases where dueDate is null or undefined
+        if (!a.dueDate) return 1; // a comes after b
+        if (!b.dueDate) return -1; // b comes after a
+
+        try {
+          const dateA = new Date(`${a.dueDate}T00:00:00`);
+          const dateB = new Date(`${b.dueDate}T00:00:00`);
+          
+          // Check for invalid dates
+          if (isNaN(dateA.getTime())) return 1;
+          if (isNaN(dateB.getTime())) return -1;
+
+          return dateA.getTime() - dateB.getTime();
+        } catch (e) {
+            // If date parsing fails, treat them as equal to avoid crashes
+            return 0;
+        }
+      }), 
+    [filteredBoletos]
+  );
+
   const boletosVerifying = useMemo(() => filteredBoletos.filter(b => b.status === BoletoStatus.VERIFYING), [filteredBoletos]);
   
   const boletosPaidKanban = useMemo(() => {

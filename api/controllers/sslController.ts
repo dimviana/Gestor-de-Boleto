@@ -1,6 +1,8 @@
 
 
-import express from 'express';
+
+// FIX: Import Request and Response types from express
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { exec } from 'child_process';
@@ -8,7 +10,8 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-export const getSslSettings = async (req: express.Request, res: express.Response) => {
+// FIX: Use correct types for handler
+export const getSslSettings = async (_req: Request, res: Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
         if (rows.length > 0) {
@@ -22,7 +25,8 @@ export const getSslSettings = async (req: express.Request, res: express.Response
     }
 };
 
-export const saveSslSettings = async (req: express.Request, res: express.Response) => {
+// FIX: Use correct types for handler
+export const saveSslSettings = async (req: Request, res: Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
         return res.status(400).json({ message: 'Invalid domain specified.' });
@@ -41,7 +45,8 @@ export const saveSslSettings = async (req: express.Request, res: express.Respons
     }
 };
 
-export const checkSslStatus = (req: express.Request, res: express.Response) => {
+// FIX: Use correct types for handler
+export const checkSslStatus = (req: Request, res: Response) => {
     const { domain } = req.body;
     if (!domain) {
         return res.status(400).json({ message: 'Domain is required.' });

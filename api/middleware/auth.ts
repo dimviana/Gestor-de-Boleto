@@ -1,6 +1,8 @@
 
 
-import express from 'express';
+
+// FIX: Import Request, Response, NextFunction types from express
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -18,7 +20,8 @@ declare global {
     }
 }
 
-export const protect = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// FIX: Use correct types for middleware handler
+export const protect = (req: Request, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -42,7 +45,8 @@ export const protect = (req: express.Request, res: express.Response, next: expre
   }
 };
 
-export const admin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// FIX: Use correct types for middleware handler
+export const admin = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -50,7 +54,8 @@ export const admin = (req: express.Request, res: express.Response, next: express
     }
 };
 
-export const editor = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// FIX: Use correct types for middleware handler
+export const editor = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {
