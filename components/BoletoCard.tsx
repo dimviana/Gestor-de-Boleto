@@ -309,12 +309,12 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
                 </p>
             )}
             {visibility.recipient && (
-                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={displayRecipient}>
+                 <p className="text-xs text-gray-400 dark:text-gray-400 mt-1 truncate" title={displayRecipient}>
                     {displayRecipient || t('recipient')}
                 </p>
             )}
             {visibility.fileName && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate" title={displayFileName}>{displayFileName}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-400 mt-1 truncate" title={displayFileName}>{displayFileName}</p>
             )}
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
@@ -342,7 +342,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
             <div className="flex justify-between items-baseline">
                 {visibility.dueDate && (
                     <div>
-                        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
+                        <p className="text-xs font-medium text-gray-400 dark:text-gray-400 uppercase tracking-wider">{t('dueDate').replace(':', '')}</p>
                         <p className="text-xl font-extrabold text-red-500 dark:text-red-400 flex items-center">
                             <CalendarIcon className="w-4 h-4 mr-2"/>
                             {formatDate(displayDueDate)}
@@ -351,7 +351,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
                 )}
                  {visibility.amount && (
                     <div className="text-right">
-                        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
+                        <p className="text-xs font-medium text-gray-400 dark:text-gray-400 uppercase tracking-wider">{t('amount').replace(':', '')}</p>
                         <p className="text-2xl font-extrabold text-green-500 dark:text-green-400">{formatCurrency(displayAmount)}</p>
                     </div>
                 )}

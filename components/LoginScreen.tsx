@@ -72,19 +72,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
             )}
             </div>
           <h1 className="text-4xl font-bold text-blue-600">{appName}</h1>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">{t('loginSubtitle')}</p>
+          <p className="mt-2 text-gray-500 dark:text-gray-300">{t('loginSubtitle')}</p>
         </div>
         
         <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
                 onClick={() => handleSwitchMode('login')}
-                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
                 {t('loginTab')}
             </button>
             <button
                 onClick={() => handleSwitchMode('register')}
-                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                className={`w-1/2 py-4 text-center font-medium text-sm transition-colors duration-300 ${mode === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
                 {t('registerTab')}
             </button>
@@ -139,7 +139,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ login, register, authError, s
                     {isPasswordVisible ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
             </div>
-             {mode === 'login' && <p className="text-xs text-center text-gray-500 dark:text-gray-400">{t('adminHint')}</p>}
+             {mode === 'login' && <p className="text-xs text-center text-gray-500 dark:text-gray-300">{t('adminHint')}</p>}
         </div>
        
         <button

@@ -1,5 +1,3 @@
-
-
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { Boleto, BoletoStatus, Role } from '../types';
 import BoletoCard from './BoletoCard';
@@ -104,7 +102,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
                         placeholder={t('searchByDocumentNumber' as TranslationKey)}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                 </div>
             )}

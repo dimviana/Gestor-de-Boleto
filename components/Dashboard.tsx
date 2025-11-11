@@ -303,7 +303,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
             <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-gray-50 dark:bg-slate-900/50 ${colorClass}`}>
                 {icon}
             </div>
-            <p className="text-base font-semibold text-gray-500 dark:text-gray-400">{title}</p>
+            <p className="text-base font-semibold text-gray-500 dark:text-gray-300">{title}</p>
         </div>
         <p className="text-4xl font-bold text-gray-800 dark:text-white self-end tracking-tight">{formatCurrency(value)}</p>
     </div>

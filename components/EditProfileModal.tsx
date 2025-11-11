@@ -93,7 +93,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, currentUse
                     </button>
                 </div>
             </div>
-            <style>{`.input-field { background-color: #FFF; color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>
+            <style>{`.input-field { color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; background-color: #F9FAFB; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>
         </Modal>
     );
 };

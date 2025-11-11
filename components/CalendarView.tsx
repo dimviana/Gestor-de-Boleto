@@ -28,19 +28,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
 
   const boletosByDate = useMemo(() => {
     const map = new Map<string, Boleto[]>();
+    const brtDateFormatter = new Intl.DateTimeFormat('en-CA', { // 'en-CA' format is YYYY-MM-DD
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+
     boletos.forEach(boleto => {
       if (boleto.createdAt) {
         const date = new Date(boleto.createdAt);
         if (!isNaN(date.getTime())) {
-          // Use toLocaleString to get a date object representing the time in Brazil.
-          // This avoids manual offset calculations and handles DST correctly.
-          const brtDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-          
-          const year = brtDate.getFullYear();
-          const month = (brtDate.getMonth() + 1).toString().padStart(2, '0');
-          const day = brtDate.getDate().toString().padStart(2, '0');
-          const dateKey = `${year}-${month}-${day}`;
-          
+          const dateKey = brtDateFormatter.format(date);
           if (!map.has(dateKey)) {
             map.set(dateKey, []);
           }
