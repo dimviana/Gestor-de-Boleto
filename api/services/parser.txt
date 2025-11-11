@@ -124,11 +124,10 @@ def get_amounts(text):
     }
     
 def get_guide_number(text):
-    """Extracts 'Nº do Documento/Guia'."""
-    doc_numero_pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s*([^\n\r]+)'
-    match = re.search(doc_numero_pattern, text, re.IGNORECASE)
+    """Extracts 'Nº do Documento/Guia' robustly, whether on the same line or next."""
+    pattern = r'N[º°o\.]?\s*Documento(?:[/]?Guia)?\s+(\S+)'
+    match = re.search(pattern, text, re.IGNORECASE)
     if match and match.group(1):
-        # The number can be on the same line or the next, this captures it
         return clean_text(match.group(1).strip())
     return None
 
@@ -176,11 +175,12 @@ def extract_boleto_info(pdf_path):
     except Exception as e:
         return {"error": f"PyMuPDF failed to read the PDF file: {str(e)}"}
 
-    # Define patterns for multiline fields based on the provided PDF structure
-    recipient_pattern = r'Cedente\n([\s\S]*?)(?=\nData do Documento)'
-    drawee_pattern = r'Sacado\n([\s\S]*?)(?=\nSacador / Avalista|\nInstruções)'
-    due_date_pattern = r'Vencimento\n(\d{2}/\d{2}/\d{4})'
-    doc_date_pattern = r'Data do Documento\n(\d{2}/\d{2}/\d{4})'
+    # Define patterns for fields, making them robust to whitespace variations.
+    recipient_pattern = r'Cedente\s+([\s\S]*?)(?=\s+Data do Documento)'
+    drawee_pattern = r'Sacado\s+([\s\S]*?)(?=\s+Sacador / Avalista|\s+Instruções)'
+    # Use \s+ to handle value on same or next line.
+    due_date_pattern = r'Vencimento\s+(\d{2}/\d{2}/\d{4})'
+    doc_date_pattern = r'Data do Documento\s+(\d{2}/\d{2}/\d{4})'
 
     amounts = get_amounts(text_content)
     
@@ -196,7 +196,7 @@ def extract_boleto_info(pdf_path):
         "interestAndFines": amounts["interestAndFines"],
         "barcode": get_barcode(text_content),
         "guideNumber": get_guide_number(text_content),
-        "nossoNumero": get_nosso_numero(text_content), # Added extra field
+        "nossoNumero": get_nosso_numero(text_content),
         "pixQrCodeText": get_pix_code(text_content),
         "detailedCosts": get_detailed_costs(text_content),
     }
