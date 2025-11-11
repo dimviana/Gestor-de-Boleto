@@ -163,7 +163,7 @@ def get_detailed_costs(text):
                 costs[label] = value
     return costs if costs else None
 
-# --- Main Extraction Function ---
+# --- Main Extraction Function ----
 
 def extract_boleto_info(pdf_path):
     """Opens a PDF and extracts all relevant boleto information."""
