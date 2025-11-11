@@ -81,11 +81,11 @@ Após a instalação, a aplicação é gerenciada pelo PM2. Comandos úteis:
 
 - **Ver os logs da aplicação:**
   ```bash
-  pm2 logs gerenciaboleto
+  pm2 logs gerencia-boleto
   ```
 - **Reiniciar a aplicação (após uma atualização, por exemplo):**
   ```bash
-  pm2 restart gerenciaboleto
+  pm2 restart gerencia-boleto
   ```
 - **Listar processos gerenciados:**
   ```bash
