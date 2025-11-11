@@ -3,11 +3,10 @@ import { PlusIcon, XIcon, UploadIcon, FolderOpenIcon } from './icons/Icons';
 
 interface FloatingMenuProps {
   onFileUploadClick: () => void;
-  onFolderWatchClick: () => void;
   disabled: boolean;
 }
 
-const FloatingMenu: React.FC<FloatingMenuProps> = ({ onFileUploadClick, onFolderWatchClick, disabled }) => {
+const FloatingMenu: React.FC<FloatingMenuProps> = ({ onFileUploadClick, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -36,14 +35,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({ onFileUploadClick, onFolder
   return (
     <div className="md:hidden fixed bottom-6 right-6 z-40">
       <div className={`relative flex items-center justify-center ${disabled ? 'opacity-50' : ''}`}>
-        <ActionButton
-          onClick={onFolderWatchClick}
-          label="Monitorar Pasta"
-          offset="transform -translate-y-36"
-        >
-          <FolderOpenIcon className="w-6 h-6" />
-        </ActionButton>
-
         <ActionButton
           onClick={onFileUploadClick}
           label="Enviar PDF"
