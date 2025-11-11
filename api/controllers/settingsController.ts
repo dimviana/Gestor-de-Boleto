@@ -1,13 +1,14 @@
 
 
-import { Request, Response } from 'express';
+
+import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const getSettings = async (_req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const getSettings = async (_req: ExpressRequest, res: ExpressResponse) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -27,8 +28,8 @@ export const getSettings = async (_req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const updateSettings = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const updateSettings = async (req: ExpressRequest, res: ExpressResponse) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {

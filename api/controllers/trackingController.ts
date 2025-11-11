@@ -1,14 +1,15 @@
 
 
-import { Request, Response } from 'express';
+
+import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { v4 as uuidv4 } from 'uuid';
 import { RowDataPacket } from 'mysql2';
 import { appConfig } from '../services/configService';
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const logTracking = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const logTracking = async (req: ExpressRequest, res: ExpressResponse) => {
     const user = req.user!;
     const { latitude, longitude } = req.body;
     // req.ip will contain the real user IP because of `app.set('trust proxy', true)`
@@ -38,8 +39,8 @@ export const logTracking = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const getTrackingLogs = async (_req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const getTrackingLogs = async (_req: ExpressRequest, res: ExpressResponse) => {
     try {
         const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM tracking_logs ORDER BY timestamp DESC LIMIT 500');
         

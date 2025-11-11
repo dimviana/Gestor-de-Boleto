@@ -22,15 +22,22 @@ const OverviewView: React.FC<OverviewViewProps> = ({ boletos }) => {
   const [endDate, setEndDate] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'updatedAt', direction: 'descending' });
 
-  const formatDate = (dateString: string | null | undefined, options?: Intl.DateTimeFormatOptions) => {
+  const formatDateToBrazilian = (dateString: string | null | undefined) => {
     if (!dateString) return t('notAvailable');
     try {
-      // Appending T00:00:00 ensures the date is parsed in the local timezone, not UTC.
-      const date = new Date(`${dateString}T00:00:00`);
+      const isSimpleDate = dateString && /^\d{4}-\d{2}-\d{2}$/.test(dateString);
+      // For YYYY-MM-DD, add T00:00:00 to parse it in local time, avoiding timezone shifts from UTC midnight.
+      const date = isSimpleDate ? new Date(`${dateString}T00:00:00`) : new Date(dateString);
+
       if (isNaN(date.getTime())) {
         return t('notAvailable');
       }
-      return new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : 'en-US', options).format(date);
+      
+      return new Intl.DateTimeFormat('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+      }).format(date);
     } catch (e) {
       return t('notAvailable');
     }
@@ -162,8 +169,8 @@ const OverviewView: React.FC<OverviewViewProps> = ({ boletos }) => {
                   <tr key={boleto.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{boleto.recipient}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{boleto.guideNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDate(boleto.dueDate)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDate(boleto.updatedAt, { year: 'numeric', month: '2-digit', day: '2-digit' })}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDateToBrazilian(boleto.dueDate)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDateToBrazilian(boleto.updatedAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(boleto.amount)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button onClick={() => handleOpenPdf(boleto)} className="p-2 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">

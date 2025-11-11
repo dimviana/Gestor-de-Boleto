@@ -1,6 +1,7 @@
 
 
-import { Request, Response } from 'express';
+
+import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,8 +17,8 @@ const mapDbCompanyToCompany = (dbCompany: any): Company => ({
 });
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const getCompanies = async (_req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const getCompanies = async (_req: ExpressRequest, res: ExpressResponse) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT id, name, cnpj, address, monitored_folder_path FROM companies ORDER BY name');
     res.json(companies.map(mapDbCompanyToCompany));
@@ -28,8 +29,8 @@ export const getCompanies = async (_req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const createCompany = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const createCompany = async (req: ExpressRequest, res: ExpressResponse) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -63,8 +64,8 @@ export const createCompany = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const updateCompany = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const updateCompany = async (req: ExpressRequest, res: ExpressResponse) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -101,8 +102,8 @@ export const updateCompany = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const deleteCompany = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const deleteCompany = async (req: ExpressRequest, res: ExpressResponse) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();
@@ -143,8 +144,8 @@ export const deleteCompany = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const setMonitoredFolderPath = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const setMonitoredFolderPath = async (req: ExpressRequest, res: ExpressResponse) => {
   const { path } = req.body;
   const { id } = req.params;
   
@@ -162,8 +163,8 @@ export const setMonitoredFolderPath = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const clearMonitoredFolderPath = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const clearMonitoredFolderPath = async (req: ExpressRequest, res: ExpressResponse) => {
   const { id } = req.params;
 
   try {

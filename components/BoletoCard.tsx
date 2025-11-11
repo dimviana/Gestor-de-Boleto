@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Boleto, BoletoStatus, Role, CardFieldVisibility } from '../types';
-import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, HashtagIcon } from './icons/Icons';
+import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, HashtagIcon, UploadIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { TranslationKey } from '../translations';
 
@@ -43,6 +43,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const [commentText, setCommentText] = useState(comments || '');
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [visibility, setVisibility] = useState<CardFieldVisibility>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // States for animations
   const [isMounted, setIsMounted] = useState(false);
@@ -189,6 +190,24 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     }
   };
 
+  const handleAttachProofClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      if (e.target.files && e.target.files.length > 0) {
+          // A real implementation would upload the file here.
+          // As requested, we'll just move the card to 'Paid' automatically.
+          onUpdateStatus(id, BoletoStatus.PAID);
+      }
+      // Reset file input to allow selecting the same file again
+      if (e.target) {
+          e.target.value = '';
+      }
+  };
+
   const getAction = () => {
     const baseButtonClasses = "w-full flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors";
     const handleActionClick = (e: React.MouseEvent, newStatus: BoletoStatus) => {
@@ -237,12 +256,22 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         );
       case BoletoStatus.VERIFYING:
         return (
-          <button
-            onClick={(e) => handleActionClick(e, BoletoStatus.PAID)}
-            className={`${baseButtonClasses} bg-yellow-500 hover:bg-yellow-600`}
-          >
-            {t('verifyPayment')} <CheckIcon className="w-4 h-4 ml-2" />
-          </button>
+          <>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileSelected}
+              onClick={(e) => e.stopPropagation()}
+              className="hidden" 
+              accept="application/pdf" 
+            />
+            <button
+              onClick={handleAttachProofClick}
+              className={`${baseButtonClasses} bg-yellow-500 hover:bg-yellow-600`}
+            >
+              {t('attachProofButton' as TranslationKey)} <UploadIcon className="w-4 h-4 ml-2" />
+            </button>
+          </>
         );
       case BoletoStatus.PAID:
         return <p className="text-sm font-semibold text-center text-green-600 dark:text-green-400 py-2">{t('paymentCompleted')}</p>;

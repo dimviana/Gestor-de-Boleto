@@ -208,6 +208,7 @@ const pt = {
     location: 'Localização (Aprox.)',
     noTrackingLogs: 'Nenhum registro de acesso encontrado.',
     viewOnMap: 'Ver no Mapa',
+    attachProofButton: 'Anexar Comprovante',
 };
 
 const en: typeof pt = {
@@ -418,6 +419,7 @@ const en: typeof pt = {
     location: 'Location (Approx.)',
     noTrackingLogs: 'No access logs found.',
     viewOnMap: 'View on Map',
+    attachProofButton: 'Attach Proof',
 };
 
 export const translations = { pt, en };

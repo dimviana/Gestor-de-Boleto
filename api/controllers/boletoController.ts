@@ -1,6 +1,7 @@
 
 
-import { Request, Response } from 'express';
+
+import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
@@ -73,8 +74,8 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const getBoletos = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const getBoletos = async (req: ExpressRequest, res: ExpressResponse) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -104,8 +105,8 @@ export const getBoletos = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const getBoletoById = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const getBoletoById = async (req: ExpressRequest, res: ExpressResponse) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -134,8 +135,8 @@ export const getBoletoById = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const extractBoleto = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const extractBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -164,8 +165,8 @@ export const extractBoleto = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const saveBoleto = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const saveBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -268,8 +269,8 @@ export const saveBoleto = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const updateBoletoStatus = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const updateBoletoStatus = async (req: ExpressRequest, res: ExpressResponse) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -316,8 +317,8 @@ export const updateBoletoStatus = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const updateBoletoComments = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const updateBoletoComments = async (req: ExpressRequest, res: ExpressResponse) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -362,8 +363,8 @@ export const updateBoletoComments = async (req: Request, res: Response) => {
 };
 
 // Add explicit types for Express Request and Response objects.
-// FIX: Correctly type express request handlers.
-export const deleteBoleto = async (req: Request, res: Response) => {
+// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
+export const deleteBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();
