@@ -1,5 +1,6 @@
 
-import express from 'express';
+
+import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
@@ -25,7 +26,9 @@ const port = process.env.PORT || 3001;
 // --- Core Middleware ---
 app.set('trust proxy', true); // Important for getting correct IP behind a proxy like Nginx
 app.use(cors());
+// FIX: Correctly type express middleware handlers.
 app.use(express.json({ limit: '50mb' }));
+// FIX: Correctly type express middleware handlers.
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // --- API ROUTER ---
@@ -43,7 +46,8 @@ apiRouter.use('/tracking', trackingRoutes);
 
 // Health check for the API router itself
 // Add explicit types for Express Request and Response objects.
-const healthCheckHandler = (_req: express.Request, res: express.Response) => {
+// FIX: Correctly type express middleware handlers.
+const healthCheckHandler = (_req: Request, res: Response) => {
   res.send('Boleto Manager AI Backend is running!');
 };
 apiRouter.get('/', healthCheckHandler);
@@ -64,7 +68,8 @@ app.use(express.static(staticPath));
 // 2. SPA Fallback: For any GET request that doesn't match an API route or a static file,
 // serve the main index.html file. This is crucial for client-side routing.
 // Add explicit types for Express Request and Response objects.
-const spaFallbackHandler = (req: express.Request, res: express.Response) => {
+// FIX: Correctly type express middleware handlers.
+const spaFallbackHandler = (req: Request, res: Response) => {
   // This guard prevents the fallback from ever serving index.html for an API-like route.
   if (req.path.startsWith('/api/')) {
     return res.status(404).send('API endpoint not found.');

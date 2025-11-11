@@ -1,5 +1,6 @@
 
-import express from 'express';
+
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -18,7 +19,8 @@ declare global {
 }
 
 // Add explicit types for Express middleware handlers.
-export const protect = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// FIX: Correctly type express middleware handlers.
+export const protect = (req: Request, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -43,7 +45,8 @@ export const protect = (req: express.Request, res: express.Response, next: expre
 };
 
 // Add explicit types for Express middleware handlers.
-export const admin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// FIX: Correctly type express middleware handlers.
+export const admin = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -52,7 +55,8 @@ export const admin = (req: express.Request, res: express.Response, next: express
 };
 
 // Add explicit types for Express middleware handlers.
-export const editor = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// FIX: Correctly type express middleware handlers.
+export const editor = (req: Request, res: Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {

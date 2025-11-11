@@ -12,7 +12,7 @@ import Documentation from './Documentation';
 import { HourglassIcon, CheckCircleIcon, TrashIcon, PaymentTerminalIcon, KanbanIcon, CalendarIcon, WalletIcon } from './icons/Icons';
 import AdminPanel from './AdminPanel';
 import FolderWatcher from './FolderWatcher';
-import * as api from './services/api';
+import * as api from '../services/api';
 import UploadProgress, { UploadStatus } from './UploadProgress';
 import FloatingMenu from './FloatingMenu';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
