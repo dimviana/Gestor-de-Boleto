@@ -1,7 +1,7 @@
 import React from 'react';
 import { User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { EditIcon } from './icons/Icons';
+import { EditIcon, OfficeBuildingIcon } from './icons/Icons';
 
 interface UserProfilePopoverProps {
   user: User;
@@ -17,7 +17,10 @@ const UserProfilePopover: React.FC<UserProfilePopoverProps> = ({ user, companyNa
       <div className="p-4 border-b border-gray-100 dark:border-gray-700">
         <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{user.name || user.username}</p>
         {user.name && <p className="text-xs text-gray-500 dark:text-gray-400">{user.username}</p>}
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{companyName}</p>
+        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+            <OfficeBuildingIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span className="truncate">{companyName}</span>
+        </div>
       </div>
       <div className="p-2">
         <button

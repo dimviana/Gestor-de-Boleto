@@ -267,3 +267,9 @@ export const EyeOffIcon: React.FC<IconProps> = (props) => (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 12.75a3 3 0 113.5-3.5" />
     </svg>
 );
+
+export const OfficeBuildingIcon: React.FC<IconProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m-1 4h1m5-8h1m-1 4h1m-1 4h1M9 21v-3.072a2 2 0 01.732-1.564L12 15l2.268 1.364a2 2 0 01.732 1.564V21" />
+  </svg>
+);
