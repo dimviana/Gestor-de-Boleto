@@ -17,9 +17,10 @@ interface HeaderProps {
   companies: Company[];
   notifications: Notification[];
   onSearch: (term: string) => void;
+  activeCompanyId: string | null;
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, onOpenEditProfile, user, companies, notifications, onSearch }) => {
+const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, onOpenEditProfile, user, companies, notifications, onSearch, activeCompanyId }) => {
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
   const [isNotificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
@@ -89,7 +90,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
                 </span>
             )}
         </button>
-        {isNotificationPopoverOpen && <NotificationPopover notifications={notifications} />}
+        {isNotificationPopoverOpen && <NotificationPopover notifications={notifications} userRole={user.role} activeCompanyId={activeCompanyId} />}
     </div>
     <button
       onClick={onLogout}

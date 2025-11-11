@@ -193,6 +193,11 @@ const pt = {
     passwordUpdateSuccess: 'Senha atualizada com sucesso.',
     passwordUpdateError: 'Falha ao atualizar a senha.',
     passwordMismatchError: 'As senhas não coincidem.',
+    sendEmailRemindersButton: 'Enviar Lembretes por E-mail',
+    remindersSentSuccess: 'Lembretes por e-mail simulados para {{count}} boletos.',
+    noRemindersToSend: 'Nenhum boleto precisa de lembrete no momento.',
+    remindersSentError: 'Falha ao enviar os lembretes por e-mail.',
+    sendingReminders: 'Enviando...',
 };
 
 const en: typeof pt = {
@@ -388,6 +393,11 @@ const en: typeof pt = {
     passwordUpdateSuccess: 'Password updated successfully.',
     passwordUpdateError: 'Failed to update password.',
     passwordMismatchError: 'Passwords do not match.',
+    sendEmailRemindersButton: 'Send Email Reminders',
+    remindersSentSuccess: 'Simulated email reminders for {{count}} boletos.',
+    noRemindersToSend: 'No boletos need reminders at the moment.',
+    remindersSentError: 'Failed to send email reminders.',
+    sendingReminders: 'Sending...',
 };
 
 export const translations = { pt, en };

@@ -1,6 +1,6 @@
 
-// Fix: Use type-only imports for Express types to avoid module resolution issues.
-import type { Request, Response, NextFunction } from 'express';
+// Fix: The `import type` was causing type resolution errors. Changed to a standard import.
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.

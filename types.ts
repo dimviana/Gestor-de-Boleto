@@ -74,7 +74,8 @@ export type LogAction =
   | 'ADMIN_CHANGE_SETTINGS'
   | 'ADMIN_CREATE_COMPANY'
   | 'ADMIN_UPDATE_COMPANY'
-  | 'ADMIN_DELETE_COMPANY';
+  | 'ADMIN_DELETE_COMPANY'
+  | 'SEND_EMAIL_REMINDERS';
 
 export interface LogEntry {
   id: string;
@@ -83,6 +84,12 @@ export interface LogEntry {
   username: string;
   action: LogAction;
   details: string; // e.g., "Updated boleto 'ACME-123' status to PAID"
+}
+
+export interface AppNotification {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
 }
 
 export interface Notification {

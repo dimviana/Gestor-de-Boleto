@@ -1,7 +1,7 @@
 
 import express from 'express';
-// Fix: Use type-only imports for Express types to avoid module resolution issues.
-import type { Request, Response } from 'express';
+// Fix: The `import type` was causing type resolution errors. Changed to a standard import.
+import { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
@@ -15,6 +15,7 @@ import userRoutes from './routes/users';
 import logRoutes from './routes/logs';
 import settingsRoutes from './routes/settings';
 import sslRoutes from './routes/ssl';
+import notificationRoutes from './routes/notifications';
 
 
 dotenv.config();
@@ -37,6 +38,7 @@ apiRouter.use('/users', userRoutes);
 apiRouter.use('/logs', logRoutes);
 apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/ssl', sslRoutes);
+apiRouter.use('/notifications', notificationRoutes);
 
 // Health check for the API router itself
 const healthCheckHandler = (req: Request, res: Response) => {

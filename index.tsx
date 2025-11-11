@@ -4,6 +4,7 @@ import App from './App';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { WhitelabelProvider } from './contexts/WhitelabelContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -16,7 +17,9 @@ root.render(
     <ThemeProvider>
       <LanguageProvider>
         <WhitelabelProvider>
-          <App />
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
         </WhitelabelProvider>
       </LanguageProvider>
     </ThemeProvider>

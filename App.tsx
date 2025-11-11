@@ -3,6 +3,7 @@ import LoginScreen from './components/LoginScreen';
 import Dashboard from './components/Dashboard';
 import { useAuth } from './hooks/useAuth';
 import { useWhitelabel } from './contexts/WhitelabelContext';
+import NotificationContainer from './components/NotificationContainer';
 
 const App: React.FC = () => {
   const { user, login, logout, register, authError, setAuthError, getUsers, getLogs } = useAuth();
@@ -17,6 +18,7 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-blue-200 dark:from-gray-900 dark:to-slate-800 min-h-screen text-gray-800 dark:text-gray-200 font-sans flex flex-col">
+      <NotificationContainer />
       <main className="flex-grow">
         {user ? (
           <Dashboard 

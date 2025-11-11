@@ -1,6 +1,6 @@
 
-// Fix: Use type-only imports for Express types to avoid module resolution issues.
-import type { Request, Response } from 'express';
+// Fix: The `import type` was causing type resolution errors. Changed to a standard import.
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';

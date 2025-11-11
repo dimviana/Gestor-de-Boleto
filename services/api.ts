@@ -259,3 +259,11 @@ export const checkSslStatus = (domain: string): Promise<SslStatus> => {
         body: JSON.stringify({ domain }),
     });
 };
+
+// --- Notifications API ---
+export const sendEmailReminders = (companyId: string): Promise<{ message: string, count: number }> => {
+    return apiFetch('/notifications/send-reminders', {
+        method: 'POST',
+        body: JSON.stringify({ companyId }),
+    });
+};

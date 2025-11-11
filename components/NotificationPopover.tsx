@@ -1,15 +1,41 @@
-
-import React from 'react';
-import { Notification } from '../types';
+import React, { useState } from 'react';
+import { Notification, Role } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CalendarIcon, DollarSignIcon } from './icons/Icons';
+import * as api from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
+import { TranslationKey } from '../translations';
+import Spinner from './Spinner';
 
 interface NotificationPopoverProps {
   notifications: Notification[];
+  userRole: Role;
+  activeCompanyId: string | null;
 }
 
-const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications }) => {
+const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications, userRole, activeCompanyId }) => {
   const { t } = useLanguage();
+  const { addNotification } = useNotification();
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSendReminders = async () => {
+    if (!activeCompanyId || isSending) return;
+    setIsSending(true);
+    try {
+      const response = await api.sendEmailReminders(activeCompanyId);
+      if (response.count > 0) {
+        addNotification(t('remindersSentSuccess', { count: String(response.count) }), 'success');
+      } else {
+        addNotification(t('noRemindersToSend'), 'info');
+      }
+    } catch (error) {
+      console.error("Failed to send reminders:", error);
+      addNotification(t('remindersSentError'), 'error');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
 
   const formatCurrency = (value: number | null) => {
     if (value === null) return t('notAvailable');
@@ -48,6 +74,8 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
       );
   };
 
+  const canSendReminders = userRole !== 'viewer' && !!activeCompanyId && notifications.length > 0;
+
   return (
     <div className="absolute top-12 right-0 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-30 animate-fade-in-up">
       <div className="p-3 font-bold text-gray-800 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700">
@@ -64,6 +92,17 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ notifications
           </div>
         )}
       </div>
+      {userRole !== 'viewer' && (
+        <div className="p-2 border-t border-gray-100 dark:border-gray-700">
+          <button
+            onClick={handleSendReminders}
+            disabled={!canSendReminders || isSending}
+            className="w-full px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            {isSending ? <><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin mr-2"></div>{t('sendingReminders' as TranslationKey)}</> : t('sendEmailRemindersButton' as TranslationKey)}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

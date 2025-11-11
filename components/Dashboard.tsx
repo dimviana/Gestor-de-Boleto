@@ -327,6 +327,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         onOpenEditProfile={() => setIsEditProfileOpen(true)}
         notifications={allNotifications}
         onSearch={setSearchTerm}
+        activeCompanyId={activeCompanyId}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <input 
