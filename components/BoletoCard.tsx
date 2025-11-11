@@ -3,12 +3,14 @@ import { Boleto, BoletoStatus, Role, CardFieldVisibility } from '../types';
 import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, HashtagIcon, UploadIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { TranslationKey } from '../translations';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface BoletoCardProps {
   boleto: Boleto;
   onUpdateStatus: (id: string, newStatus: BoletoStatus) => void;
   onDelete: (id: string) => void;
   onUpdateComments: (id: string, comments: string) => void;
+  onUploadProof: (id: string, file: File) => Promise<void>;
   isSelected: boolean;
   onToggleSelection: (id: string) => void;
   userRole: Role;
@@ -32,8 +34,9 @@ const defaultVisibility: CardFieldVisibility = {
 };
 
 
-const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, isSelected, onToggleSelection, userRole }) => {
+const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelete, onUpdateComments, onUploadProof, isSelected, onToggleSelection, userRole }) => {
   const { t, language } = useLanguage();
+  const { addNotification } = useNotification();
   const { id, status, fileData, comments, extractedData } = boleto;
   
   const [pixCopied, setPixCopied] = useState(false);
@@ -195,17 +198,34 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     fileInputRef.current?.click();
   };
 
-  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
       e.stopPropagation();
       if (e.target.files && e.target.files.length > 0) {
-          // A real implementation would upload the file here.
-          // As requested, we'll just move the card to 'Paid' automatically.
-          onUpdateStatus(id, BoletoStatus.PAID);
+          const file = e.target.files[0];
+          try {
+            await onUploadProof(id, file);
+          } catch (error: any) {
+            console.error("Failed to upload proof:", error);
+            addNotification(error.message || 'Failed to upload proof', 'error');
+          }
       }
-      // Reset file input to allow selecting the same file again
       if (e.target) {
           e.target.value = '';
       }
+  };
+
+  const handleViewProof = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!boleto.paymentProof) return;
+    const byteCharacters = atob(boleto.paymentProof);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/pdf' });
+    const fileURL = URL.createObjectURL(blob);
+    window.open(fileURL, '_blank');
   };
 
   const getAction = () => {
@@ -269,12 +289,25 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
               onClick={handleAttachProofClick}
               className={`${baseButtonClasses} bg-yellow-500 hover:bg-yellow-600`}
             >
-              {t('attachProofButton' as TranslationKey)} <UploadIcon className="w-4 h-4 ml-2" />
+              {t('attachProofButton')} <UploadIcon className="w-4 h-4 ml-2" />
             </button>
           </>
         );
       case BoletoStatus.PAID:
-        return <p className="text-sm font-semibold text-center text-green-600 dark:text-green-400 py-2">{t('paymentCompleted')}</p>;
+        return (
+          <div className="flex items-center justify-between py-2">
+            <p className="text-sm font-semibold text-green-600 dark:text-green-400">{t('paymentCompleted')}</p>
+            {boleto.paymentProof && (
+                <button
+                    onClick={handleViewProof}
+                    title={t('viewProofTooltip')}
+                    className="p-2 text-gray-500 dark:text-gray-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                    <FileTextIcon className="w-5 h-5" />
+                </button>
+            )}
+        </div>
+        );
       default:
         return null;
     }

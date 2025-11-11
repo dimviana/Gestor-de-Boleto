@@ -29,6 +29,7 @@ export interface Boleto {
   status: BoletoStatus;
   fileName: string;
   fileData: string;
+  paymentProof?: string | null; // base64 encoded PDF
   companyId: string; // Added for multi-tenancy
   comments: string | null;
   extractedData?: Record<string, any> | null;
@@ -36,7 +37,7 @@ export interface Boleto {
   updatedAt?: string;
 }
 
-export type BoletoField = keyof Omit<Boleto, 'id' | 'status' | 'fileData' | 'companyId' | 'comments' | 'extractedData' | 'createdAt' | 'updatedAt' | 'detailedCosts'>;
+export type BoletoField = keyof Omit<Boleto, 'id' | 'status' | 'fileData' | 'companyId' | 'comments' | 'extractedData' | 'createdAt' | 'updatedAt' | 'detailedCosts' | 'paymentProof'>;
 export type CardFieldVisibility = Partial<Record<BoletoField, boolean>>;
 
 

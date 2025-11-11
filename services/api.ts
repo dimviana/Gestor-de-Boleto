@@ -154,6 +154,16 @@ export const updateBoletoStatus = (id: string, status: BoletoStatus): Promise<Bo
     });
 };
 
+export const uploadPaymentProof = (id: string, file: File): Promise<Boleto> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return apiFetch(`/boletos/${id}/proof`, {
+        method: 'POST',
+        body: formData,
+    });
+};
+
 export const updateBoletoComments = (id: string, comments: string): Promise<Boleto> => {
     return apiFetch(`/boletos/${id}/comments`, {
         method: 'PUT',

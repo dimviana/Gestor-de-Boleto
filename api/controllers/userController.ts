@@ -1,16 +1,16 @@
 
 
 
-import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+
+// FIX: Use default express import and qualified types to avoid type conflicts.
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const getUsers = async (_req: ExpressRequest, res: ExpressResponse) => {
+export const getUsers = async (_req: express.Request, res: express.Response) => {
   try {
     const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, name, role, company_id FROM users');
     // Map snake_case from DB to camelCase for frontend consistency
@@ -28,9 +28,7 @@ export const getUsers = async (_req: ExpressRequest, res: ExpressResponse) => {
   }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const createUser = async (req: ExpressRequest, res: ExpressResponse) => {
+export const createUser = async (req: express.Request, res: express.Response) => {
   const { username, password, name, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -86,9 +84,7 @@ export const createUser = async (req: ExpressRequest, res: ExpressResponse) => {
   }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const updateUser = async (req: ExpressRequest, res: ExpressResponse) => {
+export const updateUser = async (req: express.Request, res: express.Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password } = req.body;
@@ -140,9 +136,7 @@ export const updateUser = async (req: ExpressRequest, res: ExpressResponse) => {
   }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const deleteUser = async (req: ExpressRequest, res: ExpressResponse) => {
+export const deleteUser = async (req: express.Request, res: express.Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -175,9 +169,7 @@ export const deleteUser = async (req: ExpressRequest, res: ExpressResponse) => {
   }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const updateUserProfile = async (req: ExpressRequest, res: ExpressResponse) => {
+export const updateUserProfile = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { password } = req.body;
     const connection = await pool.getConnection();

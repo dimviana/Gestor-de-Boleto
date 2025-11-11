@@ -46,10 +46,17 @@ export const useBoletos = (user: User | null) => {
     );
   }, []);
 
+  const uploadProof = useCallback(async (id: string, file: File) => {
+    const updatedBoleto = await api.uploadPaymentProof(id, file);
+    setBoletos(prev =>
+        prev.map(b => (b.id === id ? updatedBoleto : b))
+    );
+  }, []);
+
   const deleteBoleto = useCallback(async (user: User, id: string) => {
     await api.removeBoleto(id);
     setBoletos(prev => prev.filter(b => b.id !== id));
   }, []);
 
-  return { boletos, fetchBoletos, updateBoletoStatus, updateBoletoComments, deleteBoleto, isLoading, error };
+  return { boletos, fetchBoletos, updateBoletoStatus, updateBoletoComments, uploadProof, deleteBoleto, isLoading, error };
 };

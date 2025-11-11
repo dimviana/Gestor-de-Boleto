@@ -25,8 +25,8 @@ const OverviewView: React.FC<OverviewViewProps> = ({ boletos }) => {
   const formatDateToBrazilian = (dateString: string | null | undefined) => {
     if (!dateString) return t('notAvailable');
     try {
+      // Para datas no formato YYYY-MM-DD, adicionar T00:00:00 evita que o fuso horário mude o dia.
       const isSimpleDate = dateString && /^\d{4}-\d{2}-\d{2}$/.test(dateString);
-      // For YYYY-MM-DD, add T00:00:00 to parse it in local time, avoiding timezone shifts from UTC midnight.
       const date = isSimpleDate ? new Date(`${dateString}T00:00:00`) : new Date(dateString);
 
       if (isNaN(date.getTime())) {

@@ -1,7 +1,9 @@
 
 
 
-import { Request as ExpressRequest, Response as ExpressResponse, NextFunction } from 'express';
+
+// FIX: Use default express import and qualified types to avoid type conflicts.
+import express, { NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -19,9 +21,7 @@ declare global {
     }
 }
 
-// Add explicit types for Express middleware handlers.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const protect = (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
+export const protect = (req: express.Request, res: express.Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -45,9 +45,7 @@ export const protect = (req: ExpressRequest, res: ExpressResponse, next: NextFun
   }
 };
 
-// Add explicit types for Express middleware handlers.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const admin = (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
+export const admin = (req: express.Request, res: express.Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -55,9 +53,7 @@ export const admin = (req: ExpressRequest, res: ExpressResponse, next: NextFunct
     }
 };
 
-// Add explicit types for Express middleware handlers.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const editor = (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
+export const editor = (req: express.Request, res: express.Response, next: NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {

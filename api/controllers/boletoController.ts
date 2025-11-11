@@ -1,7 +1,9 @@
 
 
 
-import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+
+// FIX: Use default express import and qualified types to avoid type conflicts.
+import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
 import { RowDataPacket } from 'mysql2';
@@ -64,6 +66,9 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
         status: dbBoleto.status,
         fileName: dbBoleto.file_name,
         fileData: fileData,
+        paymentProof: dbBoleto.payment_proof instanceof Buffer
+            ? dbBoleto.payment_proof.toString('base64')
+            : (typeof dbBoleto.payment_proof === 'string' ? dbBoleto.payment_proof : null),
         companyId: dbBoleto.company_id,
         comments: dbBoleto.comments,
         extractedData: extractedDataParsed,
@@ -73,9 +78,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
     };
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const getBoletos = async (req: ExpressRequest, res: ExpressResponse) => {
+export const getBoletos = async (req: express.Request, res: express.Response) => {
   const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
@@ -104,9 +107,7 @@ export const getBoletos = async (req: ExpressRequest, res: ExpressResponse) => {
   }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const getBoletoById = async (req: ExpressRequest, res: ExpressResponse) => {
+export const getBoletoById = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const boletoId = req.params.id;
     try {
@@ -134,9 +135,7 @@ export const getBoletoById = async (req: ExpressRequest, res: ExpressResponse) =
     }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const extractBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
+export const extractBoleto = async (req: express.Request, res: express.Response) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -164,9 +163,7 @@ export const extractBoleto = async (req: ExpressRequest, res: ExpressResponse) =
     }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const saveBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
+export const saveBoleto = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { boletoData, companyId } = req.body;
 
@@ -268,9 +265,7 @@ export const saveBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
     }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const updateBoletoStatus = async (req: ExpressRequest, res: ExpressResponse) => {
+export const updateBoletoStatus = async (req: express.Request, res: express.Response) => {
     const { status } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -316,9 +311,60 @@ export const updateBoletoStatus = async (req: ExpressRequest, res: ExpressRespon
     }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const updateBoletoComments = async (req: ExpressRequest, res: ExpressResponse) => {
+export const uploadPaymentProof = async (req: express.Request, res: express.Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+    
+    if (!req.file) {
+        return res.status(400).json({ message: 'No proof file uploaded' });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const [beforeUpdate] = await connection.query<RowDataPacket[]>('SELECT guide_number FROM boletos WHERE id = ?', [id]);
+        if (beforeUpdate.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Boleto not found' });
+        }
+        const guideNumber = beforeUpdate[0].guide_number || 'N/A';
+        const proofBase64 = req.file.buffer.toString('base64');
+
+        await connection.query(
+            'UPDATE boletos SET status = ?, payment_proof = ? WHERE id = ?', 
+            [BoletoStatus.PAID, proofBase64, id]
+        );
+
+        await connection.query(
+            'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
+            [
+                uuidv4(),
+                user.id,
+                user.username,
+                'UPDATE_BOLETO_STATUS',
+                `Attached payment proof for boleto '${guideNumber}' and moved status to 'PAID'.`
+            ]
+        );
+
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM boletos WHERE id = ?', [id]);
+        await connection.commit();
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Boleto not found after update' });
+        }
+        res.json(mapDbBoletoToBoleto(rows[0]));
+
+    } catch (error) {
+        await connection.rollback();
+        console.error(`Error uploading proof for boleto ${id}:`, error);
+        res.status(500).json({ message: 'Server error' });
+    } finally {
+        connection.release();
+    }
+};
+
+export const updateBoletoComments = async (req: express.Request, res: express.Response) => {
     const { comments } = req.body;
     const { id } = req.params;
     const user = req.user!;
@@ -362,9 +408,7 @@ export const updateBoletoComments = async (req: ExpressRequest, res: ExpressResp
     }
 };
 
-// Add explicit types for Express Request and Response objects.
-// FIX: Use aliased Express Request and Response types to avoid global type conflicts.
-export const deleteBoleto = async (req: ExpressRequest, res: ExpressResponse) => {
+export const deleteBoleto = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();

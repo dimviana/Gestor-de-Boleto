@@ -11,13 +11,14 @@ interface KanbanColumnProps {
   onUpdateStatus: (id: string, newStatus: BoletoStatus) => void;
   onDelete: (id: string) => void;
   onUpdateComments: (id: string, comments: string) => void;
+  onUploadProof: (id: string, file: File) => Promise<void>;
   selectedBoletoIds: string[];
   onToggleSelection: (id: string) => void;
   onToggleSelectAll: (boletos: Boleto[]) => void;
   userRole: Role;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, selectedBoletoIds, onToggleSelection, onToggleSelectAll, userRole }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, onUploadProof, selectedBoletoIds, onToggleSelection, onToggleSelectAll, userRole }) => {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
     
@@ -116,6 +117,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
                 onUpdateStatus={onUpdateStatus}
                 onDelete={onDelete}
                 onUpdateComments={onUpdateComments}
+                onUploadProof={onUploadProof}
                 isSelected={selectedBoletoIds.includes(boleto.id)}
                 onToggleSelection={onToggleSelection}
                 userRole={userRole}

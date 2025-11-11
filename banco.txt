@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS `boletos` (
   `status` ENUM('PAGAR', 'VERIFICAR', 'PAGO') NOT NULL DEFAULT 'PAGAR',
   `file_name` VARCHAR(255) NOT NULL,
   `file_data` MEDIUMTEXT NOT NULL COMMENT 'Base64 encoded PDF data',
+  `payment_proof` MEDIUMTEXT DEFAULT NULL COMMENT 'Base64 encoded payment proof PDF',
   `comments` TEXT DEFAULT NULL,
   `extracted_data` JSON DEFAULT NULL COMMENT 'JSON object with all raw extracted data',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
