@@ -13,7 +13,9 @@ DB_HOST="localhost"
 DB_USER="root"
 DB_PASSWORD="your_strong_password_here" # CHANGE THIS IN YOUR SERVER
 DB_DATABASE="boleto_manager_ai"
-JWT_SECRET="your_super_secret_jwt_key_here" # CHANGE THIS IN YOUR SERVER
+# The system will auto-generate a secure secret if this is left blank.
+# You can also set your own long, random string here.
+JWT_SECRET="" 
 APP_NAME="gerencia-boleto"
 NODE_PORT=3001
 

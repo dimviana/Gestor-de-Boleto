@@ -10,8 +10,9 @@ DB_DATABASE=boleto_manager_ai
 PORT=3001
 
 # JWT Secret for Authentication
-# Use a long, random, and secure string for this value
-JWT_SECRET=your_super_secret_jwt_key
+# Leave this blank to have the application securely generate one automatically on first startup,
+# or provide your own long, random, and secure string.
+JWT_SECRET=
 
 # (Optional) Path to Python executable in a virtual environment
 # The deploy script sets this automatically. Only needed for manual setups.
