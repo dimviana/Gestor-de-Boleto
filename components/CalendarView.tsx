@@ -32,10 +32,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
       if (boleto.createdAt) {
         const date = new Date(boleto.createdAt);
         if (!isNaN(date.getTime())) {
-          // Use local date parts to form the key, respecting user's timezone
-          const year = date.getFullYear();
-          const month = (date.getMonth() + 1).toString().padStart(2, '0');
-          const day = date.getDate().toString().padStart(2, '0');
+          // Use toLocaleString to get a date object representing the time in Brazil.
+          // This avoids manual offset calculations and handles DST correctly.
+          const brtDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+          
+          const year = brtDate.getFullYear();
+          const month = (brtDate.getMonth() + 1).toString().padStart(2, '0');
+          const day = brtDate.getDate().toString().padStart(2, '0');
           const dateKey = `${year}-${month}-${day}`;
           
           if (!map.has(dateKey)) {
@@ -132,7 +135,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({ boletos }) => {
 
       <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-slate-700 border-t border-l border-gray-200 dark:border-slate-700">
         {calendarGrid.map((date, index) => {
-          // Use local date parts to form the key, matching the boletosByDate logic
           const year = date.getFullYear();
           const month = (date.getMonth() + 1).toString().padStart(2, '0');
           const day = date.getDate().toString().padStart(2, '0');

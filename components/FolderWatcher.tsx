@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { FolderOpenIcon } from './icons/Icons';
@@ -42,13 +36,12 @@ const FolderWatcher: React.FC<FolderWatcherProps> = ({ directoryHandle, error, d
         );
     }
 
-    const monitoredFolderName = directoryHandle?.name || monitoredFolderPathFromDB;
-
-    if (monitoredFolderName) {
+    // State 1: Actively monitoring (we have a live handle)
+    if (directoryHandle) {
         return (
             <div className="mt-4 p-4 border-t border-gray-200 dark:border-gray-700 text-center">
                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    {t('monitoringFolderLabel')} <span className="font-bold text-blue-600 dark:text-blue-400">{monitoredFolderName}</span>
+                    {t('monitoringFolderLabel')} <span className="font-bold text-blue-600 dark:text-blue-400">{directoryHandle.name}</span>
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('folderWatcherTabMustBeOpen')}</p>
                 <button 
@@ -61,6 +54,26 @@ const FolderWatcher: React.FC<FolderWatcherProps> = ({ directoryHandle, error, d
         );
     }
 
+    // State 2: Was monitoring, but handle is lost (e.g., new session, permissions revoked)
+    if (monitoredFolderPathFromDB) {
+        return (
+             <div className="mt-4 p-4 border-t border-gray-200 dark:border-gray-700 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    {t('resumeMonitoringPrompt' as TranslationKey, { folderName: monitoredFolderPathFromDB })}
+                </p>
+                <button 
+                    onClick={handleSelectFolder}
+                    disabled={disabled}
+                    className="w-full flex items-center justify-center px-4 py-2 font-semibold text-blue-600 bg-blue-100 rounded-lg hover:bg-blue-200 dark:text-blue-300 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 disabled:opacity-50"
+                >
+                    <FolderOpenIcon className="w-5 h-5 mr-2" />
+                    {t('reselectFolderButton' as TranslationKey)}
+                </button>
+             </div>
+        )
+    }
+
+    // State 3: No monitoring configured
     return (
         <div className="mt-4 p-4 border-t border-gray-200 dark:border-gray-700">
             <button 
