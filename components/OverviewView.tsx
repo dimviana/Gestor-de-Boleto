@@ -181,7 +181,7 @@ const OverviewView: React.FC<OverviewViewProps> = ({ boletos }) => {
                   <tr key={boleto.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{boleto.recipient}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{boleto.guideNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDate(boleto.dueDate)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDate(boleto.extractedData?.dueDate || boleto.dueDate)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatTimestamp(boleto.updatedAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(boleto.amount)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
