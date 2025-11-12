@@ -63,17 +63,21 @@ export const useFolderWatcher = (onFileUpload: (files: File[]) => void) => {
   const processedFilesRef = useRef<Set<string>>(new Set());
 
   const verifyPermission = async (handle: any, readWrite = false) => {
-    const options: any = {};
-    if (readWrite) {
-      options.mode = 'readwrite';
+    const options = { mode: readWrite ? 'readwrite' : 'read' as const };
+    // Check if permission is already granted without prompting, if the browser supports it.
+    if (handle.queryPermission) {
+      if ((await handle.queryPermission(options)) === 'granted') {
+        return true;
+      }
     }
-    if ((await handle.queryPermission(options)) === 'granted') {
-      return true;
+    // If not supported, or if permission is not 'granted', request it.
+    // This will prompt the user if the state is 'prompt'.
+    try {
+      return (await handle.requestPermission(options)) === 'granted';
+    } catch (e) {
+      console.error("Could not get folder permission:", e);
+      return false;
     }
-    if ((await handle.requestPermission(options)) === 'granted') {
-      return true;
-    }
-    return false;
   };
 
   const stopMonitoring = useCallback(async () => {
