@@ -377,13 +377,21 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       draggable={userRole !== 'viewer'}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-lg p-4 border 
+      className={`relative bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-lg p-4 border 
       transition-all duration-300 ease-out
       hover:shadow-xl hover:-translate-y-1
-      ${isOverdue ? 'border-red-500 ring-2 ring-red-500/30 animate-pulse-border' : (isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-200 dark:border-slate-700')}
+      ${isOverdue && status === BoletoStatus.TO_PAY ? 'border-red-500 ring-2 ring-red-500/30' : (isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-200 dark:border-slate-700')}
       ${isDragging ? 'opacity-50' : ''}
       ${isMounted && !isDeleting ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
     >
+      {isOverdue && status === BoletoStatus.TO_PAY && (
+          <div className="absolute inset-0 bg-slate-800/30 dark:bg-black/50 backdrop-blur-sm rounded-lg flex items-center justify-center z-10 pointer-events-none">
+              <div className="bg-red-600 text-white font-bold text-2xl uppercase tracking-widest py-2 px-8 rounded-md shadow-lg transform -rotate-12">
+                  <span>{t('overdueAlert')}</span>
+              </div>
+          </div>
+      )}
+
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
             {visibility.guideNumber && (

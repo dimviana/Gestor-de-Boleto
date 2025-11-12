@@ -124,7 +124,7 @@ const pt = {
     copyBarcode: 'Copiar Código de Barras',
     barcodeCopied: 'Copiado!',
     notificationsTitle: 'Notificações',
-    overdueAlert: 'ATRASADO',
+    overdueAlert: 'VENCIDO',
     dueSoonAlert: 'Vence em {{days}} dias',
     dueTodayAlert: 'Vence Hoje',
     dueTomorrowAlert: 'Vence Amanhã',
