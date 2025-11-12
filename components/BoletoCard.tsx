@@ -41,6 +41,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   
   const [pixCopied, setPixCopied] = useState(false);
   const [barcodeCopied, setBarcodeCopied] = useState(false);
+  const [guideNumberCopied, setGuideNumberCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(comments || '');
@@ -131,15 +132,18 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
     });
   };
 
-  const handleCopy = (text: string | null, type: 'pix' | 'barcode') => {
+  const handleCopy = (text: string | null, type: 'pix' | 'barcode' | 'guideNumber') => {
     if (!text) return;
     navigator.clipboard.writeText(text).then(() => {
         if (type === 'pix') {
             setPixCopied(true);
             setTimeout(() => setPixCopied(false), 2000);
-        } else {
+        } else if (type === 'barcode') {
             setBarcodeCopied(true);
             setTimeout(() => setBarcodeCopied(false), 2000);
+        } else if (type === 'guideNumber') {
+            setGuideNumberCopied(true);
+            setTimeout(() => setGuideNumberCopied(false), 2000);
         }
     });
   };
@@ -395,11 +399,20 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
             {visibility.guideNumber && (
-                <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 break-words" title={t('guideNumber')}>
-                    <div className="flex items-center">
-                        <HashtagIcon className="w-4 h-4 mr-2 text-gray-400" />
+                <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 break-words flex items-center justify-between" title={t('guideNumber')}>
+                    <div className="flex items-center min-w-0">
+                        <HashtagIcon className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
                         <span className="truncate">{displayGuideNumber || t('notAvailable')}</span>
                     </div>
+                    {displayGuideNumber && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); handleCopy(displayGuideNumber, 'guideNumber'); }}
+                            className="ml-2 flex-shrink-0 p-1 text-gray-400 hover:text-blue-500 rounded-full focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                            title={guideNumberCopied ? t('barcodeCopied') : t('copyGuideNumber' as TranslationKey)}
+                        >
+                            {guideNumberCopied ? <CheckIcon className="w-4 h-4 text-green-500"/> : <CopyIcon className="w-4 h-4"/>}
+                        </button>
+                    )}
                 </h3>
             )}
             {visibility.drawee && (
