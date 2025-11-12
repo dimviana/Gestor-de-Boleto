@@ -93,12 +93,23 @@ export const useFolderWatcher = (onFileUpload: (files: File[]) => void) => {
     if (!folderHandleRef.current) return;
     try {
       const filesToUpload: File[] = [];
+      const today = new Date();
+
       for await (const entry of folderHandleRef.current.values()) {
         if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
           if (!processedFilesRef.current.has(entry.name)) {
             const file = await entry.getFile();
-            filesToUpload.push(file);
-            processedFilesRef.current.add(entry.name);
+            const fileDate = new Date(file.lastModified);
+
+            // Check if the file's last modified date is today
+            const isToday = fileDate.getFullYear() === today.getFullYear() &&
+                            fileDate.getMonth() === today.getMonth() &&
+                            fileDate.getDate() === today.getDate();
+
+            if (isToday) {
+              filesToUpload.push(file);
+              processedFilesRef.current.add(entry.name);
+            }
           }
         }
       }
