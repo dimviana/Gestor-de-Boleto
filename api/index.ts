@@ -1,4 +1,3 @@
-
 // FIX: Use default express import and qualified types to avoid type conflicts.
 import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import dotenv from 'dotenv';
@@ -27,9 +26,9 @@ const port = process.env.PORT || 3001;
 app.set('trust proxy', true); // Important for getting correct IP behind a proxy like Nginx
 app.use(cors());
 // FIX: Correctly type express middleware. No functional change, but resolves overload errors.
-app.use(express.json({ limit: '50mb' }) as RequestHandler);
+app.use(express.json({ limit: '50mb' }));
 // FIX: Correctly type express middleware. No functional change, but resolves overload errors.
-app.use(express.urlencoded({ extended: true, limit: '50mb' }) as RequestHandler);
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // --- API ROUTER ---
 // Group all API routes under a single router to ensure they are treated as a block.
@@ -47,7 +46,7 @@ apiRouter.use('/tracking', trackingRoutes);
 
 // Health check for the API router itself
 // FIX: Use express.Request and express.Response to get correct typings.
-const healthCheckHandler = (_req: Request, res: Response) => {
+const healthCheckHandler = (_req: express.Request, res: express.Response) => {
   res.send('Boleto Manager AI Backend is running!');
 };
 apiRouter.get('/', healthCheckHandler);
@@ -68,7 +67,7 @@ app.use(express.static(staticPath));
 // 2. SPA Fallback: For any GET request that doesn't match an API route or a static file,
 // serve the main index.html file. This is crucial for client-side routing.
 // FIX: Use express.Request and express.Response to get correct typings.
-const spaFallbackHandler = (req: Request, res: Response) => {
+const spaFallbackHandler = (req: express.Request, res: express.Response) => {
   // This guard prevents the fallback from ever serving index.html for an API-like route.
   if (req.path.startsWith('/api/')) {
     return res.status(404).send('API endpoint not found.');
@@ -76,7 +75,7 @@ const spaFallbackHandler = (req: Request, res: Response) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 };
 // FIX: Correctly type express middleware. No functional change, but resolves overload errors.
-app.get('/*', spaFallbackHandler as RequestHandler);
+app.get('/*', spaFallbackHandler);
 
 
 // --- Server Startup ---

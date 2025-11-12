@@ -68,8 +68,10 @@ export const useFolderWatcher = (onFileUpload: (files: File[]) => void) => {
     // as serialization can strip methods.
     if (typeof handle?.queryPermission !== 'function' || typeof handle?.requestPermission !== 'function') {
         console.warn('The provided handle is not a valid FileSystemHandle. Permissions cannot be verified without user interaction.');
+        // Return false to indicate that permission cannot be verified/granted for this handle
         return false;
     }
+
     const options: any = {};
     if (readWrite) {
       options.mode = 'readwrite';
@@ -183,6 +185,9 @@ export const useFolderWatcher = (onFileUpload: (files: File[]) => void) => {
         }
     } catch (e) {
         console.error("Error checking for existing permission:", e);
+        // If an error occurs during permission check, assume permission is denied for now
+        setFolderName(null);
+        setIsPermissionDenied(false);
     }
   }, [startMonitoring]);
 

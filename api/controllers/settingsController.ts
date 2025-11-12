@@ -1,4 +1,3 @@
-
 // FIX: Use default express import and qualified types to avoid type conflicts.
 import { Request, Response } from 'express';
 import { pool } from '../../config/db';
@@ -6,7 +5,7 @@ import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const getSettings = async (_req: Request, res: Response) => {
+export const getSettings = async (_req: express.Request, res: express.Response) => {
   try {
     const [settings] = await pool.query<RowDataPacket[]>('SELECT * FROM settings');
     const settingsObj = settings.reduce((acc, setting) => {
@@ -26,7 +25,7 @@ export const getSettings = async (_req: Request, res: Response) => {
 };
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const updateSettings = async (req: Request, res: Response) => {
+export const updateSettings = async (req: express.Request, res: express.Response) => {
     const settings: Record<string, any> = req.body;
     const connection = await pool.getConnection();
     try {
