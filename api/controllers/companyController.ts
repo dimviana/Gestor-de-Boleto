@@ -1,5 +1,6 @@
+
 // FIX: Use default express import and qualified types to avoid type conflicts.
-import express from 'express';
+import { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,7 +16,7 @@ const mapDbCompanyToCompany = (dbCompany: any): Company => ({
 });
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const getCompanies = async (_req: express.Request, res: express.Response) => {
+export const getCompanies = async (_req: Request, res: Response) => {
   try {
     const [companies] = await pool.query<RowDataPacket[]>('SELECT id, name, cnpj, address, monitored_folder_path FROM companies ORDER BY name');
     res.json(companies.map(mapDbCompanyToCompany));
@@ -26,7 +27,7 @@ export const getCompanies = async (_req: express.Request, res: express.Response)
 };
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const createCompany = async (req: express.Request, res: express.Response) => {
+export const createCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const newCompany = { id: uuidv4(), name, cnpj, address };
@@ -60,7 +61,7 @@ export const createCompany = async (req: express.Request, res: express.Response)
 };
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const updateCompany = async (req: express.Request, res: express.Response) => {
+export const updateCompany = async (req: Request, res: Response) => {
   const { name, cnpj, address } = req.body;
   const user = req.user!;
   const companyId = req.params.id;
@@ -97,7 +98,7 @@ export const updateCompany = async (req: express.Request, res: express.Response)
 };
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const deleteCompany = async (req: express.Request, res: express.Response) => {
+export const deleteCompany = async (req: Request, res: Response) => {
   const user = req.user!;
   const companyId = req.params.id;
   const connection = await pool.getConnection();
@@ -137,7 +138,7 @@ export const deleteCompany = async (req: express.Request, res: express.Response)
   }
 };
 
-export const setMonitoredFolder = async (req: express.Request, res: express.Response) => {
+export const setMonitoredFolder = async (req: Request, res: Response) => {
   const { path } = req.body;
   const companyId = req.params.id;
   const user = req.user!;

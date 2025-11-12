@@ -26,6 +26,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
   const [isNotificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
   const [isProfilePopoverOpen, setProfilePopoverOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState('');
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +41,20 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
   } else if (hasDueSoon) {
     notificationBadgeClasses = 'bg-yellow-400 text-black';
   }
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'America/Sao_Paulo',
+      });
+      setCurrentTime(timeString);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -139,6 +154,10 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
             </div>
 
           <div className="hidden md:flex items-center space-x-2">
+            <div className="text-sm font-mono bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg text-gray-700 dark:text-gray-200">
+                <span>{currentTime}</span>
+                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">BRT</span>
+            </div>
             <HeaderControls />
              <div className="relative" ref={profileRef}>
                 <button

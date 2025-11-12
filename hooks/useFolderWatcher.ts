@@ -63,6 +63,13 @@ export const useFolderWatcher = (onFileUpload: (files: File[]) => void) => {
   const processedFilesRef = useRef<Set<string>>(new Set());
 
   const verifyPermission = async (handle: any, readWrite = false) => {
+    // FIX: Add a defensive check to ensure the handle has the required methods.
+    // Handles retrieved from IndexedDB may not be full-featured FileSystemDirectoryHandle objects,
+    // as serialization can strip methods.
+    if (typeof handle?.queryPermission !== 'function' || typeof handle?.requestPermission !== 'function') {
+        console.warn('The provided handle is not a valid FileSystemHandle. Permissions cannot be verified without user interaction.');
+        return false;
+    }
     const options: any = {};
     if (readWrite) {
       options.mode = 'readwrite';
@@ -156,14 +163,22 @@ export const useFolderWatcher = (onFileUpload: (files: File[]) => void) => {
     try {
         const handle = await getHandle('folderHandle');
         if (handle) {
-            const hasPermission = await verifyPermission(handle, false);
-            if (hasPermission) {
-                // Permission already granted, we can start monitoring
-                await startMonitoring(handle);
+            // Check if the stored handle is a "live" FileSystemDirectoryHandle with methods
+            if (typeof handle?.queryPermission === 'function' && typeof handle?.requestPermission === 'function') {
+                const hasPermission = await verifyPermission(handle, false);
+                if (hasPermission) {
+                    await startMonitoring(handle);
+                } else {
+                    // Handle is valid but permission revoked (not the TypeError case)
+                    setFolderName(handle.name);
+                    setIsPermissionDenied(true);
+                }
             } else {
-                // We have a handle, but no permission. Prompt user to re-enable.
-                setFolderName(handle.name);
-                setIsPermissionDenied(true);
+                // Stored handle is a plain object, not a live FileSystemDirectoryHandle. It's invalid.
+                console.warn('Stored folder handle is invalid (missing methods), requesting user to re-select.');
+                await deleteHandle('folderHandle'); // Clear the invalid handle
+                setFolderName(null); // Clear folder name from state
+                setIsPermissionDenied(false); // Reset permission denied state
             }
         }
     } catch (e) {
