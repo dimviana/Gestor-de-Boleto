@@ -26,9 +26,9 @@ const port = process.env.PORT || 3001;
 app.set('trust proxy', true); // Important for getting correct IP behind a proxy like Nginx
 app.use(cors());
 // FIX: Correctly type express middleware. No functional change, but resolves overload errors.
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }) as express.RequestHandler);
 // FIX: Correctly type express middleware. No functional change, but resolves overload errors.
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }) as express.RequestHandler);
 
 // --- API ROUTER ---
 // Group all API routes under a single router to ensure they are treated as a block.
@@ -75,7 +75,7 @@ const spaFallbackHandler = (req: express.Request, res: express.Response) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 };
 // FIX: Correctly type express middleware. No functional change, but resolves overload errors.
-app.get('/*', spaFallbackHandler);
+app.get('/*', spaFallbackHandler as express.RequestHandler);
 
 
 // --- Server Startup ---

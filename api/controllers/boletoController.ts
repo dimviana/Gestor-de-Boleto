@@ -1,13 +1,12 @@
-// FIX: Use default express import and qualified types to avoid type conflicts.
 import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
-import { RowDataPacket } from 'mysql2'; // RowDataPacket is from mysql2, not express. This import is correct.
+import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
 import { extractBoletoInfoWithPython } from '../services/pythonService';
 import { appConfig } from '../services/configService';
-
+import 'multer'; // Import Multer to ensure its types are available
 
 // --- Controller Functions ---
 
