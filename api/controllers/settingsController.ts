@@ -1,5 +1,5 @@
 // FIX: Use default express import and qualified types to avoid type conflicts.
-import { Request, Response } from 'express';
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { updateInMemoryConfig } from '../services/configService';

@@ -1,5 +1,5 @@
 // FIX: Use default express import and qualified types to avoid type conflicts.
-import { Request, Response } from 'express';
+import express from 'express';
 import { pool } from '../../config/db';
 import { v4 as uuidv4 } from 'uuid';
 import { RowDataPacket } from 'mysql2';
@@ -7,7 +7,7 @@ import { appConfig } from '../services/configService';
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const logTracking = async (req: express.Request, res: express.Response) => {
-    const user = req.user!;
+    const user = req.user!; // Access user from the augmented Express.Request interface
     const { latitude, longitude } = req.body;
     // req.ip will contain the real user IP because of `app.set('trust proxy', true)`
     const ipAddress = req.ip;

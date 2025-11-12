@@ -1,5 +1,5 @@
 // FIX: Use default express import and qualified types to avoid type conflicts.
-import { Request, Response } from 'express';
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 // FIX: Use express.Request, express.Response to get correct typings.
 export const sendReminders = async (req: express.Request, res: express.Response) => {
     const { companyId } = req.body;
-    const user = req.user!;
+    const user = req.user!; // Access user from the augmented Express.Request interface
 
     if (!companyId) {
         return res.status(400).json({ message: 'Company ID is required.' });
@@ -30,7 +30,7 @@ export const sendReminders = async (req: express.Request, res: express.Response)
         // Format dates to 'YYYY-MM-DD' for SQL query
         const limitDate = sevenDaysFromNow.toISOString().split('T')[0];
 
-        const [boletosToRemind] = await connection.query<RowDataPacket[]>(
+        const [boletosToRemind] = await pool.query<RowDataPacket[]>(
             "SELECT id, recipient, due_date, amount FROM boletos WHERE company_id = ? AND status = 'PAGAR' AND due_date <= ?",
             [companyId, limitDate]
         );
@@ -40,7 +40,7 @@ export const sendReminders = async (req: express.Request, res: express.Response)
             return res.json({ message: 'No reminders to send.', count: 0 });
         }
 
-        const [usersToNotify] = await connection.query<RowDataPacket[]>(
+        const [usersToNotify] = await pool.query<RowDataPacket[]>(
             "SELECT username FROM users WHERE company_id = ? AND role IN ('admin', 'editor')",
             [companyId]
         );
@@ -58,7 +58,7 @@ export const sendReminders = async (req: express.Request, res: express.Response)
         `);
         // --- END SIMULATION ---
         
-        await connection.query(
+        await pool.query(
             'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
             [
                 uuidv4(),

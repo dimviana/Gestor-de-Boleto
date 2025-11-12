@@ -1,5 +1,5 @@
 // FIX: Use default express import and qualified types to avoid type conflicts.
-import { Request, Response } from 'express';
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,7 +28,7 @@ export const getCompanies = async (_req: express.Request, res: express.Response)
 // FIX: Use express.Request, express.Response to get correct typings.
 export const createCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
-  const user = req.user!;
+  const user = req.user!; // Access user from the augmented Express.Request interface
   const newCompany = { id: uuidv4(), name, cnpj, address };
   const connection = await pool.getConnection();
 
@@ -62,19 +62,19 @@ export const createCompany = async (req: express.Request, res: express.Response)
 // FIX: Use express.Request, express.Response to get correct typings.
 export const updateCompany = async (req: express.Request, res: express.Response) => {
   const { name, cnpj, address } = req.body;
-  const user = req.user!;
+  const user = req.user!; // Access user from the augmented Express.Request interface
   const companyId = req.params.id;
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    const [companyBeforeRows] = await connection.query<RowDataPacket[]>('SELECT name FROM companies WHERE id = ?', [companyId]);
+    const [companyBeforeRows] = await pool.query<RowDataPacket[]>('SELECT name FROM companies WHERE id = ?', [companyId]);
     const oldName = companyBeforeRows.length > 0 ? companyBeforeRows[0].name : 'N/A';
 
     await connection.query('UPDATE companies SET name = ?, cnpj = ?, address = ? WHERE id = ?', [name, cnpj, address, companyId]);
     
-    await connection.query(
+    await pool.query(
         'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
         [
           uuidv4(),
@@ -98,14 +98,14 @@ export const updateCompany = async (req: express.Request, res: express.Response)
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const deleteCompany = async (req: express.Request, res: express.Response) => {
-  const user = req.user!;
+  const user = req.user!; // Access user from the augmented Express.Request interface
   const companyId = req.params.id;
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    const [companyBeforeRows] = await connection.query<RowDataPacket[]>('SELECT name FROM companies WHERE id = ?', [companyId]);
+    const [companyBeforeRows] = await pool.query<RowDataPacket[]>('SELECT name FROM companies WHERE id = ?', [companyId]);
     if (companyBeforeRows.length === 0) {
         await connection.rollback();
         return res.status(404).json({ message: 'Company not found' });
@@ -115,7 +115,7 @@ export const deleteCompany = async (req: express.Request, res: express.Response)
     // The ON DELETE SET NULL constraint in the DB schema will handle un-assigning users.
     await connection.query('DELETE FROM companies WHERE id = ?', [companyId]);
     
-    await connection.query(
+    await pool.query(
         'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
         [
           uuidv4(),
@@ -140,7 +140,7 @@ export const deleteCompany = async (req: express.Request, res: express.Response)
 export const setMonitoredFolder = async (req: express.Request, res: express.Response) => {
   const { path } = req.body;
   const companyId = req.params.id;
-  const user = req.user!;
+  const user = req.user!; // Access user from the augmented Express.Request interface
 
   try {
     await pool.query(
