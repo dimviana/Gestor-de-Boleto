@@ -91,17 +91,20 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return t('notAvailable');
+    if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return t('notAvailable');
     try {
-      const date = new Date(`${dateString}T00:00:00`);
-      // Check if the date is valid. An invalid date's time is NaN.
-      if (isNaN(date.getTime())) {
-        return t('notAvailable');
-      }
-      return new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : 'en-US').format(date);
+        // Use Date.UTC to create a UTC date object to avoid local timezone shifts
+        const [year, month, day] = dateString.split('-').map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        if (isNaN(date.getTime())) {
+            return t('notAvailable');
+        }
+        return new Intl.DateTimeFormat(language === 'pt' ? 'pt-BR' : 'en-US', {
+            timeZone: 'UTC' // Format it as if it's UTC, preserving the original day
+        }).format(date);
     } catch (e) {
-      // Fallback for any other unexpected errors during date processing
-      return t('notAvailable');
+        // Fallback for any other unexpected errors during date processing
+        return t('notAvailable');
     }
   };
 

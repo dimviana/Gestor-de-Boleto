@@ -55,7 +55,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
     const formatLogTimestamp = (isoString: string) => {
         return new Date(isoString).toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US', {
             dateStyle: 'short',
-            timeStyle: 'medium'
+            timeStyle: 'medium',
+            timeZone: 'America/Sao_Paulo'
         });
     };
     

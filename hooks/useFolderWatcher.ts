@@ -23,7 +23,6 @@ const setHandle = async (key: string, value: any) => {
   const db = await openDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');
   tx.objectStore(STORE_NAME).put(value, key);
-  // FIX: Property 'done' does not exist on type 'IDBTransaction'. Replaced with a promise that resolves on transaction completion.
   return new Promise<void>((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
@@ -46,7 +45,6 @@ const deleteHandle = async (key: string) => {
   const db = await openDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');
   tx.objectStore(STORE_NAME).delete(key);
-  // FIX: Property 'done' does not exist on type 'IDBTransaction'. Replaced with a promise that resolves on transaction completion.
   return new Promise<void>((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
@@ -147,8 +145,9 @@ export const useFolderWatcher = (onFileUpload: (files: File[]) => void) => {
       if (e.name === 'AbortError') {
         // User cancelled the picker, do nothing
       } else {
+        // For other errors, log them for debugging but do not change the state.
+        // This prevents the button from disappearing and allows the user to try again.
         console.error("Error starting folder monitoring:", e);
-        setError('folderWatcherUnsupported');
       }
     }
   }, [processFolder]);

@@ -22,37 +22,33 @@ const OverviewView: React.FC<OverviewViewProps> = ({ boletos }) => {
   const [endDate, setEndDate] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'updatedAt', direction: 'descending' });
 
-  const formatDateToBrazilian = (dateString: string | null | undefined) => {
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return t('notAvailable');
+    try {
+      const [year, month, day] = dateString.split('-').map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (isNaN(date.getTime())) return t('notAvailable');
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(date);
+    } catch (e) {
+      return t('notAvailable');
+    }
+  };
+  
+  const formatTimestamp = (dateString: string | null | undefined) => {
     if (!dateString) return t('notAvailable');
     try {
-      // Para datas no formato YYYY-MM-DD, a criação de um novo objeto Date
-      // pode interpretar a data como UTC, causando erros de um dia a menos em fusos horários
-      // a oeste de UTC. Ao separar a string e usar o construtor Date com os componentes,
-      // garantimos que a data seja criada no fuso horário local do usuário.
-      const isSimpleDate = dateString && /^\d{4}-\d{2}-\d{2}$/.test(dateString);
-      let date: Date;
-
-      if (isSimpleDate) {
-        const [year, month, day] = dateString.split('-').map(Number);
-        // O construtor Date(ano, mês-1, dia) cria a data no fuso horário local.
-        date = new Date(year, month - 1, day);
-      } else {
-        // Para timestamps completos (ISO strings), o construtor padrão é o correto.
-        date = new Date(dateString);
-      }
-
-      if (isNaN(date.getTime())) {
-        return t('notAvailable');
-      }
-      
-      // Ao formatar, especificar timeZone: 'UTC' instrui o Intl.DateTimeFormat
-      // a ignorar o deslocamento do fuso horário local do navegador. Esta combinação
-      // renderiza corretamente o dia do calendário pretendido.
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return t('notAvailable');
       return new Intl.DateTimeFormat('pt-BR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          timeZone: 'UTC' // Trata a data como UTC para evitar deslocamentos de fuso horário
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'America/Sao_Paulo',
       }).format(date);
     } catch (e) {
       return t('notAvailable');
@@ -185,8 +181,8 @@ const OverviewView: React.FC<OverviewViewProps> = ({ boletos }) => {
                   <tr key={boleto.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{boleto.recipient}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{boleto.guideNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDateToBrazilian(boleto.dueDate)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDateToBrazilian(boleto.updatedAt)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDate(boleto.dueDate)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatTimestamp(boleto.updatedAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(boleto.amount)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button onClick={() => handleOpenPdf(boleto)} className="p-2 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
