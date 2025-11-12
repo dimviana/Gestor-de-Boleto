@@ -30,7 +30,6 @@ const ThemeSwitcher: React.FC = () => {
   
   const handleSetTheme = (newTheme: Theme) => {
     setTheme(newTheme);
-    setIsOpen(false);
   }
 
   return (

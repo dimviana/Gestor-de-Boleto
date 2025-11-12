@@ -34,7 +34,7 @@ const App: React.FC = () => {
   }, [user]);
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-blue-200 dark:from-gray-900 dark:to-slate-800 min-h-screen text-gray-800 dark:text-gray-200 font-sans flex flex-col">
+    <div className="bg-gradient-to-br from-white to-gray-100 dark:from-gray-900 dark:to-slate-800 min-h-screen text-gray-800 dark:text-gray-200 font-sans flex flex-col">
       <NotificationContainer />
       <main className="flex-grow">
         {user ? (

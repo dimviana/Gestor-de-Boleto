@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Boleto, BoletoStatus, Role, CardFieldVisibility } from '../types';
 import { CalendarIcon, CheckIcon, DollarSignIcon, TrashIcon, ArrowRightIcon, BarcodeIcon, FileTextIcon, UserIcon, QrCodeIcon, CopyIcon, ChatBubbleIcon, DownloadIcon, HashtagIcon, UploadIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -84,6 +84,21 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
   const displayDiscount = extractedData?.discount ?? boleto.discount;
   const displayInterestAndFines = extractedData?.interestAndFines ?? boleto.interestAndFines;
   const displayDocumentDate = extractedData?.documentDate || boleto.documentDate;
+
+  const isOverdue = useMemo(() => {
+    if (boleto.status === BoletoStatus.TO_PAY && displayDueDate) {
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Compare date part only
+        const dueDate = new Date(`${displayDueDate}T00:00:00`);
+        if (isNaN(dueDate.getTime())) return false;
+        return dueDate < today;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }, [boleto.status, displayDueDate]);
 
   const toggleDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -350,6 +365,13 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
         to { opacity: 1; }
       }
       .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+      @keyframes pulse-border {
+        0%, 100% { border-color: #ef4444; } /* red-500 */
+        50% { border-color: #fca5a5; } /* red-300 */
+      }
+      .animate-pulse-border {
+        animation: pulse-border 2s infinite;
+      }
     `}</style>
     <div 
       draggable={userRole !== 'viewer'}
@@ -358,7 +380,7 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       className={`bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-lg p-4 border 
       transition-all duration-300 ease-out
       hover:shadow-xl hover:-translate-y-1
-      ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-200 dark:border-slate-700'}
+      ${isOverdue ? 'border-red-500 ring-2 ring-red-500/30 animate-pulse-border' : (isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-200 dark:border-slate-700')}
       ${isDragging ? 'opacity-50' : ''}
       ${isMounted && !isDeleting ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
     >
