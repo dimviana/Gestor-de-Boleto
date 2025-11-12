@@ -1,3 +1,6 @@
+
+
+// FIX: Use default express import and qualified types to avoid type conflicts.
 import express from 'express';
 import { pool } from '../../config/db';
 import { Boleto, BoletoStatus } from '../../types';
@@ -6,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Buffer } from 'buffer';
 import { extractBoletoInfoWithPython } from '../services/pythonService';
 import { appConfig } from '../services/configService';
-import 'multer'; // Import Multer to ensure its types are available
+
 
 // --- Controller Functions ---
 
@@ -75,7 +78,7 @@ const mapDbBoletoToBoleto = (dbBoleto: any): Boleto => {
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const getBoletos = async (req: express.Request, res: express.Response) => {
-  const user = req.user!; // Access user from the augmented Express.Request interface
+  const user = req.user!;
   try {
     if (user.role !== 'admin' && !user.companyId) {
       return res.json([]);
@@ -105,7 +108,7 @@ export const getBoletos = async (req: express.Request, res: express.Response) =>
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const getBoletoById = async (req: express.Request, res: express.Response) => {
-    const user = req.user!; // Access user from the augmented Express.Request interface
+    const user = req.user!;
     const boletoId = req.params.id;
     try {
         let query = 'SELECT * FROM boletos WHERE id = ?';
@@ -134,14 +137,12 @@ export const getBoletoById = async (req: express.Request, res: express.Response)
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const extractBoleto = async (req: express.Request, res: express.Response) => {
-    // req.file is added by multer middleware
-    // FIX: Add type assertion for req.file to Multer.File as it's added by Multer.
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
 
     try {
-        const extractedData = await extractBoletoInfoWithPython((req.file as Multer.File).buffer, (req.file as Multer.File).originalname);
+        const extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
         
         if (extractedData.amount === null || extractedData.amount === undefined) {
             return res.status(400).json({ message: 'amountNotFoundErrorText' });
@@ -155,7 +156,7 @@ export const extractBoleto = async (req: express.Request, res: express.Response)
             return res.status(400).json({ message: 'invalidBarcodeErrorText' });
         }
 
-        res.status(200).json({ ...extractedData, fileData: (req.file as Multer.File).buffer.toString('base64') });
+        res.status(200).json({ ...extractedData, fileData: req.file.buffer.toString('base64') });
 
     } catch (error: any) {
         console.error("Error extracting boleto data:", error);
@@ -165,7 +166,7 @@ export const extractBoleto = async (req: express.Request, res: express.Response)
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const saveBoleto = async (req: express.Request, res: express.Response) => {
-    const user = req.user!; // Access user from the augmented Express.Request interface
+    const user = req.user!;
     const { boletoData, companyId } = req.body;
 
     if (!isValidDateString(boletoData.documentDate) || !isValidDateString(boletoData.dueDate)) {
@@ -270,13 +271,13 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
 export const updateBoletoStatus = async (req: express.Request, res: express.Response) => {
     const { status } = req.body;
     const { id } = req.params;
-    const user = req.user!; // Access user from the augmented Express.Request interface
+    const user = req.user!;
     const connection = await pool.getConnection();
 
     try {
         await connection.beginTransaction();
 
-        const [beforeUpdate] = await pool.query<RowDataPacket[]>('SELECT status, guide_number FROM boletos WHERE id = ?', [id]);
+        const [beforeUpdate] = await connection.query<RowDataPacket[]>('SELECT status, guide_number FROM boletos WHERE id = ?', [id]);
         if (beforeUpdate.length === 0) {
             await connection.rollback();
             return res.status(404).json({ message: 'Boleto not found' });
@@ -297,7 +298,7 @@ export const updateBoletoStatus = async (req: express.Request, res: express.Resp
             ]
         );
 
-        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM boletos WHERE id = ?', [id]);
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM boletos WHERE id = ?', [id]);
         await connection.commit();
 
         if (rows.length === 0) {
@@ -316,10 +317,8 @@ export const updateBoletoStatus = async (req: express.Request, res: express.Resp
 // FIX: Use express.Request, express.Response to get correct typings.
 export const uploadPaymentProof = async (req: express.Request, res: express.Response) => {
     const { id } = req.params;
-    const user = req.user!; // Access user from the augmented Express.Request interface
+    const user = req.user!;
     
-    // req.file is added by multer middleware
-    // FIX: Add type assertion for req.file to Multer.File as it's added by Multer.
     if (!req.file) {
         return res.status(400).json({ message: 'No proof file uploaded' });
     }
@@ -328,13 +327,13 @@ export const uploadPaymentProof = async (req: express.Request, res: express.Resp
     try {
         await connection.beginTransaction();
 
-        const [beforeUpdate] = await pool.query<RowDataPacket[]>('SELECT guide_number FROM boletos WHERE id = ?', [id]);
+        const [beforeUpdate] = await connection.query<RowDataPacket[]>('SELECT guide_number FROM boletos WHERE id = ?', [id]);
         if (beforeUpdate.length === 0) {
             await connection.rollback();
             return res.status(404).json({ message: 'Boleto not found' });
         }
         const guideNumber = beforeUpdate[0].guide_number || 'N/A';
-        const proofBase64 = (req.file as Multer.File).buffer.toString('base64');
+        const proofBase64 = req.file.buffer.toString('base64');
 
         await connection.query(
             'UPDATE boletos SET status = ?, payment_proof = ? WHERE id = ?', 
@@ -352,7 +351,7 @@ export const uploadPaymentProof = async (req: express.Request, res: express.Resp
             ]
         );
 
-        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM boletos WHERE id = ?', [id]);
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM boletos WHERE id = ?', [id]);
         await connection.commit();
 
         if (rows.length === 0) {
@@ -373,12 +372,12 @@ export const uploadPaymentProof = async (req: express.Request, res: express.Resp
 export const updateBoletoComments = async (req: express.Request, res: express.Response) => {
     const { comments } = req.body;
     const { id } = req.params;
-    const user = req.user!; // Access user from the augmented Express.Request interface
+    const user = req.user!;
     const connection = await pool.getConnection();
 
     try {
         await connection.beginTransaction();
-        const [beforeUpdate] = await pool.query<RowDataPacket[]>('SELECT guide_number FROM boletos WHERE id = ?', [id]);
+        const [beforeUpdate] = await connection.query<RowDataPacket[]>('SELECT guide_number FROM boletos WHERE id = ?', [id]);
         if (beforeUpdate.length === 0) {
             await connection.rollback();
             return res.status(404).json({ message: 'Boleto not found' });
@@ -398,7 +397,7 @@ export const updateBoletoComments = async (req: express.Request, res: express.Re
             ]
         );
 
-        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM boletos WHERE id = ?', [id]);
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM boletos WHERE id = ?', [id]);
         await connection.commit();
 
         if (rows.length === 0) {
@@ -416,13 +415,13 @@ export const updateBoletoComments = async (req: express.Request, res: express.Re
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const deleteBoleto = async (req: express.Request, res: express.Response) => {
-    const user = req.user!; // Access user from the augmented Express.Request interface
+    const user = req.user!;
     const { id } = req.params;
     const connection = await pool.getConnection();
 
     try {
         await connection.beginTransaction();
-        const [beforeDelete] = await pool.query<RowDataPacket[]>('SELECT guide_number FROM boletos WHERE id = ?', [id]);
+        const [beforeDelete] = await connection.query<RowDataPacket[]>('SELECT guide_number FROM boletos WHERE id = ?', [id]);
         if (beforeDelete.length === 0) {
             await connection.rollback();
             return res.status(404).json({ message: 'Boleto not found' });

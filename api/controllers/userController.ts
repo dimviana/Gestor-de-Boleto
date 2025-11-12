@@ -1,3 +1,5 @@
+
+
 // FIX: Use default express import and qualified types to avoid type conflicts.
 import express from 'express';
 import { pool } from '../../config/db';
@@ -28,13 +30,13 @@ export const getUsers = async (_req: express.Request, res: express.Response) => 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const createUser = async (req: express.Request, res: express.Response) => {
   const { username, password, name, role, companyId } = req.body;
-  const adminUser = req.user!; // Access user from the augmented Express.Request interface
+  const adminUser = req.user!;
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    const [existingUsers] = await pool.query<RowDataPacket[]>('SELECT id FROM users WHERE username = ?', [username]);
+    const [existingUsers] = await connection.query<RowDataPacket[]>('SELECT id FROM users WHERE username = ?', [username]);
     if (existingUsers.length > 0) {
       await connection.rollback();
       return res.status(409).json({ message: 'addUserErrorDuplicate' });
@@ -47,7 +49,7 @@ export const createUser = async (req: express.Request, res: express.Response) =>
     const newUserDb = { id: uuidv4(), username, name: name || null, password: hashedPassword, role, company_id: companyId || null };
     await connection.query('INSERT INTO users SET ?', newUserDb);
     
-    await pool.query(
+    await connection.query(
       'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
       [
         uuidv4(),
@@ -85,14 +87,14 @@ export const createUser = async (req: express.Request, res: express.Response) =>
 // FIX: Use express.Request, express.Response to get correct typings.
 export const updateUser = async (req: express.Request, res: express.Response) => {
   const userId = req.params.id;
-  const adminUser = req.user!; // Access user from the augmented Express.Request interface
+  const adminUser = req.user!;
   const { password } = req.body;
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    const [users] = await pool.query<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [userId]);
+    const [users] = await connection.query<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [userId]);
     if (users.length === 0) {
         await connection.rollback();
         return res.status(404).json({ message: 'User not found' });
@@ -115,10 +117,10 @@ export const updateUser = async (req: express.Request, res: express.Response) =>
         return res.json({ message: 'No changes provided to update.' });
     }
     
-    await pool.query('UPDATE users SET ? WHERE id = ?', [updates, userId]);
+    await connection.query('UPDATE users SET ? WHERE id = ?', [updates, userId]);
     
     const details = `Updated user '${currentUser.name || currentUser.username}' (ID: ${userId}). Changes: ${Object.keys(updates).filter(k => k !== 'password').join(', ')}.`;
-    await pool.query(
+    await connection.query(
         'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
         [ uuidv4(), adminUser.id, adminUser.username, 'ADMIN_UPDATE_USER', details ]
     );
@@ -138,22 +140,22 @@ export const updateUser = async (req: express.Request, res: express.Response) =>
 // FIX: Use express.Request, express.Response to get correct typings.
 export const deleteUser = async (req: express.Request, res: express.Response) => {
   const userIdToDelete = req.params.id;
-  const adminUser = req.user!; // Access user from the augmented Express.Request interface
+  const adminUser = req.user!;
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    const [users] = await pool.query<RowDataPacket[]>('SELECT username, name FROM users WHERE id = ?', [userIdToDelete]);
+    const [users] = await connection.query<RowDataPacket[]>('SELECT username, name FROM users WHERE id = ?', [userIdToDelete]);
     if (users.length === 0) {
         await connection.rollback();
         return res.status(404).json({ message: 'User not found' });
     }
     const userToDelete = users[0];
 
-    await pool.query('DELETE FROM users WHERE id = ?', [userIdToDelete]);
+    await connection.query('DELETE FROM users WHERE id = ?', [userIdToDelete]);
 
-    await pool.query(
+    await connection.query(
         'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
         [ uuidv4(), adminUser.id, adminUser.username, 'DELETE_USER', `Deleted user '${userToDelete.name || userToDelete.username}' (ID: ${userIdToDelete}).` ]
     );
@@ -171,7 +173,7 @@ export const deleteUser = async (req: express.Request, res: express.Response) =>
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const updateUserProfile = async (req: express.Request, res: express.Response) => {
-    const user = req.user!; // Access user from the augmented Express.Request interface
+    const user = req.user!;
     const { password } = req.body;
     const connection = await pool.getConnection();
 
@@ -181,9 +183,9 @@ export const updateUserProfile = async (req: express.Request, res: express.Respo
         if (password) {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
-            await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id]);
+            await connection.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id]);
 
-            await pool.query(
+            await connection.query(
                 'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
                 [ uuidv4(), user.id, user.username, 'UPDATE_USER_PROFILE', 'User updated their own password.' ]
             );

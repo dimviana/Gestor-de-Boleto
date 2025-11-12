@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { getLogs } from '../controllers/logController';
 import { protect, admin } from '../middleware/auth';

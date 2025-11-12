@@ -1,3 +1,6 @@
+
+
+// FIX: Use default express import and qualified types to avoid type conflicts.
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -17,7 +20,7 @@ const generateToken = (id: string, username: string, name: string | null, role: 
   });
 };
 
-// FIX: Use express.Request and express.Response for controller function types.
+// FIX: Use express.Request, express.Response to get correct typings.
 export const registerUser = async (req: express.Request, res: express.Response) => {
   const { username, password, name, role = 'viewer', companyId = null } = req.body;
 
@@ -44,7 +47,7 @@ export const registerUser = async (req: express.Request, res: express.Response) 
   }
 };
 
-// FIX: Use express.Request and express.Response for controller function types.
+// FIX: Use express.Request, express.Response to get correct typings.
 export const loginUser = async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
 
@@ -69,7 +72,6 @@ export const loginUser = async (req: express.Request, res: express.Response) => 
     // Backwards compatibility: map old 'user' role to 'editor'
     const userRole: Role = user.role === 'user' ? 'editor' : user.role;
 
-    // FIX: Ensure properties like id, username, name, role, companyId are explicitly typed and available from the user object.
     res.json({
       id: user.id,
       username: user.username,

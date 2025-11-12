@@ -1,3 +1,5 @@
+
+
 // FIX: Use default express import and qualified types to avoid type conflicts.
 import express from 'express';
 import dotenv from 'dotenv';
@@ -15,7 +17,7 @@ import settingsRoutes from './routes/settings';
 import sslRoutes from './routes/ssl';
 import notificationRoutes from './routes/notifications';
 import trackingRoutes from './routes/tracking';
-import { startWatching } from './services/folderWatcherService'; // Import the new watcher service
+
 
 dotenv.config();
 
@@ -26,9 +28,9 @@ const port = process.env.PORT || 3001;
 app.set('trust proxy', true); // Important for getting correct IP behind a proxy like Nginx
 app.use(cors());
 // FIX: Correctly type express middleware. No functional change, but resolves overload errors.
-app.use(express.json({ limit: '50mb' }) as express.RequestHandler);
+app.use(express.json({ limit: '50mb' }));
 // FIX: Correctly type express middleware. No functional change, but resolves overload errors.
-app.use(express.urlencoded({ extended: true, limit: '50mb' }) as express.RequestHandler);
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // --- API ROUTER ---
 // Group all API routes under a single router to ensure they are treated as a block.
@@ -42,7 +44,6 @@ apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/ssl', sslRoutes);
 apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/tracking', trackingRoutes);
-
 
 // Health check for the API router itself
 // FIX: Use express.Request and express.Response to get correct typings.
@@ -75,14 +76,13 @@ const spaFallbackHandler = (req: express.Request, res: express.Response) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 };
 // FIX: Correctly type express middleware. No functional change, but resolves overload errors.
-app.get('/*', spaFallbackHandler as express.RequestHandler);
+app.get('/*', spaFallbackHandler);
 
 
 // --- Server Startup ---
 const startServer = async () => {
     await testDbConnection();
     await loadConfigFromDB(); // Load config before starting to listen
-    startWatching(); // Start folder monitoring service
 
     app.listen(port, () => {
       console.log(`[server]: Server is running at http://localhost:${port}`);
