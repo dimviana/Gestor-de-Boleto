@@ -25,18 +25,34 @@ const OverviewView: React.FC<OverviewViewProps> = ({ boletos }) => {
   const formatDateToBrazilian = (dateString: string | null | undefined) => {
     if (!dateString) return t('notAvailable');
     try {
-      // Para datas no formato YYYY-MM-DD, adicionar T00:00:00 evita que o fuso horário mude o dia.
+      // Para datas no formato YYYY-MM-DD, a criação de um novo objeto Date
+      // pode interpretar a data como UTC, causando erros de um dia a menos em fusos horários
+      // a oeste de UTC. Ao separar a string e usar o construtor Date com os componentes,
+      // garantimos que a data seja criada no fuso horário local do usuário.
       const isSimpleDate = dateString && /^\d{4}-\d{2}-\d{2}$/.test(dateString);
-      const date = isSimpleDate ? new Date(`${dateString}T00:00:00`) : new Date(dateString);
+      let date: Date;
+
+      if (isSimpleDate) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        // O construtor Date(ano, mês-1, dia) cria a data no fuso horário local.
+        date = new Date(year, month - 1, day);
+      } else {
+        // Para timestamps completos (ISO strings), o construtor padrão é o correto.
+        date = new Date(dateString);
+      }
 
       if (isNaN(date.getTime())) {
         return t('notAvailable');
       }
       
+      // Ao formatar, especificar timeZone: 'UTC' instrui o Intl.DateTimeFormat
+      // a ignorar o deslocamento do fuso horário local do navegador. Esta combinação
+      // renderiza corretamente o dia do calendário pretendido.
       return new Intl.DateTimeFormat('pt-BR', {
           day: '2-digit',
           month: '2-digit',
-          year: 'numeric'
+          year: 'numeric',
+          timeZone: 'UTC' // Trata a data como UTC para evitar deslocamentos de fuso horário
       }).format(date);
     } catch (e) {
       return t('notAvailable');
