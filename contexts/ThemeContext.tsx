@@ -12,19 +12,22 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem(THEME_KEY) as Theme) || 'system';
+    // Immediately set the theme on initial load to prevent flashing
+    const savedTheme = (localStorage.getItem(THEME_KEY) as Theme) || 'system';
+    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (savedTheme === 'dark' || (savedTheme === 'system' && isSystemDark)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+    return savedTheme;
   });
 
   const applyTheme = (isDark: boolean) => {
     const root = window.document.documentElement;
-    const themeColor = isDark ? '#111827' : '#FFFFFF'; // gray-900 for dark, white for light
-    
-    if (isDark) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    root.classList.toggle('dark', isDark);
 
+    const themeColor = isDark ? '#111827' : '#FFFFFF'; // gray-900 for dark, white for light
     let themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     if (!themeColorMeta) {
         themeColorMeta = document.createElement('meta');
