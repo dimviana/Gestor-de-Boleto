@@ -190,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
       
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-            <div className="fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl p-4 animate-slide-in-right" onClick={e => e.stopPropagation()}>
+            <div className="fixed top-0 right-0 h-full w-64 bg-gray-50 dark:bg-gray-900 shadow-xl p-4 animate-slide-in-right" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="font-bold text-lg">Menu</h2>
                     <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">

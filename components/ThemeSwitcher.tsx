@@ -30,12 +30,16 @@ const ThemeSwitcher: React.FC = () => {
   
   const handleSetTheme = (newTheme: Theme) => {
     setTheme(newTheme);
+    setIsOpen(false);
   }
 
   return (
     <div className="relative" ref={popoverRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
         className="flex items-center justify-center p-2 rounded-full text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-blue-500 transition-colors"
         title={t('theme')}
       >
