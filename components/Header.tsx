@@ -48,7 +48,6 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
       const timeString = now.toLocaleTimeString('pt-BR', {
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit',
         timeZone: 'America/Sao_Paulo',
       });
       setCurrentTime(timeString);
