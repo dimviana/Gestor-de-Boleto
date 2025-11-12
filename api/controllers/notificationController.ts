@@ -1,13 +1,13 @@
 
 
 // FIX: Use default express import and qualified types to avoid type conflicts.
-import { Request, Response } from 'express';
+import express from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const sendReminders = async (req: Request, res: Response) => {
+export const sendReminders = async (req: express.Request, res: express.Response) => {
     const { companyId } = req.body;
     const user = req.user!;
 

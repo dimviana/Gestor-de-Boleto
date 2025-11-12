@@ -1,7 +1,7 @@
 
 
 // FIX: Use default express import and qualified types to avoid type conflicts.
-import { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, User } from '../../types';
 // A importação de 'multer' disponibiliza a tipagem Express.Multer.File.
@@ -20,7 +20,7 @@ declare global {
 }
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const protect = (req: Request, res: Response, next: NextFunction) => {
+export const protect = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -45,7 +45,7 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const admin = (req: Request, res: Response, next: NextFunction) => {
+export const admin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -54,7 +54,7 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const editor = (req: Request, res: Response, next: NextFunction) => {
+export const editor = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
         next();
     } else {

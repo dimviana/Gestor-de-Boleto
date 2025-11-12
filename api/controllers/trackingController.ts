@@ -1,14 +1,14 @@
 
 
 // FIX: Use default express import and qualified types to avoid type conflicts.
-import { Request, Response } from 'express';
+import express from 'express';
 import { pool } from '../../config/db';
 import { v4 as uuidv4 } from 'uuid';
 import { RowDataPacket } from 'mysql2';
 import { appConfig } from '../services/configService';
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const logTracking = async (req: Request, res: Response) => {
+export const logTracking = async (req: express.Request, res: express.Response) => {
     const user = req.user!;
     const { latitude, longitude } = req.body;
     // req.ip will contain the real user IP because of `app.set('trust proxy', true)`
@@ -38,7 +38,7 @@ export const logTracking = async (req: Request, res: Response) => {
 };
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const getTrackingLogs = async (_req: Request, res: Response) => {
+export const getTrackingLogs = async (_req: express.Request, res: express.Response) => {
     try {
         const [logs] = await pool.query<RowDataPacket[]>('SELECT * FROM tracking_logs ORDER BY timestamp DESC LIMIT 500');
         

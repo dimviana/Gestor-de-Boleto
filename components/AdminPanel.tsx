@@ -168,6 +168,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         const [selectedUser, setSelectedUser] = useState<RegisteredUser | null>(null);
         const [userForm, setUserForm] = useState({ username: '', name: '', password: '', role: 'viewer' as Role, companyId: '' });
         const [companyForm, setCompanyForm] = useState({ name: '', cnpj: '', address: ''});
+        const [folderPaths, setFolderPaths] = useState<Record<string, string>>({});
 
         const roleClassMap: Record<Role, string> = {
             admin: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
@@ -180,6 +181,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 const [fetchedUsers, fetchedCompanies] = await Promise.all([getUsers(), api.fetchCompanies()]);
                 setUsers(fetchedUsers || []);
                 setCompanies(fetchedCompanies || []);
+                const initialPaths = (fetchedCompanies || []).reduce((acc, company) => {
+                    acc[company.id] = company.monitoredFolderPath || '';
+                    return acc;
+                }, {} as Record<string, string>);
+                setFolderPaths(initialPaths);
             } catch (error) {
                 console.error("Failed to refresh data:", error);
                 showNotification("Failed to load user and company data.", 'error');
@@ -266,6 +272,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
             }
         }
         
+        const handleSaveFolder = async (companyId: string) => {
+            const path = folderPaths[companyId];
+            try {
+                await api.setCompanyMonitoredFolder(companyId, path);
+                showNotification('Caminho da pasta salvo com sucesso!', 'success');
+                // Refresh data to ensure UI is consistent with DB
+                await refreshData();
+            } catch (error: any) {
+                showNotification('Falha ao salvar o caminho da pasta.', 'error');
+            }
+        };
+        
         return (
             <div className="space-y-8">
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl shadow-md">
@@ -297,6 +315,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                                         {users.filter(u => u.companyId === company.id).map(user => (<li key={user.id} className="text-gray-600 dark:text-gray-400">{user.name || user.username}</li>))}
                                         {users.filter(u => u.companyId === company.id).length === 0 && <p className="text-xs text-gray-400 italic">{t('noUsersInCompany')}</p>}
                                     </ul>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('monitorFolderServerPathLabel')}</label>
+                                    <div className="flex items-center space-x-2 mt-1">
+                                        <input
+                                            type="text"
+                                            value={folderPaths[company.id] || ''}
+                                            onChange={(e) => setFolderPaths(prev => ({...prev, [company.id]: e.target.value}))}
+                                            placeholder={t('monitorFolderServerPathPlaceholder')}
+                                            className="w-full input-field text-sm"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveFolder(company.id)}
+                                            className="px-3 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 text-xs whitespace-nowrap"
+                                        >
+                                            {t('saveButton')}
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('monitorFolderServerDescription')}</p>
                                 </div>
                             </div>
                         ))}

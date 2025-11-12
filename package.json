@@ -1,6 +1,6 @@
 {
   "name": "boleto-manager-ai-backend",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "description": "Backend server for the Boleto Manager AI application.",
   "main": "dist/api/index.js",
   "scripts": {
