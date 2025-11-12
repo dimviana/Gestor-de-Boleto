@@ -23,14 +23,14 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
     const [searchTerm, setSearchTerm] = useState('');
     
     const filteredBoletos = useMemo(() => {
-        if (status !== BoletoStatus.TO_PAY || !searchTerm) {
+        if (!searchTerm) {
             return boletos;
         }
         const lowercasedTerm = searchTerm.toLowerCase();
         return boletos.filter(boleto => 
             boleto.guideNumber && boleto.guideNumber.toLowerCase().includes(lowercasedTerm)
         );
-    }, [boletos, searchTerm, status]);
+    }, [boletos, searchTerm]);
 
     const columnBoletoIds = useMemo(() => filteredBoletos.map(b => b.id), [filteredBoletos]);
     const selectedInColumn = useMemo(() => columnBoletoIds.filter(id => selectedBoletoIds.includes(id)), [columnBoletoIds, selectedBoletoIds]);
@@ -96,17 +96,15 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
                 />
               )}
             </h2>
-             {status === BoletoStatus.TO_PAY && (
-                <div className="p-2 border-b border-gray-200 dark:border-gray-700">
-                    <input
-                        type="text"
-                        placeholder={t('searchByDocumentNumber' as TranslationKey)}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                </div>
-            )}
+            <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                <input
+                    type="text"
+                    placeholder={t('searchByDocumentNumber' as TranslationKey)}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+            </div>
         </div>
         <div className="p-2 space-y-4 overflow-y-auto flex-1">
           {filteredBoletos.length > 0 ? (
