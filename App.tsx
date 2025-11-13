@@ -8,14 +8,15 @@ import * as api from './services/api';
 
 const App: React.FC = () => {
   const { user, login, logout, register, authError, setAuthError, getUsers, getLogs } = useAuth();
-  const { logoUrl } = useWhitelabel();
+  const { appName, logoUrl } = useWhitelabel();
 
   useEffect(() => {
+    document.title = appName;
     const favicon = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
     if (favicon) {
       favicon.href = logoUrl || '/vite.svg';
     }
-  }, [logoUrl]);
+  }, [appName, logoUrl]);
 
   useEffect(() => {
     if (user) {

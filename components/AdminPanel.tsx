@@ -777,7 +777,7 @@ sudo certbot renew --dry-run</code></pre>
                     <TabButton tabId="users_companies" label={t('adminPanelUsersCompaniesTab')} />
                     <TabButton tabId="ssl" label="Certificado SSL" />
                     <TabButton tabId="rastreio" label={t('trackingTab')} />
-                    <TabButton tabId="email" label={t('adminPanelEmailTab' as TranslationKey)} />
+                    <TabButton tabId="email" label={t('adminPanelEmailTab')} />
                     <TabButton tabId="logs" label={t('adminPanelLogsTab')} />
                 </nav>
             </div>
