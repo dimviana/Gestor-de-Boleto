@@ -231,6 +231,13 @@ const pt = {
     sendingTestEmail: 'Enviando Teste...',
     testEmailSentSuccess: 'Simulação de envio de e-mail de teste bem-sucedida! Verifique o console do servidor para detalhes.',
     testEmailSentError: 'Falha ao simular o envio do e-mail de teste.',
+    paginationSettingsTitle: 'Configurações de Paginação',
+    cardsPerPageLabel: 'Cards por Página',
+    cardsPerPageDescription: 'Define quantos boletos são exibidos por página nas colunas do Kanban.',
+    paginationPage: 'Página',
+    paginationOf: 'de',
+    paginationPrevious: 'Anterior',
+    paginationNext: 'Próxima',
 };
 
 const en: typeof pt = {
@@ -464,6 +471,13 @@ const en: typeof pt = {
     sendingTestEmail: 'Sending Test...',
     testEmailSentSuccess: 'Test email sending simulation successful! Check the server console for details.',
     testEmailSentError: 'Failed to simulate sending test email.',
+    paginationSettingsTitle: 'Pagination Settings',
+    cardsPerPageLabel: 'Cards per Page',
+    cardsPerPageDescription: 'Sets how many boletos are displayed per page in the Kanban columns.',
+    paginationPage: 'Page',
+    paginationOf: 'of',
+    paginationPrevious: 'Previous',
+    paginationNext: 'Next',
 };
 
 export const translations = { pt, en };

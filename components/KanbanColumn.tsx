@@ -16,11 +16,13 @@ interface KanbanColumnProps {
   onToggleSelection: (id: string) => void;
   onToggleSelectAll: (boletos: Boleto[]) => void;
   userRole: Role;
+  cardsPerPage: number;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, onUploadProof, selectedBoletoIds, onToggleSelection, onToggleSelectAll, userRole }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onUpdateStatus, onDelete, onUpdateComments, onUploadProof, selectedBoletoIds, onToggleSelection, onToggleSelectAll, userRole, cardsPerPage }) => {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
     
     const filteredBoletos = useMemo(() => {
         if (!searchTerm) {
@@ -31,6 +33,19 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
             boleto.guideNumber && boleto.guideNumber.toLowerCase().includes(lowercasedTerm)
         );
     }, [boletos, searchTerm]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const safeCardsPerPage = Math.max(1, cardsPerPage);
+    const totalPages = Math.ceil(filteredBoletos.length / safeCardsPerPage);
+
+    const paginatedBoletos = useMemo(() => {
+        const startIndex = (currentPage - 1) * safeCardsPerPage;
+        return filteredBoletos.slice(startIndex, startIndex + safeCardsPerPage);
+    }, [filteredBoletos, currentPage, safeCardsPerPage]);
+
 
     const columnBoletoIds = useMemo(() => filteredBoletos.map(b => b.id), [filteredBoletos]);
     const selectedInColumn = useMemo(() => columnBoletoIds.filter(id => selectedBoletoIds.includes(id)), [columnBoletoIds, selectedBoletoIds]);
@@ -107,8 +122,8 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
             </div>
         </div>
         <div className="p-2 space-y-4 overflow-y-auto flex-1">
-          {filteredBoletos.length > 0 ? (
-            filteredBoletos.map(boleto => (
+          {paginatedBoletos.length > 0 ? (
+            paginatedBoletos.map(boleto => (
               <BoletoCard
                 key={boleto.id}
                 boleto={boleto}
@@ -127,6 +142,27 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, boletos, status, onU
             </div>
           )}
         </div>
+        {totalPages > 1 && (
+            <div className="p-2 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm">
+                <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                    {t('paginationPrevious')}
+                </button>
+                <span className="text-gray-600 dark:text-gray-300 font-semibold">
+                    {t('paginationPage')} {currentPage} {t('paginationOf')} {totalPages}
+                </span>
+                <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                    {t('paginationNext')}
+                </button>
+            </div>
+        )}
       </div>
     </div>
   );

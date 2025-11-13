@@ -39,6 +39,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const [searchTerm, setSearchTerm] = useState('');
   const [currentView, setCurrentView] = useState<'kanban' | 'calendar' | 'overview'>('kanban');
   const [activeKanbanTab, setActiveKanbanTab] = useState<BoletoStatus>(BoletoStatus.TO_PAY);
+  const [cardsPerPage, setCardsPerPage] = useState<number>(10);
 
 
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -50,6 +51,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
   const activeCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
   const isUploadDisabled = !activeCompanyId;
   
+   useEffect(() => {
+        const loadPaginationSettings = async () => {
+            try {
+                const settings = await api.fetchAllSettings();
+                const perPage = settings.pagination_cardsPerPage;
+                if (perPage && Number(perPage) > 0) {
+                    setCardsPerPage(Number(perPage));
+                }
+            } catch (err) {
+                console.error("Failed to load pagination settings", err);
+            }
+        };
+        loadPaginationSettings();
+    }, []);
+
   const processAndUploadFile = async (file: File) => {
     if (!activeCompanyId) {
         const errorKey = user.role === 'admin' ? 'adminMustSelectCompanyErrorText' : 'userHasNoCompanyErrorText';
@@ -449,16 +465,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
                     {/* Visualização em Abas para Dispositivos Móveis */}
                     <div className="md:hidden -mx-2">
-                        {activeKanbanTab === BoletoStatus.TO_PAY && <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />}
-                        {activeKanbanTab === BoletoStatus.VERIFYING && <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />}
-                        {activeKanbanTab === BoletoStatus.PAID && <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaidKanban} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />}
+                        {activeKanbanTab === BoletoStatus.TO_PAY && <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} cardsPerPage={cardsPerPage} />}
+                        {activeKanbanTab === BoletoStatus.VERIFYING && <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} cardsPerPage={cardsPerPage} />}
+                        {activeKanbanTab === BoletoStatus.PAID && <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaidKanban} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} cardsPerPage={cardsPerPage} />}
                     </div>
                     
                     {/* Visualização de 3 Colunas para Desktop */}
                     <div className="hidden md:flex flex-row -mx-2">
-                      <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
-                      <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
-                      <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaidKanban} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} />
+                      <KanbanColumn userRole={user.role} title={t('kanbanTitleToDo')} boletos={boletosToDo} status={BoletoStatus.TO_PAY} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} cardsPerPage={cardsPerPage} />
+                      <KanbanColumn userRole={user.role} title={t('kanbanTitleVerifying')} boletos={boletosVerifying} status={BoletoStatus.VERIFYING} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} cardsPerPage={cardsPerPage} />
+                      <KanbanColumn userRole={user.role} title={t('kanbanTitlePaid')} boletos={boletosPaidKanban} status={BoletoStatus.PAID} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} onUpdateComments={handleUpdateComments} onUploadProof={handleUploadProof} selectedBoletoIds={selectedBoletoIds} onToggleSelection={handleToggleBoletoSelection} onToggleSelectAll={handleToggleSelectAll} cardsPerPage={cardsPerPage} />
                     </div>
                   </>
                 ) : currentView === 'calendar' ? (

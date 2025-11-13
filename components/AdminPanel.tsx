@@ -67,6 +67,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         const [currentAppName, setCurrentAppName] = useState(appName);
         const [currentLogoUrl, setCurrentLogoUrl] = useState(logoUrl);
         const [jwtSecret, setJwtSecret] = useState('');
+        const [cardsPerPage, setCardsPerPage] = useState('10');
         const [isLoading, setIsLoading] = useState(true);
 
         useEffect(() => {
@@ -77,6 +78,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                     setCurrentAppName(settings.whitelabel_appName || appName);
                     setCurrentLogoUrl(settings.whitelabel_logoUrl || logoUrl);
                     setJwtSecret(settings.JWT_SECRET || '');
+                    setCardsPerPage(String(settings.pagination_cardsPerPage || 10));
                 } catch (error) {
                     console.error("Failed to load settings", error);
                     showNotification(t('settingsLoadError' as TranslationKey), 'error');
@@ -99,6 +101,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 whitelabel_appName: currentAppName,
                 whitelabel_logoUrl: currentLogoUrl,
                 JWT_SECRET: jwtSecret,
+                pagination_cardsPerPage: Number(cardsPerPage) || 10,
             };
 
             try {
@@ -109,6 +112,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 setLogoUrl(currentLogoUrl);
                 
                 showNotification(t('settingsSavedSuccess'), 'success');
+                 setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } catch (error: any) {
                 showNotification(t('settingsSaveError' as TranslationKey) || error.message, 'error');
             }
@@ -130,6 +136,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                          <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Logotipo (Opcional)</label>
                             <input type="text" value={currentLogoUrl} onChange={(e) => setCurrentLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
+                    </div>
+                </div>
+
+                <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
+
+                <div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('paginationSettingsTitle')}</h3>
+                    <div className="mt-4 space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('cardsPerPageLabel')}</label>
+                            <input
+                                type="number"
+                                value={cardsPerPage}
+                                onChange={(e) => setCardsPerPage(e.target.value)}
+                                min="1"
+                                className="mt-1 block w-full max-w-xs px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            />
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('cardsPerPageDescription')}</p>
                         </div>
                     </div>
                 </div>
