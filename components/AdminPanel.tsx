@@ -18,7 +18,7 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser, getLogs }) => {
     const { t, language } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl' | 'rastreio' | 'pdfdv'>('settings');
+    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl' | 'rastreio' | 'email'>('settings');
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     
@@ -39,7 +39,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         loadLogs();
     }, [activeTab, getLogs]);
     
-    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl' | 'rastreio' | 'pdfdv', label: string}> = ({ tabId, label}) => (
+    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl' | 'rastreio' | 'email', label: string}> = ({ tabId, label}) => (
          <button
             onClick={() => setActiveTab(tabId)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -616,16 +616,139 @@ sudo certbot renew --dry-run</code></pre>
         );
     };
 
-    const PdfdvTab = () => (
-      <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl shadow-md">
-        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">
-          Análise de PDF (PDFDV)
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400">
-          Esta funcionalidade está em desenvolvimento.
-        </p>
-      </div>
-    );
+    const EmailTab = () => {
+        const [smtpSettings, setSmtpSettings] = useState({
+            host: '',
+            port: 587,
+            user: '',
+            pass: '',
+            from: '',
+            secure: true,
+        });
+        const [isLoading, setIsLoading] = useState(true);
+        const [isSaving, setIsSaving] = useState(false);
+        const [isTesting, setIsTesting] = useState(false);
+
+        useEffect(() => {
+            const loadSettings = async () => {
+                setIsLoading(true);
+                try {
+                    const settings = await api.fetchAllSettings();
+                    setSmtpSettings({
+                        host: settings.smtp_host || '',
+                        port: settings.smtp_port || 587,
+                        user: settings.smtp_user || '',
+                        pass: settings.smtp_pass || '',
+                        from: settings.smtp_from || '',
+                        secure: settings.smtp_secure !== undefined ? settings.smtp_secure : true,
+                    });
+                } catch (error) {
+                    showNotification(t('settingsLoadError' as TranslationKey), 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            loadSettings();
+        }, []);
+
+        const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const { name, value, type, checked } = e.target;
+            setSmtpSettings(prev => ({
+                ...prev,
+                [name]: type === 'checkbox' ? checked : value,
+            }));
+        };
+
+        const handleSaveSettings = async () => {
+            setIsSaving(true);
+            const settingsToSave = {
+                smtp_host: smtpSettings.host,
+                smtp_port: Number(smtpSettings.port),
+                smtp_user: smtpSettings.user,
+                smtp_pass: smtpSettings.pass,
+                smtp_from: smtpSettings.from,
+                smtp_secure: smtpSettings.secure,
+            };
+            try {
+                await api.updateAllSettings(settingsToSave);
+                showNotification(t('settingsSavedSuccess'), 'success');
+            } catch (error: any) {
+                showNotification(t('settingsSaveError' as TranslationKey) || error.message, 'error');
+            } finally {
+                setIsSaving(false);
+            }
+        };
+
+        const handleSendTestEmail = async () => {
+            setIsTesting(true);
+            const settingsToTest = {
+                smtp_host: smtpSettings.host,
+                smtp_port: Number(smtpSettings.port),
+                smtp_user: smtpSettings.user,
+                smtp_pass: smtpSettings.pass,
+                smtp_from: smtpSettings.from,
+                smtp_secure: smtpSettings.secure,
+            };
+            try {
+                const response = await api.sendTestEmail(settingsToTest);
+                showNotification(t(response.message as TranslationKey) || response.message, 'success');
+            } catch (error: any) {
+                showNotification(t((error.message as TranslationKey) || 'testEmailSentError'), 'error');
+            } finally {
+                setIsTesting(false);
+            }
+        };
+
+        if (isLoading) {
+            return <div className="flex justify-center items-center h-64"><Spinner /></div>;
+        }
+
+        return (
+            <div className="space-y-6">
+                 <div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('emailSettingsTitle' as TranslationKey)}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('emailSettingsDescription' as TranslationKey)}</p>
+                    <div className="space-y-4 mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('smtpHost' as TranslationKey)}</label>
+                                <input type="text" name="host" value={smtpSettings.host} onChange={handleInputChange} className="mt-1 block w-full input-field" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('smtpPort' as TranslationKey)}</label>
+                                <input type="number" name="port" value={smtpSettings.port} onChange={handleInputChange} className="mt-1 block w-full input-field" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('smtpUser' as TranslationKey)}</label>
+                            <input type="text" name="user" value={smtpSettings.user} onChange={handleInputChange} className="mt-1 block w-full input-field" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('smtpPass' as TranslationKey)}</label>
+                            <input type="password" name="pass" value={smtpSettings.pass} onChange={handleInputChange} className="mt-1 block w-full input-field" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('smtpFrom' as TranslationKey)}</label>
+                            <input type="email" name="from" value={smtpSettings.from} onChange={handleInputChange} placeholder={t('smtpFromPlaceholder' as TranslationKey)} className="mt-1 block w-full input-field" />
+                        </div>
+                        <div className="flex items-center">
+                            <input type="checkbox" name="secure" checked={smtpSettings.secure} onChange={handleInputChange} className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+                            <label className="ml-2 block text-sm text-gray-900 dark:text-gray-300">{t('smtpSecure' as TranslationKey)}</label>
+                        </div>
+                    </div>
+                </div>
+                 <div className="flex justify-end pt-4 mt-4 border-t dark:border-gray-600 space-x-3">
+                    <button onClick={handleSendTestEmail} disabled={isTesting || isSaving} className="px-4 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center min-w-[160px] justify-center">
+                        {isTesting ? <><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin mr-2"></div>{t('sendingTestEmail' as TranslationKey)}</> : t('sendTestEmailButton' as TranslationKey)}
+                    </button>
+                    <button onClick={handleSaveSettings} disabled={isSaving || isTesting} className="px-6 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center min-w-[120px] justify-center">
+                        {isSaving ? <><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin mr-2"></div>{t('saving' as TranslationKey)}</> : t('saveButton')}
+                    </button>
+                </div>
+                <style>{`.input-field { background-color: #F3F4F6; color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>
+            </div>
+        )
+    };
 
     return (
         <>
@@ -649,12 +772,12 @@ sudo certbot renew --dry-run</code></pre>
                 </div>
             )}
             <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
-                <nav className="flex space-x-2">
+                <nav className="flex space-x-2 overflow-x-auto pb-2">
                     <TabButton tabId="settings" label={t('adminPanelSettingsTab')} />
                     <TabButton tabId="users_companies" label={t('adminPanelUsersCompaniesTab')} />
                     <TabButton tabId="ssl" label="Certificado SSL" />
                     <TabButton tabId="rastreio" label={t('trackingTab')} />
-                    <TabButton tabId="pdfdv" label="PDFDV" />
+                    <TabButton tabId="email" label={t('adminPanelEmailTab' as TranslationKey)} />
                     <TabButton tabId="logs" label={t('adminPanelLogsTab')} />
                 </nav>
             </div>
@@ -663,7 +786,7 @@ sudo certbot renew --dry-run</code></pre>
             {activeTab === 'users_companies' && <UsersAndCompaniesTab />}
             {activeTab === 'ssl' && <SslTab />}
             {activeTab === 'rastreio' && <TrackingTab />}
-            {activeTab === 'pdfdv' && <PdfdvTab />}
+            {activeTab === 'email' && <EmailTab />}
             {activeTab === 'logs' && <LogsTab />}
             
             <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">

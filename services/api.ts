@@ -278,6 +278,14 @@ export const sendEmailReminders = (companyId: string): Promise<{ message: string
     });
 };
 
+export const sendTestEmail = (settings: Record<string, any>): Promise<{ message: string }> => {
+    return apiFetch('/notifications/test-email', {
+        method: 'POST',
+        body: JSON.stringify(settings),
+    });
+};
+
+
 // --- Tracking API ---
 export const logTrackingInfo = (data: { latitude: number | null, longitude: number | null }): Promise<{ message: string }> => {
     return apiFetch('/tracking', {

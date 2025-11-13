@@ -1,5 +1,3 @@
-
-
 // FIX: Use default express import and qualified types to avoid type conflicts.
 import express from 'express';
 import { pool } from '../../config/db';
@@ -80,5 +78,43 @@ export const sendReminders = async (req: express.Request, res: express.Response)
         res.status(500).json({ message: 'Server error while processing reminders.' });
     } finally {
         connection.release();
+    }
+};
+
+export const sendTestEmail = async (req: express.Request, res: express.Response) => {
+    const smtpSettings = req.body;
+    const user = req.user!;
+    const recipientEmail = user.username;
+
+    // In a real app, you would use these settings with a library like Nodemailer.
+    // For now, we just simulate the process.
+    console.log(`[Email Test Simulation]
+        Triggered by: ${user.username}
+        Recipient: ${recipientEmail}
+        SMTP Config Used:
+            Host: ${smtpSettings.smtp_host}
+            Port: ${smtpSettings.smtp_port}
+            User: ${smtpSettings.smtp_user}
+            Secure: ${smtpSettings.smtp_secure}
+            From: ${smtpSettings.smtp_from}
+        WOULD SEND TEST EMAIL NOW.
+    `);
+
+    // Log this action
+    try {
+        await pool.query(
+            'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
+            [
+                uuidv4(),
+                user.id,
+                user.username,
+                'ADMIN_CHANGE_SETTINGS',
+                `Sent a test email to ${recipientEmail} to verify SMTP settings.`
+            ]
+        );
+        res.json({ message: 'testEmailSentSuccess' });
+    } catch (error) {
+        console.error('Failed to log test email action:', error);
+        res.status(500).json({ message: 'testEmailSentError' });
     }
 };
