@@ -191,6 +191,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
       if (messageFromServer.startsWith('Duplicate barcode:')) {
           const substitutions = { identifier: messageFromServer.split(': ')[1] || 'N/A' };
           errorMessage = t('duplicateBarcodeErrorText', substitutions);
+      } else if (messageFromServer.startsWith('Duplicate guide number:')) {
+          const substitutions = { identifier: messageFromServer.split(': ')[1] || 'N/A' };
+          errorMessage = t('duplicateGuideNumberErrorText', substitutions);
       } else {
           const isKnownKey = Object.keys(translations.pt).includes(messageFromServer);
           errorMessage = t(isKnownKey ? messageFromServer as TranslationKey : 'genericErrorText');

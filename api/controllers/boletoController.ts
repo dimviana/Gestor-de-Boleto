@@ -188,6 +188,14 @@ export const uploadAndProcessBoleto = async (req: express.Request, res: express.
              }
         }
         
+        if (extractedData.guideNumber) {
+            const [existingGuide] = await connection.query<RowDataPacket[]>('SELECT id FROM boletos WHERE guide_number = ? AND company_id = ?', [extractedData.guideNumber, targetCompanyId]);
+            if (existingGuide.length > 0) {
+                await connection.rollback();
+                throw new Error(`Duplicate guide number: ${extractedData.guideNumber}`);
+            }
+        }
+        
         const boletoDataWithFile = { ...extractedData, fileData: req.file.buffer.toString('base64') };
         const newBoleto: Boleto = {
             id: uuidv4(),
@@ -253,7 +261,7 @@ export const uploadAndProcessBoleto = async (req: express.Request, res: express.
         if (knownErrors.includes(error.message)) {
             return res.status(400).json({ message: error.message });
         }
-        if (error.message.startsWith('Duplicate barcode:')) {
+        if (error.message.startsWith('Duplicate barcode:') || error.message.startsWith('Duplicate guide number:')) {
             return res.status(409).json({ message: error.message });
         }
         
