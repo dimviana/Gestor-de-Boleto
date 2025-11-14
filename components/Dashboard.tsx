@@ -82,25 +82,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     }
 
     const uploadId = crypto.randomUUID();
-    setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: 'Enviando e extraindo...', progress: 0 }, ...prev]);
+    setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: 'Enviando e processando...', progress: 0 }, ...prev]);
 
     const onProgress = (progress: number) => {
         setUploadStatuses(prev => prev.map(up =>
             up.id === uploadId
-            ? { ...up, progress: progress }
+            ? { ...up, progress: progress, message: progress < 95 ? 'Enviando e processando...' : 'Finalizando...' }
             : up
         ));
     };
 
     try {
-      const extractedData = await api.extractBoletoData(file, activeCompanyId, onProgress);
-      
-      onProgress(95);
-       setUploadStatuses(prev => prev.map(up => 
-        up.id === uploadId ? { ...up, message: 'Salvando no banco de dados...', progress: 95 } : up
-      ));
-
-      await api.saveBoleto(extractedData, activeCompanyId);
+      await api.uploadAndProcessBoleto(file, activeCompanyId, onProgress);
       
       setUploadStatuses(prev => prev.map(up => 
         up.id === uploadId ? { ...up, status: 'success', message: t('uploadSuccess'), progress: 100 } : up

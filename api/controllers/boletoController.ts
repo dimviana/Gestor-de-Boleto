@@ -135,42 +135,12 @@ export const getBoletoById = async (req: express.Request, res: express.Response)
     }
 };
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const extractBoleto = async (req: express.Request, res: express.Response) => {
+export const uploadAndProcessBoleto = async (req: express.Request, res: express.Response) => {
+    const user = req.user!;
+    const { companyId } = req.body;
+
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
-    }
-
-    try {
-        const extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
-        
-        if (extractedData.amount === null || extractedData.amount === undefined) {
-            return res.status(400).json({ message: 'amountNotFoundErrorText' });
-        }
-
-        if (extractedData.amount === 0) {
-             return res.status(400).json({ message: 'freeBoletoErrorText' });
-        }
-        
-        if (!extractedData.barcode) {
-            return res.status(400).json({ message: 'invalidBarcodeErrorText' });
-        }
-
-        res.status(200).json({ ...extractedData, fileData: req.file.buffer.toString('base64') });
-
-    } catch (error: any) {
-        console.error("Error extracting boleto data:", error);
-        return res.status(500).json({ message: 'pdfProcessingError', details: error.message || 'Failed to parse PDF content.' });
-    }
-};
-
-// FIX: Use express.Request, express.Response to get correct typings.
-export const saveBoleto = async (req: express.Request, res: express.Response) => {
-    const user = req.user!;
-    const { boletoData, companyId } = req.body;
-
-    if (!isValidDateString(boletoData.documentDate) || !isValidDateString(boletoData.dueDate)) {
-        return res.status(400).json({ message: 'Data inválida detectada no PDF. As datas devem ser válidas e no formato AAAA-MM-DD.' });
     }
 
     let targetCompanyId: string | null;
@@ -185,26 +155,43 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
         }
         targetCompanyId = user.companyId;
     }
-    
+
     if (!targetCompanyId) {
         return res.status(500).json({ message: 'Internal Server Error: Target company ID was not determined.' });
     }
 
     const connection = await pool.getConnection();
     try {
+        const extractedData = await extractBoletoInfoWithPython(req.file.buffer, req.file.originalname);
+        
+        if (extractedData.amount === null || extractedData.amount === undefined) {
+            throw new Error('amountNotFoundErrorText');
+        }
+        if (extractedData.amount === 0) {
+             throw new Error('freeBoletoErrorText');
+        }
+        if (!extractedData.barcode) {
+            throw new Error('invalidBarcodeErrorText');
+        }
+        
+        if (!isValidDateString(extractedData.documentDate) || !isValidDateString(extractedData.dueDate)) {
+            return res.status(400).json({ message: 'Data inválida detectada no PDF. As datas devem ser válidas e no formato AAAA-MM-DD.' });
+        }
+        
         await connection.beginTransaction();
 
-        if (boletoData.barcode) {
-             const [existing] = await connection.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [boletoData.barcode, targetCompanyId]);
+        if (extractedData.barcode) {
+             const [existing] = await connection.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [extractedData.barcode, targetCompanyId]);
              if (existing.length > 0) {
                  await connection.rollback();
-                 return res.status(409).json({ message: `Duplicate barcode: ${boletoData.guideNumber || boletoData.barcode}`});
+                 throw new Error(`Duplicate barcode: ${extractedData.guideNumber || extractedData.barcode}`);
              }
         }
-
+        
+        const boletoDataWithFile = { ...extractedData, fileData: req.file.buffer.toString('base64') };
         const newBoleto: Boleto = {
             id: uuidv4(),
-            ...boletoData,
+            ...boletoDataWithFile,
             status: BoletoStatus.TO_PAY,
             comments: null,
             companyId: targetCompanyId,
@@ -229,7 +216,7 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
             file_name: newBoleto.fileName,
             file_data: newBoleto.fileData,
             comments: newBoleto.comments || null,
-            extracted_data: JSON.stringify(boletoData)
+            extracted_data: JSON.stringify(extractedData)
         };
 
         const columns = Object.keys(dbInsertObject);
@@ -259,11 +246,20 @@ export const saveBoleto = async (req: express.Request, res: express.Response) =>
         res.status(201).json(mapDbBoletoToBoleto(rows[0]));
 
     } catch (error: any) {
-        await connection.rollback();
-        console.error("Error saving boleto:", error);
-        res.status(500).json({ message: error.message || 'Failed to save boleto' });
+        if (connection) await connection.rollback();
+        console.error("Error in uploadAndProcessBoleto:", error);
+        
+        const knownErrors = ['amountNotFoundErrorText', 'freeBoletoErrorText', 'invalidBarcodeErrorText'];
+        if (knownErrors.includes(error.message)) {
+            return res.status(400).json({ message: error.message });
+        }
+        if (error.message.startsWith('Duplicate barcode:')) {
+            return res.status(409).json({ message: error.message });
+        }
+        
+        res.status(500).json({ message: 'pdfProcessingError', details: error.message || 'Failed to process file.' });
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 };
 

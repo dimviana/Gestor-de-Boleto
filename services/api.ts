@@ -86,18 +86,18 @@ export const fetchBoletos = (): Promise<Boleto[]> => apiFetch('/boletos');
 
 export const fetchBoletoById = (id: string): Promise<Boleto> => apiFetch(`/boletos/${id}`);
 
-export const extractBoletoData = (
+export const uploadAndProcessBoleto = (
     file: File, 
     companyId: string, 
     onProgress: (progress: number) => void
-): Promise<Omit<Boleto, 'id' | 'status' | 'comments' | 'companyId'>> => {
+): Promise<Boleto> => {
     return new Promise((resolve, reject) => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('companyId', companyId);
 
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${API_BASE_URL}/boletos/extract`);
+        xhr.open('POST', `${API_BASE_URL}/boletos`);
 
         const token = getAuthToken();
         if (token) {
@@ -106,13 +106,15 @@ export const extractBoletoData = (
 
         xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
-                const percentComplete = (event.loaded / event.total) * 90; // 90% for upload, 10% for processing
+                // Upload progress accounts for 90% of the bar
+                const percentComplete = (event.loaded / event.total) * 90;
                 onProgress(percentComplete);
             }
         };
 
         xhr.onload = () => {
-            onProgress(100); // Set to 100 on completion
+            // When server responds, the process is complete
+            onProgress(100);
             if (xhr.status >= 200 && xhr.status < 300) {
                 try {
                     const responseJson = JSON.parse(xhr.responseText);
@@ -137,13 +139,6 @@ export const extractBoletoData = (
         };
 
         xhr.send(formData);
-    });
-};
-
-export const saveBoleto = (boletoData: Omit<Boleto, 'id' | 'status' | 'comments' | 'companyId' >, companyId: string): Promise<Boleto> => {
-    return apiFetch('/boletos/save', {
-        method: 'POST',
-        body: JSON.stringify({ boletoData, companyId }),
     });
 };
 
