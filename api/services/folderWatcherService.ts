@@ -19,8 +19,26 @@ async function processFile(filePath: string, company: Company): Promise<void> {
     await fs.mkdir(failedDir, { recursive: true });
 
     const connection = await pool.getConnection();
+    let transactionStarted = false; // Flag to track if transaction began
     try {
+        const fileBuffer = await fs.readFile(filePath);
+        const extractedData = await extractBoletoInfoWithPython(fileBuffer, fileName);
+        
+        // Barcode is essential for all checks that follow
+        if (!extractedData.barcode) throw new Error('invalidBarcodeErrorText');
+
+        // Check for duplicates before starting a transaction
+        const [existing] = await connection.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [extractedData.barcode, company.id]);
+        if (existing.length > 0) {
+            // It's a duplicate, not an error. Log, move, and finish.
+            console.log(`[Folder Watcher] Skipping duplicate file: ${fileName}. Moved to _processed.`);
+            await fs.rename(filePath, path.join(processedDir, fileName));
+            return; // Exit successfully, finally block will run to release connection
+        }
+
+        // Start transaction only when we know it's a new file
         await connection.beginTransaction();
+        transactionStarted = true;
 
         // Find an admin or editor to associate the boleto with
         const [users] = await connection.query<RowDataPacket[]>('SELECT id, username FROM users WHERE company_id = ? AND role IN (?, ?) LIMIT 1', [company.id, 'admin', 'editor']);
@@ -28,17 +46,10 @@ async function processFile(filePath: string, company: Company): Promise<void> {
             throw new Error(`No admin/editor user found for company ${company.name} to assign the boleto to.`);
         }
         const designatedUser = users[0];
-
-        const fileBuffer = await fs.readFile(filePath);
-        const extractedData = await extractBoletoInfoWithPython(fileBuffer, fileName);
         
-        // Validations
+        // Other validations
         if (extractedData.amount === null || extractedData.amount === undefined) throw new Error('amountNotFoundErrorText');
         if (extractedData.amount === 0) throw new Error('freeBoletoErrorText');
-        if (!extractedData.barcode) throw new Error('invalidBarcodeErrorText');
-
-        const [existing] = await connection.query<RowDataPacket[]>('SELECT id FROM boletos WHERE barcode = ? AND company_id = ?', [extractedData.barcode, company.id]);
-        if (existing.length > 0) throw new Error(`Duplicate barcode: ${extractedData.guideNumber || extractedData.barcode}`);
 
         const newBoleto: Omit<Boleto, 'id' | 'createdAt' | 'updatedAt'> = {
             ...extractedData,
@@ -62,7 +73,9 @@ async function processFile(filePath: string, company: Company): Promise<void> {
         console.log(`[Folder Watcher] Successfully processed and moved: ${fileName}`);
 
     } catch (error: any) {
-        await connection.rollback();
+        if (transactionStarted) {
+            await connection.rollback();
+        }
         console.error(`[Folder Watcher] Failed to process ${fileName}:`, error.message);
         await fs.rename(filePath, path.join(failedDir, fileName));
     } finally {
@@ -83,9 +96,10 @@ async function processDirectory(company: Company): Promise<void> {
     try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
+        // Only process one file per scan cycle for sequential processing
         const pdfFilesToProcess = entries
             .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.pdf'))
-            .slice(0, 10); // Limit to a maximum of 10 files
+            .slice(0, 1); 
 
         for (const entry of pdfFilesToProcess) {
             const filePath = path.join(dirPath, entry.name);
