@@ -82,11 +82,14 @@ async function processDirectory(company: Company): Promise<void> {
     currentlyProcessing.add(company.id);
     try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
-        for (const entry of entries) {
-            if (entry.isFile() && entry.name.toLowerCase().endsWith('.pdf')) {
-                const filePath = path.join(dirPath, entry.name);
-                await processFile(filePath, company);
-            }
+
+        const pdfFilesToProcess = entries
+            .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.pdf'))
+            .slice(0, 10); // Limit to a maximum of 10 files
+
+        for (const entry of pdfFilesToProcess) {
+            const filePath = path.join(dirPath, entry.name);
+            await processFile(filePath, company);
         }
     } catch (error: any) {
         console.error(`[Folder Watcher] Error scanning directory ${dirPath} for company ${company.name}:`, error.message);
