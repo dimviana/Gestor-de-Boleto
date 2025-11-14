@@ -16,7 +16,14 @@ export const useOfflineSync = ({ onSyncStart, onSyncSuccess, onSyncError }: UseO
         if (!navigator.onLine) return;
 
         console.log('Connection restored. Starting sync...');
-        const queuedFiles = await offlineService.getQueuedFiles();
+        let queuedFiles: QueuedFile[];
+        try {
+            queuedFiles = await offlineService.getQueuedFiles();
+        } catch (e: any) {
+            console.error("Failed to get queued files from IndexedDB:", e);
+            return;
+        }
+
 
         if (queuedFiles.length === 0) {
             console.log('No files in queue to sync.');
@@ -28,14 +35,16 @@ export const useOfflineSync = ({ onSyncStart, onSyncSuccess, onSyncError }: UseO
         for (const item of queuedFiles) {
             try {
                 onSyncStart(item);
-                const onProgress = () => {}; // Dummy progress for background sync
+                const onProgress = (progress: number) => {
+                    // This callback is required by the API but not used for background sync.
+                };
                 await api.uploadAndProcessBoleto(item.file, item.companyId, onProgress);
                 await offlineService.deleteQueuedFile(item.id);
                 onSyncSuccess(item);
             } catch (error: any) {
                 console.error(`Failed to sync file ${item.fileName}:`, error);
                 onSyncError(item, error);
-                // Stop on the first error to avoid spamming the server.
+                // Stop on the first error to avoid spamming the server if there's a persistent issue.
                 break;
             }
         }
@@ -51,8 +60,8 @@ export const useOfflineSync = ({ onSyncStart, onSyncSuccess, onSyncError }: UseO
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
 
-        // Initial sync check on component mount
-        if (isOnline) {
+        // Initial sync check on hook mount if online
+        if (navigator.onLine) {
             syncQueuedFiles();
         }
 
@@ -60,7 +69,7 @@ export const useOfflineSync = ({ onSyncStart, onSyncSuccess, onSyncError }: UseO
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [isOnline, syncQueuedFiles]);
+    }, [syncQueuedFiles]);
 
     return { isOnline };
 };

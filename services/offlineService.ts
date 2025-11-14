@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-
 const DB_NAME = 'boleto-manager-offline-db';
 const STORE_NAME = 'upload-queue';
 const DB_VERSION = 1;
@@ -45,7 +43,7 @@ const getDB = (): Promise<IDBDatabase> => {
 export const queueFileForUpload = async (file: File, companyId: string): Promise<QueuedFile> => {
     const db = await getDB();
     const queuedFile: QueuedFile = {
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         file,
         companyId,
         fileName: file.name,
