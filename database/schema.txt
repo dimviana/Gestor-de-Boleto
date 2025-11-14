@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `username` VARCHAR(255) NOT NULL COMMENT 'User''s email address, used for login',
   `name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'User''s full name',
   `password` VARCHAR(255) NOT NULL COMMENT 'Hashed password for security',
-  `role` ENUM('viewer', 'editor', 'admin') NOT NULL DEFAULT 'viewer' COMMENT 'User role for authorization',
+  `role` ENUM('viewer', 'editor', 'company_admin', 'admin') NOT NULL DEFAULT 'viewer' COMMENT 'User role for authorization',
   `company_id` VARCHAR(36) DEFAULT NULL COMMENT 'Foreign key linking to the company',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

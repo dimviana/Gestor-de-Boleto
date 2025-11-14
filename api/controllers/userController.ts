@@ -1,5 +1,3 @@
-
-
 // FIX: Use default express import and qualified types to avoid type conflicts.
 import express from 'express';
 import { pool } from '../../config/db';
@@ -9,11 +7,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
 // FIX: Use express.Request, express.Response to get correct typings.
-export const getUsers = async (_req: express.Request, res: express.Response) => {
+export const getUsers = async (req: express.Request, res: express.Response) => {
+  const user = req.user!;
   try {
-    const [usersFromDb] = await pool.query<RowDataPacket[]>('SELECT id, username, name, role, company_id FROM users');
-    // Map snake_case from DB to camelCase for frontend consistency
-    // Also, map old 'user' role to 'editor' for backward compatibility
+    let query = 'SELECT id, username, name, role, company_id FROM users';
+    const params: string[] = [];
+
+    if (user.role === 'company_admin') {
+        if (!user.companyId) return res.json([]);
+        query += ' WHERE company_id = ?';
+        params.push(user.companyId);
+    }
+    
+    const [usersFromDb] = await pool.query<RowDataPacket[]>(query, params);
+    
     const users = usersFromDb.map(user => ({
         id: user.id,
         username: user.username,
@@ -29,11 +36,18 @@ export const getUsers = async (_req: express.Request, res: express.Response) => 
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const createUser = async (req: express.Request, res: express.Response) => {
-  const { username, password, name, role, companyId } = req.body;
+  let { username, password, name, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
 
   try {
+    if (adminUser.role === 'company_admin') {
+        companyId = adminUser.companyId;
+        if (role === 'admin' || role === 'company_admin') {
+            return res.status(403).json({ message: 'cannotCreateRole' });
+        }
+    }
+
     await connection.beginTransaction();
 
     const [existingUsers] = await connection.query<RowDataPacket[]>('SELECT id FROM users WHERE username = ?', [username]);
@@ -45,7 +59,6 @@ export const createUser = async (req: express.Request, res: express.Response) =>
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
-    // Use snake_case for DB insertion
     const newUserDb = { id: uuidv4(), username, name: name || null, password: hashedPassword, role, company_id: companyId || null };
     await connection.query('INSERT INTO users SET ?', newUserDb);
     
@@ -62,7 +75,6 @@ export const createUser = async (req: express.Request, res: express.Response) =>
 
     await connection.commit();
     
-    // Prepare camelCase response for frontend
     const userResponse = {
         id: newUserDb.id,
         username: newUserDb.username,
@@ -88,7 +100,7 @@ export const createUser = async (req: express.Request, res: express.Response) =>
 export const updateUser = async (req: express.Request, res: express.Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
-  const { password } = req.body;
+  const { password, role } = req.body;
   const connection = await pool.getConnection();
 
   try {
@@ -99,7 +111,18 @@ export const updateUser = async (req: express.Request, res: express.Response) =>
         await connection.rollback();
         return res.status(404).json({ message: 'User not found' });
     }
-    const currentUser = users[0];
+    const targetUser = users[0];
+
+    if (adminUser.role === 'company_admin') {
+        if (targetUser.company_id !== adminUser.companyId || targetUser.role === 'admin') {
+            await connection.rollback();
+            return res.status(403).json({ message: 'cannotEditUser' });
+        }
+        if (role === 'admin' || role === 'company_admin') {
+            await connection.rollback();
+            return res.status(403).json({ message: 'cannotAssignRole' });
+        }
+    }
 
     const updates: any = {};
     if ('username' in req.body) updates.username = req.body.username;
@@ -119,7 +142,7 @@ export const updateUser = async (req: express.Request, res: express.Response) =>
     
     await connection.query('UPDATE users SET ? WHERE id = ?', [updates, userId]);
     
-    const details = `Updated user '${currentUser.name || currentUser.username}' (ID: ${userId}). Changes: ${Object.keys(updates).filter(k => k !== 'password').join(', ')}.`;
+    const details = `Updated user '${targetUser.name || targetUser.username}' (ID: ${userId}). Changes: ${Object.keys(updates).filter(k => k !== 'password').join(', ')}.`;
     await connection.query(
         'INSERT INTO activity_logs (id, user_id, username, action, details) VALUES (?, ?, ?, ?, ?)',
         [ uuidv4(), adminUser.id, adminUser.username, 'ADMIN_UPDATE_USER', details ]
@@ -146,12 +169,19 @@ export const deleteUser = async (req: express.Request, res: express.Response) =>
   try {
     await connection.beginTransaction();
 
-    const [users] = await connection.query<RowDataPacket[]>('SELECT username, name FROM users WHERE id = ?', [userIdToDelete]);
+    const [users] = await connection.query<RowDataPacket[]>('SELECT username, name, role, company_id FROM users WHERE id = ?', [userIdToDelete]);
     if (users.length === 0) {
         await connection.rollback();
         return res.status(404).json({ message: 'User not found' });
     }
     const userToDelete = users[0];
+
+    if (adminUser.role === 'company_admin') {
+        if (userToDelete.company_id !== adminUser.companyId || userToDelete.role === 'admin') {
+            await connection.rollback();
+            return res.status(403).json({ message: 'permissionDenied' });
+        }
+    }
 
     await connection.query('DELETE FROM users WHERE id = ?', [userIdToDelete]);
 

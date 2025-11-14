@@ -41,7 +41,7 @@ export type BoletoField = keyof Omit<Boleto, 'id' | 'status' | 'fileData' | 'com
 export type CardFieldVisibility = Partial<Record<BoletoField, boolean>>;
 
 
-export type Role = 'viewer' | 'editor' | 'admin';
+export type Role = 'viewer' | 'editor' | 'company_admin' | 'admin';
 
 export interface User {
   id: string;

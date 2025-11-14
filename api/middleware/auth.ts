@@ -1,5 +1,3 @@
-
-
 // FIX: Use default express import and qualified types to avoid type conflicts.
 import express from 'express';
 import jwt from 'jsonwebtoken';
@@ -55,9 +53,18 @@ export const admin = (req: express.Request, res: express.Response, next: express
 
 // FIX: Use express.Request, express.Response to get correct typings.
 export const editor = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (req.user && (req.user.role === 'editor' || req.user.role === 'admin')) {
+    if (req.user && (req.user.role === 'editor' || req.user.role === 'admin' || req.user.role === 'company_admin')) {
         next();
     } else {
-        res.status(403).json({ message: 'Não autorizado como editor ou administrador' });
+        res.status(403).json({ message: 'Não autorizado como editor ou superior' });
+    }
+};
+
+// FIX: Use express.Request, express.Response to get correct typings.
+export const companyAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.user && (req.user.role === 'company_admin' || req.user.role === 'admin')) {
+        next();
+    } else {
+        res.status(403).json({ message: 'Não autorizado como administrador da empresa ou superior' });
     }
 };

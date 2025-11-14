@@ -16,9 +16,20 @@ interface AdminPanelProps {
     getLogs: () => Promise<LogEntry[]>;
 }
 
+type AdminTab = 'settings' | 'users_companies' | 'logs' | 'ssl' | 'rastreio' | 'email';
+
 const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser, getLogs }) => {
     const { t, language } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'settings' | 'users_companies' | 'logs' | 'ssl' | 'rastreio' | 'email'>('settings');
+    
+    const isAdmin = currentUser.role === 'admin';
+    const isCompanyAdmin = currentUser.role === 'company_admin';
+
+    const availableTabs: AdminTab[] = isAdmin 
+        ? ['settings', 'users_companies', 'ssl', 'rastreio', 'email', 'logs'] 
+        : ['settings', 'users_companies'];
+        
+    const [activeTab, setActiveTab] = useState<AdminTab>('settings');
+
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     
@@ -32,14 +43,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
 
     useEffect(() => {
         const loadLogs = async () => {
-            if (activeTab === 'logs') {
+            if (activeTab === 'logs' && isAdmin) {
                 setLogs(await getLogs());
             }
         };
         loadLogs();
-    }, [activeTab, getLogs]);
+    }, [activeTab, getLogs, isAdmin]);
     
-    const TabButton: React.FC<{tabId: 'settings' | 'users_companies' | 'logs' | 'ssl' | 'rastreio' | 'email', label: string}> = ({ tabId, label}) => (
+    const tabLabels: Record<AdminTab, TranslationKey> = {
+        settings: 'adminPanelSettingsTab',
+        users_companies: isCompanyAdmin ? 'companyAdminUsersTab' : 'adminPanelUsersCompaniesTab',
+        logs: 'adminPanelLogsTab',
+        ssl: 'Certificado SSL' as any,
+        rastreio: 'trackingTab',
+        email: 'adminPanelEmailTab',
+    };
+
+    const TabButton: React.FC<{tabId: AdminTab}> = ({ tabId}) => (
          <button
             onClick={() => setActiveTab(tabId)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -48,7 +68,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
         >
-            {label}
+            {t(tabLabels[tabId])}
         </button>
     );
 
@@ -75,9 +95,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                 setIsLoading(true);
                 try {
                     const settings = await api.fetchAllSettings();
-                    setCurrentAppName(settings.whitelabel_appName || appName);
-                    setCurrentLogoUrl(settings.whitelabel_logoUrl || logoUrl);
-                    setJwtSecret(settings.JWT_SECRET || '');
+                    if(isAdmin) {
+                      setCurrentAppName(settings.whitelabel_appName || appName);
+                      setCurrentLogoUrl(settings.whitelabel_logoUrl || logoUrl);
+                      setJwtSecret(settings.JWT_SECRET || '');
+                    }
                     setCardsPerPage(String(settings.pagination_cardsPerPage || 10));
                 } catch (error) {
                     console.error("Failed to load settings", error);
@@ -97,19 +119,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         };
         
         const handleSaveAllSettings = async () => {
-            const settingsToSave = {
+            const settingsToSave = isAdmin ? {
                 whitelabel_appName: currentAppName,
                 whitelabel_logoUrl: currentLogoUrl,
                 JWT_SECRET: jwtSecret,
                 pagination_cardsPerPage: Number(cardsPerPage) || 10,
+            } : {
+                pagination_cardsPerPage: Number(cardsPerPage) || 10,
             };
+
 
             try {
                 await api.updateAllSettings(settingsToSave);
                 
-                // Update local contexts after successful save
-                setAppName(currentAppName);
-                setLogoUrl(currentLogoUrl);
+                if (isAdmin) {
+                  setAppName(currentAppName);
+                  setLogoUrl(currentLogoUrl);
+                }
                 
                 showNotification(t('settingsSavedSuccess'), 'success');
                  setTimeout(() => {
@@ -126,21 +152,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
 
         return (
             <div className="space-y-6">
-                 <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Configurações de Aparência</h3>
-                    <div className="space-y-4 mt-4">
+                 {isAdmin && (
+                    <>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Aplicação</label>
-                            <input type="text" value={currentAppName} onChange={(e) => setCurrentAppName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">Configurações de Aparência</h3>
+                            <div className="space-y-4 mt-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Aplicação</label>
+                                    <input type="text" value={currentAppName} onChange={(e) => setCurrentAppName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Logotipo (Opcional)</label>
+                                    <input type="text" value={currentLogoUrl} onChange={(e) => setCurrentLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                </div>
+                            </div>
                         </div>
-                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Logotipo (Opcional)</label>
-                            <input type="text" value={currentLogoUrl} onChange={(e) => setCurrentLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        </div>
-                    </div>
-                </div>
-
-                <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
+                        <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
+                    </>
+                 )}
 
                 <div>
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('paginationSettingsTitle')}</h3>
@@ -159,25 +188,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                     </div>
                 </div>
 
-                <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
-                
-                <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('credentialsAndSecurityTitle')}</h3>
-                    <div className="mt-4 space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('jwtSecretLabel')}</label>
-                            <div className="flex items-center space-x-2">
-                                <input type="password" value={jwtSecret} onChange={(e) => setJwtSecret(e.target.value)} placeholder={t('jwtSecretPlaceholder')} className="mt-1 block w-full input-field"/>
-                                <button onClick={handleGenerateJwt} className="mt-1 px-4 py-2 text-sm font-semibold text-white bg-gray-600 rounded-lg hover:bg-gray-700 whitespace-nowrap">{t('generateButton')}</button>
+                {isAdmin && (
+                  <>
+                    <hr className="my-6 border-t border-gray-200 dark:border-gray-600"/>
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('credentialsAndSecurityTitle')}</h3>
+                        <div className="mt-4 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('jwtSecretLabel')}</label>
+                                <div className="flex items-center space-x-2">
+                                    <input type="password" value={jwtSecret} onChange={(e) => setJwtSecret(e.target.value)} placeholder={t('jwtSecretPlaceholder')} className="mt-1 block w-full input-field"/>
+                                    <button onClick={handleGenerateJwt} className="mt-1 px-4 py-2 text-sm font-semibold text-white bg-gray-600 rounded-lg hover:bg-gray-700 whitespace-nowrap">{t('generateButton')}</button>
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('jwtSecretDescription')}</p>
                             </div>
-                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('jwtSecretDescription')}</p>
                         </div>
                     </div>
-                </div>
+                  </>
+                )}
 
                 <div className="flex justify-end pt-4 mt-4 border-t dark:border-gray-600">
                     <button onClick={handleSaveAllSettings} className="px-6 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                        {t('saveAllSettingsButton')}
+                        {t('saveButton')}
                     </button>
                 </div>
                 <style>{`.input-field { background-color: #F3F4F6; color: #1F2937; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.5rem 0.75rem; } .dark .input-field { background-color: #374151; color: #F9FAFB; border-color: #4B5563; }`}</style>
@@ -195,15 +227,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         const [companyForm, setCompanyForm] = useState({ name: '', cnpj: '', address: ''});
         const [folderPaths, setFolderPaths] = useState<Record<string, string>>({});
 
+        const roleDisplayMap: Record<Role, TranslationKey> = {
+            admin: 'roleAdmin',
+            company_admin: 'roleCompanyAdmin',
+            editor: 'roleEditor',
+            viewer: 'roleViewer',
+        };
+
         const roleClassMap: Record<Role, string> = {
-            admin: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+            admin: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+            company_admin: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
             editor: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
             viewer: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
         };
 
         const refreshData = async () => {
             try {
-                const [fetchedUsers, fetchedCompanies] = await Promise.all([getUsers(), api.fetchCompanies()]);
+                const [fetchedUsers, fetchedCompanies] = await Promise.all([
+                    getUsers(), 
+                    isAdmin ? api.fetchCompanies() : Promise.resolve([])
+                ]);
                 setUsers(fetchedUsers || []);
                 setCompanies(fetchedCompanies || []);
                 const initialPaths = (fetchedCompanies || []).reduce((acc, company) => {
@@ -221,7 +264,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
 
         const openAddUserModal = () => {
             setModalMode('add'); setSelectedUser(null);
-            setUserForm({ username: '', name: '', password: '', role: 'viewer', companyId: '' });
+            setUserForm({ username: '', name: '', password: '', role: 'viewer', companyId: isCompanyAdmin ? currentUser.companyId || '' : '' });
             setIsUserModalOpen(true);
         };
 
@@ -242,7 +285,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                     if (userForm.name !== (selectedUser.name || '')) updates.name = userForm.name;
                     if (userForm.password) updates.password = userForm.password;
                     if (userForm.role !== selectedUser.role) updates.role = userForm.role;
-                    if (userForm.companyId !== (selectedUser.companyId || '')) updates.companyId = userForm.companyId;
+                    if (isAdmin && userForm.companyId !== (selectedUser.companyId || '')) updates.companyId = userForm.companyId;
 
                     if (Object.keys(updates).length > 0) {
                         await api.updateUser(selectedUser.id, updates);
@@ -302,7 +345,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
             try {
                 await api.setCompanyMonitoredFolder(companyId, path);
                 showNotification('Caminho da pasta salvo com sucesso!', 'success');
-                // Refresh data to ensure UI is consistent with DB
                 await refreshData();
             } catch (error: any) {
                 showNotification('Falha ao salvar o caminho da pasta.', 'error');
@@ -311,63 +353,65 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         
         return (
             <div className="space-y-8">
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl shadow-md">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('adminCompaniesTitle')}</h3>
-                    <form onSubmit={handleAddCompany} className="p-4 bg-white dark:bg-gray-800 rounded-lg space-y-4 border dark:border-gray-700">
-                        <h4 className="font-semibold">{t('adminAddCompanyTitle')}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <input value={companyForm.name} onChange={e => setCompanyForm({...companyForm, name: e.target.value})} placeholder={t('companyNameLabel')} required className="w-full input-field"/>
-                            <input value={companyForm.cnpj} onChange={e => setCompanyForm({...companyForm, cnpj: e.target.value})} placeholder={t('cnpjLabel')} required className="w-full input-field"/>
-                            <input value={companyForm.address} onChange={e => setCompanyForm({...companyForm, address: e.target.value})} placeholder={t('addressLabel')} className="w-full input-field"/>
-                        </div>
-                        <div className="flex justify-end"><button type="submit" className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 text-sm">{t('addCompanyButton')}</button></div>
-                    </form>
-
-                    <div className="mt-6 space-y-4">
-                        {companies.map(company => (
-                            <div key={company.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 dark:text-gray-100">{company.name}</h4>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">CNPJ: {company.cnpj}</p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('addressLabel')}: {company.address}</p>
-                                    </div>
-                                    <button onClick={() => handleDeleteCompany(company.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
-                                </div>
-                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('usersInThisCompany')}</h5>
-                                    <ul className="text-sm space-y-1">
-                                        {users.filter(u => u.companyId === company.id).map(user => (<li key={user.id} className="text-gray-600 dark:text-gray-400">{user.name || user.username}</li>))}
-                                        {users.filter(u => u.companyId === company.id).length === 0 && <p className="text-xs text-gray-400 italic">{t('noUsersInCompany')}</p>}
-                                    </ul>
-                                </div>
-                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('monitorFolderServerPathLabel')}</label>
-                                    <div className="flex items-center space-x-2 mt-1">
-                                        <input
-                                            type="text"
-                                            value={folderPaths[company.id] || ''}
-                                            onChange={(e) => setFolderPaths(prev => ({...prev, [company.id]: e.target.value}))}
-                                            placeholder={t('monitorFolderServerPathPlaceholder')}
-                                            className="w-full input-field text-sm"
-                                        />
-                                        <button
-                                            onClick={() => handleSaveFolder(company.id)}
-                                            className="px-3 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 text-xs whitespace-nowrap"
-                                        >
-                                            {t('saveButton')}
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('monitorFolderServerDescription')}</p>
-                                </div>
+                {isAdmin && (
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl shadow-md">
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-600 pb-2 mb-4">{t('adminCompaniesTitle')}</h3>
+                        <form onSubmit={handleAddCompany} className="p-4 bg-white dark:bg-gray-800 rounded-lg space-y-4 border dark:border-gray-700">
+                            <h4 className="font-semibold">{t('adminAddCompanyTitle')}</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <input value={companyForm.name} onChange={e => setCompanyForm({...companyForm, name: e.target.value})} placeholder={t('companyNameLabel')} required className="w-full input-field"/>
+                                <input value={companyForm.cnpj} onChange={e => setCompanyForm({...companyForm, cnpj: e.target.value})} placeholder={t('cnpjLabel')} required className="w-full input-field"/>
+                                <input value={companyForm.address} onChange={e => setCompanyForm({...companyForm, address: e.target.value})} placeholder={t('addressLabel')} className="w-full input-field"/>
                             </div>
-                        ))}
+                            <div className="flex justify-end"><button type="submit" className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 text-sm">{t('addCompanyButton')}</button></div>
+                        </form>
+
+                        <div className="mt-6 space-y-4">
+                            {companies.map(company => (
+                                <div key={company.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 dark:text-gray-100">{company.name}</h4>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">CNPJ: {company.cnpj}</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">{t('addressLabel')}: {company.address}</p>
+                                        </div>
+                                        <button onClick={() => handleDeleteCompany(company.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('usersInThisCompany')}</h5>
+                                        <ul className="text-sm space-y-1">
+                                            {users.filter(u => u.companyId === company.id).map(user => (<li key={user.id} className="text-gray-600 dark:text-gray-400">{user.name || user.username}</li>))}
+                                            {users.filter(u => u.companyId === company.id).length === 0 && <p className="text-xs text-gray-400 italic">{t('noUsersInCompany')}</p>}
+                                        </ul>
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('monitorFolderServerPathLabel')}</label>
+                                        <div className="flex items-center space-x-2 mt-1">
+                                            <input
+                                                type="text"
+                                                value={folderPaths[company.id] || ''}
+                                                onChange={(e) => setFolderPaths(prev => ({...prev, [company.id]: e.target.value}))}
+                                                placeholder={t('monitorFolderServerPathPlaceholder')}
+                                                className="w-full input-field text-sm"
+                                            />
+                                            <button
+                                                onClick={() => handleSaveFolder(company.id)}
+                                                className="px-3 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 text-xs whitespace-nowrap"
+                                            >
+                                                {t('saveButton')}
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('monitorFolderServerDescription')}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                 </div>
+                )}
 
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl shadow-md">
                     <div className="flex justify-between items-center border-b dark:border-gray-600 pb-2 mb-4">
-                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Gerenciamento de Usuários</h3>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{t('companyAdminUsersTab')}</h3>
                         <button onClick={openAddUserModal} className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 text-sm">{t('addUserButton')}</button>
                     </div>
                     <div className="overflow-x-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
@@ -375,7 +419,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                              <thead className="bg-gray-50 dark:bg-gray-700"><tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('userFormNameLabel')}</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('companyLabel')}</th>
+                                {isAdmin && <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">{t('companyLabel')}</th>}
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Permissão</th>
                                 <th scope="col" className="relative px-6 py-3"><span className="sr-only">Ações</span></th>
                             </tr></thead>
@@ -384,8 +428,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                                     <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{user.name || <span className="italic text-gray-400">N/A</span>}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{user.username}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{companies.find(c => c.id === user.companyId)?.name || <span className="italic">{t('noCompany')}</span>}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleClassMap[user.role]}`}>{user.role}</span></td>
+                                        {isAdmin && <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{companies.find(c => c.id === user.companyId)?.name || <span className="italic">{t('noCompany')}</span>}</td>}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleClassMap[user.role]}`}>{t(roleDisplayMap[user.role])}</span></td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
                                             <button onClick={() => openEditUserModal(user)} className="text-blue-600 hover:text-blue-900"><EditIcon className="w-5 h-5 inline-block"/></button>
                                             <button onClick={() => handleDeleteUser(user.id)} className={`text-red-600 hover:text-red-900 ${currentUser.id === user.id ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={currentUser.id === user.id}><TrashIcon className="w-5 h-5 inline-block" /></button>
@@ -401,13 +445,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormNameLabel')}</label><input type="text" value={userForm.name} onChange={(e) => setUserForm({...userForm, name: e.target.value})} className="mt-1 block w-full input-field"/></div>
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormEmailLabel')}</label><input type="email" value={userForm.username} onChange={(e) => setUserForm({...userForm, username: e.target.value})} className="mt-1 block w-full input-field"/></div>
                         <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormPasswordLabel')}</label><input type="password" value={userForm.password} onChange={(e) => setUserForm({...userForm, password: e.target.value})} placeholder={modalMode === 'edit' ? t('userFormPasswordPlaceholder') : ''} className="mt-1 block w-full input-field"/></div>
-                        <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('companyLabel')}</label><select value={userForm.companyId} onChange={(e) => setUserForm({...userForm, companyId: e.target.value})} className="mt-1 block w-full input-field"><option value="">{t('noCompany')}</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                        {isAdmin && (
+                            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('companyLabel')}</label><select value={userForm.companyId} onChange={(e) => setUserForm({...userForm, companyId: e.target.value})} className="mt-1 block w-full input-field"><option value="">{t('noCompany')}</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('userFormRoleLabel')}</label>
                             <select value={userForm.role} onChange={(e) => setUserForm({...userForm, role: e.target.value as Role})} className="mt-1 block w-full input-field">
-                                <option value="viewer">Viewer</option>
-                                <option value="editor">Editor</option>
-                                <option value="admin">Admin</option>
+                                <option value="viewer">{t('roleViewer' as TranslationKey)}</option>
+                                <option value="editor">{t('roleEditor' as TranslationKey)}</option>
+                                {isAdmin && <option value="company_admin">{t('roleCompanyAdmin' as TranslationKey)}</option>}
+                                {isAdmin && <option value="admin">{t('roleAdmin' as TranslationKey)}</option>}
                             </select>
                         </div>
                         <div className="flex justify-end pt-4 space-x-2"><button onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('cancelButton')}</button><button onClick={handleUserFormSubmit} className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">{t('saveButton')}</button></div>
@@ -450,7 +497,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, getUsers, currentUser,
         const [isLoading, setIsLoading] = useState(false);
 
         useEffect(() => {
-            // Pre-check status on tab load
             handleCheckStatus();
         // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []);
@@ -798,21 +844,16 @@ sudo certbot renew --dry-run</code></pre>
             )}
             <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
                 <nav className="flex space-x-2 overflow-x-auto pb-2">
-                    <TabButton tabId="settings" label={t('adminPanelSettingsTab')} />
-                    <TabButton tabId="users_companies" label={t('adminPanelUsersCompaniesTab')} />
-                    <TabButton tabId="ssl" label="Certificado SSL" />
-                    <TabButton tabId="rastreio" label={t('trackingTab')} />
-                    <TabButton tabId="email" label={t('adminPanelEmailTab')} />
-                    <TabButton tabId="logs" label={t('adminPanelLogsTab')} />
+                    {availableTabs.map(tabId => <TabButton key={tabId} tabId={tabId} />)}
                 </nav>
             </div>
             
             {activeTab === 'settings' && <SettingsTab />}
             {activeTab === 'users_companies' && <UsersAndCompaniesTab />}
-            {activeTab === 'ssl' && <SslTab />}
-            {activeTab === 'rastreio' && <TrackingTab />}
-            {activeTab === 'email' && <EmailTab />}
-            {activeTab === 'logs' && <LogsTab />}
+            {activeTab === 'ssl' && isAdmin && <SslTab />}
+            {activeTab === 'rastreio' && isAdmin && <TrackingTab />}
+            {activeTab === 'email' && isAdmin && <EmailTab />}
+            {activeTab === 'logs' && isAdmin && <LogsTab />}
             
             <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
                  <button onClick={onClose} className="px-6 py-2 font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Fechar Painel</button>

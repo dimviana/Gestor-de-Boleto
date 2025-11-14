@@ -75,7 +75,7 @@ const pt = {
     confirmBulkStatusChange: 'Tem certeza que deseja mover os {{count}} boletos selecionados para o status "{{newStatus}}"?',
     deleteUserError: 'Não foi possível excluir o usuário.',
     deleteSelfError: 'Você não pode excluir sua própria conta.',
-    adminPanelSettingsTab: 'Configurações',
+    adminPanelSettingsTab: 'Configurações Gerais',
     adminPanelUsersCompaniesTab: 'Usuários & Empresas',
     adminPanelLogsTab: 'Logs de Atividades',
     adminPanelEmailTab: 'Email',
@@ -241,6 +241,18 @@ const pt = {
     paginationPrevious: 'Anterior',
     paginationNext: 'Próxima',
     invalidProofFileType: 'Apenas arquivos PDF são permitidos como comprovante.',
+
+    // Company Admin
+    companyAdminPanelTitle: 'Painel da Empresa',
+    companyAdminUsersTab: 'Gerenciamento de Usuários',
+    roleViewer: 'Visualizador',
+    roleEditor: 'Editor',
+    roleCompanyAdmin: 'Admin da Empresa',
+    roleAdmin: 'Admin Geral',
+    permissionDenied: 'Permissão negada.',
+    cannotCreateRole: 'Permissão negada para criar um usuário com esta função.',
+    cannotEditUser: 'Permissão negada para editar este usuário.',
+    cannotAssignRole: 'Permissão negada para atribuir esta função.',
 };
 
 const en: typeof pt = {
@@ -318,7 +330,7 @@ const en: typeof pt = {
     confirmBulkStatusChange: 'Are you sure you want to move the {{count}} selected boletos to the "{{newStatus}}" status?',
     deleteUserError: 'Could not delete the user.',
     deleteSelfError: 'You cannot delete your own account.',
-    adminPanelSettingsTab: 'Settings',
+    adminPanelSettingsTab: 'General Settings',
     adminPanelUsersCompaniesTab: 'Users & Companies',
     adminPanelLogsTab: 'Activity Logs',
     adminPanelEmailTab: 'Email',
@@ -484,6 +496,18 @@ const en: typeof pt = {
     paginationPrevious: 'Previous',
     paginationNext: 'Next',
     invalidProofFileType: 'Only PDF files are allowed as payment proof.',
+
+    // Company Admin
+    companyAdminPanelTitle: 'Company Panel',
+    companyAdminUsersTab: 'User Management',
+    roleViewer: 'Viewer',
+    roleEditor: 'Editor',
+    roleCompanyAdmin: 'Company Admin',
+    roleAdmin: 'Global Admin',
+    permissionDenied: 'Permission denied.',
+    cannotCreateRole: 'Permission denied to create a user with this role.',
+    cannotEditUser: 'Permission denied to edit this user.',
+    cannotAssignRole: 'Permission denied to assign this role.',
 };
 
 export const translations = { pt, en };

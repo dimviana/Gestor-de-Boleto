@@ -1,11 +1,10 @@
-
 import { execFile } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { Boleto } from '../../types';
-// Add import for Buffer to resolve type error.
+// FIX: Add import for Buffer to resolve type error.
 import { Buffer } from 'buffer';
 
 const PYTHON_PATH = process.env.PYTHON_PATH || 'python3';

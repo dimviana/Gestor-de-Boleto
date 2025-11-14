@@ -76,7 +76,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
       <ThemeSwitcher />
       <LanguageSwitcher />
 
-      {user.role === 'admin' && (
+      {(user.role === 'admin' || user.role === 'company_admin') && (
           <button
           onClick={onOpenAdminPanel}
           title="Painel Administrativo"
