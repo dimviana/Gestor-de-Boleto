@@ -19,6 +19,9 @@ import CalendarView from './CalendarView';
 import OverviewView from './OverviewView';
 import EditProfileModal from './EditProfileModal';
 import { useFolderWatcher } from '../hooks/useFolderWatcher';
+import { useOfflineSync } from '../hooks/useOfflineSync';
+import * as offlineService from '../services/offlineService';
+import { QueuedFile } from '../services/offlineService';
 
 
 interface DashboardProps {
@@ -50,6 +53,56 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
   const activeCompanyId = user.role === 'admin' ? selectedCompanyFilter : user.companyId;
   const isUploadDisabled = !activeCompanyId;
+
+  // --- Offline Sync Logic ---
+  const { isOnline } = useOfflineSync({
+    onSyncStart: (item: QueuedFile) => {
+        setUploadStatuses(prev => prev.map(up =>
+            up.id === item.id
+            ? { ...up, status: 'processing', message: 'Sincronizando...' }
+            : up
+        ));
+    },
+    onSyncSuccess: async (item: QueuedFile) => {
+        setUploadStatuses(prev => prev.map(up =>
+            up.id === item.id
+            ? { ...up, status: 'success', message: 'Sincronizado com sucesso!', progress: 100 }
+            : up
+        ));
+        await fetchBoletos();
+        setTimeout(() => {
+            setUploadStatuses(prev => prev.filter(status => status.id !== item.id));
+        }, 5000);
+    },
+    onSyncError: (item: QueuedFile, error: Error) => {
+        const errorMessage = `Falha na sincronização: ${error.message}`;
+        setUploadStatuses(prev => prev.map(up =>
+            up.id === item.id
+            ? { ...up, status: 'error', message: errorMessage }
+            : up
+        ));
+    },
+  });
+
+  useEffect(() => {
+    const loadQueuedFiles = async () => {
+        try {
+            const queuedFiles = await offlineService.getQueuedFiles();
+            const queuedStatuses: UploadStatus[] = queuedFiles.map(item => ({
+                id: item.id,
+                fileName: item.fileName,
+                status: 'queued',
+                message: 'Aguardando conexão...',
+                progress: 0,
+            }));
+            setUploadStatuses(prev => [...queuedStatuses, ...prev.filter(p => !queuedStatuses.some(q => q.id === p.id))]);
+        } catch (e) {
+            console.warn("Could not load queued files, IndexedDB may not be available.");
+        }
+    };
+    loadQueuedFiles();
+  }, []);
+  // --- End Offline Sync Logic ---
   
    useEffect(() => {
         const loadPaginationSettings = async () => {
@@ -81,6 +134,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         return;
     }
 
+    if (!isOnline) {
+        try {
+            const queuedItem = await offlineService.queueFileForUpload(file, activeCompanyId);
+            setUploadStatuses(prev => [{
+                id: queuedItem.id,
+                fileName: file.name,
+                status: 'queued',
+                message: 'Aguardando conexão...',
+                progress: 0,
+            }, ...prev]);
+        } catch (e) {
+            console.error("Failed to queue file offline:", e);
+            setUploadStatuses(prev => [{
+                id: crypto.randomUUID(),
+                fileName: file.name,
+                status: 'error',
+                message: 'Falha ao salvar para envio posterior.',
+                progress: 0
+            }, ...prev]);
+        }
+        return;
+    }
+
     const uploadId = crypto.randomUUID();
     setUploadStatuses(prev => [{ id: uploadId, fileName: file.name, status: 'processing', message: 'Enviando e processando...', progress: 0 }, ...prev]);
 
@@ -101,7 +177,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
 
       await fetchBoletos();
 
-      // Automatically clear the success message after a few seconds
       setTimeout(() => {
         setUploadStatuses(prev => prev.filter(status => status.id !== uploadId));
       }, 5000);
@@ -362,6 +437,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
         notifications={allNotifications}
         onSearch={setSearchTerm}
         activeCompanyId={activeCompanyId}
+        isOnline={isOnline}
       />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <input 

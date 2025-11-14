@@ -18,9 +18,10 @@ interface HeaderProps {
   notifications: Notification[];
   onSearch: (term: string) => void;
   activeCompanyId: string | null;
+  isOnline: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, onOpenEditProfile, user, companies, notifications, onSearch, activeCompanyId }) => {
+const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel, onOpenEditProfile, user, companies, notifications, onSearch, activeCompanyId, isOnline }) => {
   const { t } = useLanguage();
   const { appName, logoUrl } = useWhitelabel();
   const [isNotificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
@@ -153,9 +154,12 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
             </div>
 
           <div className="hidden md:flex items-center space-x-2">
-            <div className="text-sm font-mono bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg text-gray-700 dark:text-gray-200">
-                <span>{currentTime}</span>
-                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">BRT</span>
+            <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg" title={isOnline ? 'Online' : 'Offline'}>
+                <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <div className="text-sm font-mono text-gray-700 dark:text-gray-200">
+                    <span>{currentTime}</span>
+                    <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">BRT</span>
+                </div>
             </div>
             <HeaderControls />
              <div className="relative" ref={profileRef}>
@@ -195,6 +199,10 @@ const Header: React.FC<HeaderProps> = ({ onLogout, onOpenDocs, onOpenAdminPanel,
                     <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                         <XIcon className="w-6 h-6" />
                     </button>
+                </div>
+                <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg mb-4" title={isOnline ? 'Online' : 'Offline'}>
+                    <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">{isOnline ? 'Online' : 'Offline'}</span>
                 </div>
                 <div className="flex flex-col space-y-4">
                     <HeaderControls isMobile={true}/>

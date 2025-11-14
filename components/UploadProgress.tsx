@@ -1,11 +1,11 @@
 import React from 'react';
-import { CheckCircleIcon, XCircleIcon } from './icons/Icons';
+import { CheckCircleIcon, XCircleIcon, HourglassIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export interface UploadStatus {
   id: string;
   fileName: string;
-  status: 'processing' | 'success' | 'error';
+  status: 'processing' | 'success' | 'error' | 'queued';
   message: string;
   progress?: number;
 }
@@ -30,6 +30,8 @@ const UploadProgress: React.FC<UploadProgressProps> = ({ statuses, onClear }) =>
         return <CheckCircleIcon className="w-6 h-6 text-green-500" />;
       case 'error':
         return <XCircleIcon className="w-6 h-6 text-red-500" />;
+      case 'queued':
+        return <HourglassIcon className="w-5 h-5 text-gray-500" />;
     }
   };
 
