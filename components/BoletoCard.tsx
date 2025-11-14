@@ -224,6 +224,13 @@ const BoletoCard: React.FC<BoletoCardProps> = ({ boleto, onUpdateStatus, onDelet
       e.stopPropagation();
       if (e.target.files && e.target.files.length > 0) {
           const file = e.target.files[0];
+          if (file.type !== 'application/pdf') {
+              addNotification(t('invalidProofFileType' as TranslationKey), 'error');
+              if (e.target) {
+                  e.target.value = '';
+              }
+              return;
+          }
           try {
             await onUploadProof(id, file);
           } catch (error: any) {

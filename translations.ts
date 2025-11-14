@@ -238,6 +238,7 @@ const pt = {
     paginationOf: 'de',
     paginationPrevious: 'Anterior',
     paginationNext: 'Próxima',
+    invalidProofFileType: 'Apenas arquivos PDF são permitidos como comprovante.',
 };
 
 const en: typeof pt = {
@@ -478,6 +479,7 @@ const en: typeof pt = {
     paginationOf: 'of',
     paginationPrevious: 'Previous',
     paginationNext: 'Next',
+    invalidProofFileType: 'Only PDF files are allowed as payment proof.',
 };
 
 export const translations = { pt, en };
