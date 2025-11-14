@@ -1,5 +1,6 @@
-// FIX: Use default express import and qualified types to avoid type conflicts.
-import express from 'express';
+
+// FIX: Changed express import to directly include types for Request and Response, resolving type inference issues.
+import express, { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { exec } from 'child_process';
@@ -7,8 +8,8 @@ import { SslStatus } from '../../types';
 
 const SSL_SETTINGS_KEY = 'ssl_settings';
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const getSslSettings = async (_req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const getSslSettings = async (_req: Request, res: Response) => {
     try {
         const [rows] = await pool.query<RowDataPacket[]>("SELECT setting_value FROM settings WHERE setting_key = ?", [SSL_SETTINGS_KEY]);
         if (rows.length > 0) {
@@ -22,8 +23,8 @@ export const getSslSettings = async (_req: express.Request, res: express.Respons
     }
 };
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const saveSslSettings = async (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const saveSslSettings = async (req: Request, res: Response) => {
     const { domain } = req.body;
     if (typeof domain !== 'string') {
         return res.status(400).json({ message: 'Invalid domain specified.' });
@@ -42,8 +43,8 @@ export const saveSslSettings = async (req: express.Request, res: express.Respons
     }
 };
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const checkSslStatus = (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const checkSslStatus = (req: Request, res: Response) => {
     const { domain } = req.body;
     if (!domain) {
         return res.status(400).json({ message: 'Domain is required.' });

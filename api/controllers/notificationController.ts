@@ -1,11 +1,12 @@
-// FIX: Use default express import and qualified types to avoid type conflicts.
-import express from 'express';
+
+// FIX: Changed express import to directly include types for Request and Response, resolving type inference issues.
+import express, { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const sendReminders = async (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const sendReminders = async (req: Request, res: Response) => {
     const { companyId } = req.body;
     const user = req.user!;
 
@@ -81,7 +82,7 @@ export const sendReminders = async (req: express.Request, res: express.Response)
     }
 };
 
-export const sendTestEmail = async (req: express.Request, res: express.Response) => {
+export const sendTestEmail = async (req: Request, res: Response) => {
     const smtpSettings = req.body;
     const user = req.user!;
     const recipientEmail = user.username;

@@ -1,5 +1,6 @@
-// FIX: Use default express import and qualified types to avoid type conflicts.
-import express from 'express';
+
+// FIX: Changed express import to directly include types for Request and Response, resolving type inference issues.
+import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../../config/db';
@@ -18,8 +19,8 @@ const generateToken = (id: string, username: string, name: string | null, role: 
   });
 };
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const registerUser = async (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const registerUser = async (req: Request, res: Response) => {
   const { username, password, name, role = 'viewer', companyId = null } = req.body;
 
   if (!username || !password) {
@@ -45,8 +46,8 @@ export const registerUser = async (req: express.Request, res: express.Response) 
   }
 };
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const loginUser = async (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {

@@ -1,13 +1,14 @@
-// FIX: Use default express import and qualified types to avoid type conflicts.
-import express from 'express';
+
+// FIX: Changed express import to directly include types for Request and Response, resolving type inference issues.
+import express, { Request, Response } from 'express';
 import { pool } from '../../config/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '../../types';
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const getUsers = async (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const getUsers = async (req: Request, res: Response) => {
   const user = req.user!;
   try {
     let query = 'SELECT id, username, name, role, company_id FROM users';
@@ -34,8 +35,8 @@ export const getUsers = async (req: express.Request, res: express.Response) => {
   }
 };
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const createUser = async (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const createUser = async (req: Request, res: Response) => {
   let { username, password, name, role, companyId } = req.body;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -96,8 +97,8 @@ export const createUser = async (req: express.Request, res: express.Response) =>
   }
 };
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const updateUser = async (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const updateUser = async (req: Request, res: Response) => {
   const userId = req.params.id;
   const adminUser = req.user!;
   const { password, role } = req.body;
@@ -160,8 +161,8 @@ export const updateUser = async (req: express.Request, res: express.Response) =>
   }
 };
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const deleteUser = async (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const deleteUser = async (req: Request, res: Response) => {
   const userIdToDelete = req.params.id;
   const adminUser = req.user!;
   const connection = await pool.getConnection();
@@ -201,8 +202,8 @@ export const deleteUser = async (req: express.Request, res: express.Response) =>
   }
 };
 
-// FIX: Use express.Request, express.Response to get correct typings.
-export const updateUserProfile = async (req: express.Request, res: express.Response) => {
+// FIX: Updated function signature to use directly imported express types.
+export const updateUserProfile = async (req: Request, res: Response) => {
     const user = req.user!;
     const { password } = req.body;
     const connection = await pool.getConnection();
