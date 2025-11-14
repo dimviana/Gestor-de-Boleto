@@ -97,23 +97,18 @@ export const useFolderWatcher = (onFileUpload: (files: File[]) => void) => {
     if (!folderHandleRef.current) return;
     try {
       const filesToUpload: File[] = [];
-      const today = new Date();
+      const BATCH_LIMIT = 10; // Process up to 10 new files per scan
 
       for await (const entry of folderHandleRef.current.values()) {
+        if (filesToUpload.length >= BATCH_LIMIT) {
+          break; // Stop if we've hit our batch limit for this cycle
+        }
+
         if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
           if (!processedFilesRef.current.has(entry.name)) {
             const file = await entry.getFile();
-            const fileDate = new Date(file.lastModified);
-
-            // Check if the file's last modified date is today
-            const isToday = fileDate.getFullYear() === today.getFullYear() &&
-                            fileDate.getMonth() === today.getMonth() &&
-                            fileDate.getDate() === today.getDate();
-
-            if (isToday) {
-              filesToUpload.push(file);
-              processedFilesRef.current.add(entry.name);
-            }
+            filesToUpload.push(file);
+            processedFilesRef.current.add(entry.name);
           }
         }
       }
