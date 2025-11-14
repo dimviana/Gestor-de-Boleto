@@ -185,6 +185,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user, getUsers, getLogs
     } catch (error: any) {
       console.error("Upload failed:", error);
       
+      // Handle network errors by queueing the file for later
+      if ((error.message.includes('Network error') || !isOnline) && activeCompanyId) {
+        console.log('Network error detected during upload. Queuing file for sync.');
+        try {
+          const queuedItem = await offlineService.queueFileForUpload(file, activeCompanyId);
+          // Replace the 'processing' status with a 'queued' status.
+          setUploadStatuses(prev => prev.map(up => 
+            up.id === uploadId 
+            ? { 
+                ...up, 
+                id: queuedItem.id, // The queue gives it a new ID
+                status: 'queued', 
+                message: t('networkErrorQueueing' as TranslationKey), 
+                progress: 0 
+              } 
+            : up
+          ));
+        } catch (queueError) {
+            console.error("Failed to queue file after network error:", queueError);
+             setUploadStatuses(prev => prev.map(up => 
+                up.id === uploadId 
+                ? { ...up, status: 'error', message: 'Falha ao salvar para envio posterior.', progress: 0 } 
+                : up
+            ));
+        }
+        return; // Prevent further error handling
+      }
+      
       const messageFromServer = error.message || 'genericErrorText';
       let errorMessage = '';
 
